@@ -1,0 +1,15 @@
+name: Specialization
+version: '0.0.0.1'
+main: com.minecraftcivilizations.specialization.Specialization
+api-version: '1.21.8'
+depend:
+  - MinecraftCivilizationsCore
+  - ProtocolLib
+authors: [ DNFneca ]
+description: Lyphea
+
+commands:
+  simulatehit:
+    description: Simulate a combat hit for testing.
+    usage: /simulatehit
+    permission: specialization.simulatehit
