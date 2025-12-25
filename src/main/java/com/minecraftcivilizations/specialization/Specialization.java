@@ -1,5 +1,6 @@
 package com.minecraftcivilizations.specialization;
 
+import org.bukkit.Difficulty;
 import co.aikar.commands.PaperCommandManager;
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.ProtocolLibrary;

@@ -63,6 +63,8 @@ dependencies {
 
     testCompileOnly("org.projectlombok:lombok:1.18.38")
     testAnnotationProcessor("org.projectlombok:lombok:1.18.38")
+
+    shadow 'co.aikar:acf-paper:0.5.1-SNAPSHOT'
 }
 
 jar {
