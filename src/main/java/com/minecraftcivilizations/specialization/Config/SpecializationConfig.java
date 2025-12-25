@@ -142,7 +142,7 @@ public class SpecializationConfig {
         xpGainFromCraftingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromCrafting", null, fields -> {
             for (Material inputMaterial : Material.values()) {
                 if (inputMaterial.isItem() && inputMaterial != Material.AIR) {
-                    fields.add(new Pair<>(inputMaterial, new Pair<>(SkillType.FARMER, 1D)));
+                    fields.add(new Pair<>(inputMaterial, new Pair<>(SkillType.BLACKSMITH, 1D)));
                 }
             }
         });
@@ -153,7 +153,7 @@ public class SpecializationConfig {
                     Bukkit.recipeIterator().forEachRemaining((recipe) -> {
                         if (recipe instanceof StonecuttingRecipe stonecuttingRecipe) {
                             if (stonecuttingRecipe.getResult().equals(ItemStack.of(inputMaterial))) {
-                                fields.add(new Pair<>(inputMaterial, new Pair<>(SkillType.FARMER, "1")));
+                                fields.add(new Pair<>(inputMaterial, new Pair<>(SkillType.BUILDER, "1")));
                             }
                         }
                     });
@@ -207,7 +207,7 @@ public class SpecializationConfig {
         xpGainFromRepairingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromRepairing", null, fields -> {
             for (Material inputMaterial : Material.values()) {
                 if (inputMaterial.isItem() && inputMaterial != Material.AIR && inputMaterial.getMaxDurability() > 0) {
-                    fields.add(new Pair<>(inputMaterial, new Pair<>(SkillType.LIBRARIAN, "1")));
+                    fields.add(new Pair<>(inputMaterial, new Pair<>(SkillType.BLACKSMITH, "1")));
                 }
             }
         });
@@ -256,7 +256,7 @@ public class SpecializationConfig {
                     Bukkit.recipeIterator().forEachRemaining((recipe) -> {
                         if (recipe instanceof BlastingRecipe blastingRecipe) {
                             if (blastingRecipe.getResult().equals(ItemStack.of(inputMaterial))) {
-                                fields.add(new Pair<>(inputMaterial, new Pair<>(SkillType.FARMER, "1")));
+                                fields.add(new Pair<>(inputMaterial, new Pair<>(SkillType.MINER, "1")));
                             }
                         }
                     });
@@ -295,7 +295,7 @@ public class SpecializationConfig {
         xpGainFromBreakingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromBreaking", null, fields -> {
             for (Material inputMaterial : Material.values()) {
                 if (inputMaterial.isBlock()) {
-                    fields.add(new Pair<>(inputMaterial, new Pair<>(SkillType.FARMER, "0")));
+                    fields.add(new Pair<>(inputMaterial, new Pair<>(SkillType.MINER, "0")));
                 }
             }
         });
@@ -303,7 +303,7 @@ public class SpecializationConfig {
         xpGainFromPlacingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromPlacing", null, fields -> {
             for (Material inputMaterial : Material.values()) {
                 if (inputMaterial.isBlock()) {
-                    fields.add(new Pair<>(inputMaterial, new Pair<>(SkillType.FARMER, "0")));
+                    fields.add(new Pair<>(inputMaterial, new Pair<>(SkillType.BUILDER, "0")));
                 }
             }
         });
