@@ -10,12 +10,14 @@ import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.minecraft.world.level.block.SweetBerryBushBlock;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.Ageable;
 import org.bukkit.block.data.Bisected;
 import org.bukkit.block.data.type.Bed;
 import org.bukkit.block.data.type.Door;
@@ -39,26 +41,27 @@ public class RightClickListener implements Listener {
     @EventHandler
     public void onRightClick(PlayerInteractEvent event) {
         if (!(event.getAction() == Action.RIGHT_CLICK_BLOCK)) return;
-        if(event.getClickedBlock() == null) return;
-        if(event.getClickedBlock().getType().equals(Material.SPAWNER)){
+        Block clicked = event.getClickedBlock();
+        if(clicked == null) return;
+
+        if(clicked.getType().equals(Material.SPAWNER)){
             event.setCancelled(true);
         }
 
-        if (ReinforcementManager.isReinforced(event.getClickedBlock())) return;
+        if (ReinforcementManager.isReinforced(clicked)) return;
 
         Player player = event.getPlayer();
         CustomPlayer cPlayer = CoreUtil.getPlayer(player);
-        if(event.getClickedBlock().getType().equals(Material.SWEET_BERRY_BUSH) && cPlayer.getSkillLevel(SkillType.FARMER) < 2){
-            if(Math.random() < 0.2){
+        if(clicked.getBlockData() instanceof Ageable bush && cPlayer.getSkillLevel(SkillType.FARMER) < 2){
+            if(bush.getAge() >= 3 && Math.random() < 0.2){
                 player.damage(1);
-//                LocalChat.getInstance().spawnBubble(player, "Ouch!");
             }
         }
 
         if (player.getInventory().getItemInMainHand().getType() == Material.COPPER_INGOT) {
             CustomPlayer customPlayer = CoreUtil.getPlayer(player.getUniqueId());
             if (customPlayer.getSkillLevel(SkillType.BUILDER) >= SpecializationConfig.getReinforcementConfig().get("LIGHT_REINFORCEMENT_LEVEL", Integer.class)) {
-                List<Block> blocks = getMultiBlocks(event.getClickedBlock());
+                List<Block> blocks = getMultiBlocks(clicked);
                 boolean success = false;
                 for (Block block : blocks) {
                     if (ReinforcementManager.addReinforcement(player, block, false)) {
@@ -75,7 +78,7 @@ public class RightClickListener implements Listener {
             CustomPlayer customPlayer = CoreUtil.getPlayer(player.getUniqueId());
 
             if (customPlayer.getSkillLevel(SkillType.BUILDER) >= SpecializationConfig.getReinforcementConfig().get("HEAVY_REINFORCEMENT_LEVEL", Integer.class)) {
-                List<Block> blocks = getMultiBlocks(event.getClickedBlock());
+                List<Block> blocks = getMultiBlocks(clicked);
                 boolean success = false;
                 for (Block block : blocks) {
                     if (ReinforcementManager.addReinforcement(player, block, true)) {

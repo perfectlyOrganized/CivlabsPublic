@@ -1,5 +1,6 @@
 package com.minecraftcivilizations.specialization.Listener.Player;
 
+import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.util.EffectsUtil;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
@@ -234,9 +235,9 @@ public class BedListener implements Listener {
     }
 
     //-----------BED HEALING ---------------------//
-    private static final double NIGHT_HEAL_CAP = 5.0; // 2.5 hearts
-    private static final long BED_HEAL_INTERVAL = 900L; // ticks between heals
-
+    private static final double NIGHT_HEAL_CAP = SpecializationConfig.getHealthConfig().get("SLEEP_REGEN_CAP", double.class); // 2.5 hearts
+    private static final long BED_HEAL_INTERVAL = SpecializationConfig.getHealthConfig().get("SLEEP_REGEN_TICK_SPEED", long.class); // ticks between heals
+    private static final boolean LIMIT_SLEEP_REGEN_PER_DAY =  SpecializationConfig.getHealthConfig().get("LIMIT_SLEEP_REGEN_PER_DAY", boolean.class);
     private final Map<UUID, BedHealingTasks> bedHealTasks = new HashMap<>();
     private final Map<UUID, Long> lastHealDay = new HashMap<>();     // MC day index
     private final Map<UUID, Double> healedThisDay = new HashMap<>(); // healed today
@@ -244,7 +245,6 @@ public class BedListener implements Listener {
     private void startBedHealing(Player player) {
         UUID id = player.getUniqueId();
         if (bedHealTasks.containsKey(id)) return;
-
 
         //------------- DAY CALCULATION ----------------//
         World world = player.getWorld();
@@ -255,7 +255,7 @@ public class BedListener implements Listener {
 
 //        player.sendMessage("stored day:" + storedDay + "current Day:" + currentDay);
         // daily cap
-        if (storedDay == currentDay && healedSoFar >= NIGHT_HEAL_CAP) {
+        if (LIMIT_SLEEP_REGEN_PER_DAY && storedDay == currentDay && healedSoFar >= NIGHT_HEAL_CAP) {
             PlayerUtil.message(player, "You're fully rested");
             stopBedHealing(player);
             return;
@@ -362,7 +362,7 @@ public class BedListener implements Listener {
                 PlayerUtil.message(player, barText.toString());
 
                 // check cap at heal moment also
-                if (healed >= NIGHT_HEAL_CAP) {
+                if (LIMIT_SLEEP_REGEN_PER_DAY && healed >= NIGHT_HEAL_CAP) {
                     PlayerUtil.message(player, "You're fully rested");
                     stopBedHealing(player);
                     return;
