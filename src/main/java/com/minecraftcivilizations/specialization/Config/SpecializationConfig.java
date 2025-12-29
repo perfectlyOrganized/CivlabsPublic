@@ -371,6 +371,9 @@ public class SpecializationConfig {
             fields.add(new Pair<>("DEATH_REDUCED_MAX_HEALTH", 8D));
             fields.add(new Pair<>("BLESSED_FOOD_HEALTH_RESTORE_AMOUNT", 2D));
             fields.add(new Pair<>("HEALTH_ENABLED", true));
+            fields.add(new Pair<>("LIMIT_SLEEP_REGEN_PER_DAY", true));
+            fields.add(new Pair<>("SLEEP_REGEN_CAP", 5));
+            fields.add(new Pair<>("SLEEP_REGEN_TICK_SPEED", 900));
         });
 
         bedOwnershipConfig = new ConfigFile(Specialization.getInstance(), "bedOwnershipConfig", null, fields -> {
