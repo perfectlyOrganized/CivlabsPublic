@@ -6,6 +6,7 @@ import com.minecraftcivilizations.specialization.CustomItem.CustomItemManager;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
+import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Item.ItemUtils;
 import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
@@ -25,6 +26,9 @@ import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.Recipe;
+import org.bukkit.inventory.ShapelessRecipe;
+import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
@@ -83,7 +87,29 @@ public class CraftingListener implements Listener {
     public CraftingListener(Plugin plugin) {
         this.plugin = plugin;
     }
+    public void woolToStringTooCheck(CraftItemEvent event) {
+        ItemStack[] matrix = event.getInventory().getMatrix();
 
+        for (int i = 0; i < matrix.length; i++) {
+            if (matrix[i] != null && matrix[i].getType() == Material.SHEARS) {
+                ItemStack shears = matrix[i].clone();
+                ItemMeta itemMeta = shears.getItemMeta();
+                if (itemMeta instanceof Damageable damage) {
+                    int durability = damage.getDamage()+1;
+                    damage.setDamage(durability);
+                    shears.setItemMeta(damage);
+                    if (!damage.hasMaxDamage() || durability < damage.getMaxDamage()) {
+                        int finalI = i;
+                        Bukkit.getScheduler().runTaskLater(Specialization.getInstance(), () -> {
+                            event.getInventory().setItem(finalI + 1, shears);
+                        }, 1L);
+                    }
+
+                }
+            }
+
+        }
+    }
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onCraft(CraftItemEvent event) {
         if (!(event.getWhoClicked() instanceof Player player) || event.getCurrentItem() == null) return;
@@ -95,6 +121,13 @@ public class CraftingListener implements Listener {
         }
 
         ItemStack crafted = event.getCurrentItem();
+
+        if (event.getRecipe() instanceof ShapelessRecipe recipe) {
+            NamespacedKey stringRecipe = new NamespacedKey(Specialization.getInstance(), "wool_to_string_recipe");
+            if (recipe.getKey().equals(stringRecipe)) {
+                woolToStringTooCheck(event);
+            }
+        }
 
         if (COMPLEX_ITEMS.contains(crafted.getType())) {
             CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
@@ -264,7 +297,6 @@ public class CraftingListener implements Listener {
             case FLINT_AND_STEEL:
             case BUCKET:
             case SHEARS:
-                return 2.0;
             case CLAY:
             case BRICK:
             case PACKED_MUD:

@@ -97,6 +97,8 @@ public final class Specialization extends JavaPlugin {
     private XPMonitoringCommand xpMonitoringCommand;
 
     @Getter
+    private HammerListener hammerListener;
+    @Getter
     private PlayerDownedListener playerDownedListener;
     private RecipeBlocker recipeBlocker;
     private EmoteManager emoteManager;
@@ -143,6 +145,7 @@ public final class Specialization extends JavaPlugin {
         pvpManager = new PVPManager(playerDownedListener, this);
         recipeBlocker = new RecipeBlocker();
         armorTrimSystem = new BlacksmithArmorTrim();
+        hammerListener = new HammerListener();
 //      emoteListener = new EmoteListener(this);
 
         getServer().getMessenger().registerIncomingPluginChannel(this, "civlabs:weathersync", new TimeSyncListener());
@@ -183,7 +186,7 @@ public final class Specialization extends JavaPlugin {
         getServer().getPluginManager().registerEvents(playerDownedListener, this);
         getServer().getPluginManager().registerEvents(reviveListener, this);
         getServer().getPluginManager().registerEvents(recipeBlocker, this);
-
+        getServer().getPluginManager().registerEvents(hammerListener, this);
         //town data does not need to wait anymore
         TownManager.scanAllPlayersForTownsAsync();
 

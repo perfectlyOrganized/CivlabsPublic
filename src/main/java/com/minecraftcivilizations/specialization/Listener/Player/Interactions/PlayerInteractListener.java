@@ -49,8 +49,6 @@ public class PlayerInteractListener implements Listener {
 
     @EventHandler
     public void onOpenBlockInventory(InventoryOpenEvent e) {
-        if (e.getPlayer().isOp()) return;
-
         InventoryType type = e.getInventory().getType();
         List<InventoryType> defaultAllow = SpecializationConfig.getCanUseBlockConfig().get("default", new TypeToken<>() {});
         if (defaultAllow.contains(type)) return;
@@ -70,6 +68,7 @@ public class PlayerInteractListener implements Listener {
                 }
             }
         }
+        e.getPlayer().sendMessage("You are unable to access: "+ type.toString() + ", report if this is a bug.");
         e.setCancelled(true);
     }
 
