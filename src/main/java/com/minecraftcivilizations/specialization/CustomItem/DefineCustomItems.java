@@ -5,10 +5,8 @@ import com.minecraftcivilizations.specialization.Listener.Player.ReviveListener;
 import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.Sound;
+import org.bukkit.*;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
@@ -18,16 +16,20 @@ import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.RecipeChoice;
-import org.bukkit.inventory.ShapedRecipe;
+import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.components.CustomModelDataComponent;
+import org.bukkit.inventory.meta.components.EquippableComponent;
+import org.bukkit.inventory.meta.components.ToolComponent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffectType;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -119,7 +121,38 @@ public class DefineCustomItems implements Listener {
             itemStack.setItemMeta(meta);
         }
     };
+    CustomItem copper_axe = new CustomItem("copper_axe", "§rCopper Axe", Material.IRON_AXE, "copper_axe", true) {
+        @Override
+        public void onCreateItem(ItemStack itemStack, ItemMeta meta, Player player_who_crafted) {
+            CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
+            cmd.setStrings(List.of("copper_axe"));
+            meta.setCustomModelDataComponent(cmd);
+            if (meta instanceof Damageable damageMeta) {
+                damageMeta.setMaxDamage(190);
+            }
+            ToolComponent tool = meta.getTool();
+            tool.addRule(Tag.MINEABLE_PICKAXE, 5.0f, true);
 
+        }
+    };
+    // durability: 55 80 	75 	65
+    CustomItem copper_helmet = new CustomItem("copper_helmet", "§rCopper Helmet", Material.CHAINMAIL_HELMET, "copper_helmet", true) {
+        @Override
+        public void onCreateItem(ItemStack itemStack, ItemMeta meta, Player player_who_crafted) {
+            CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
+            cmd.setStrings(List.of("copper_helmet"));
+            meta.setCustomModelDataComponent(cmd);
+            //meta.setItemModel(new NamespacedKey(Specialization.getInstance(), "copper_helmet"));
+            //EquippableComponent equippableComponent = meta.getEquippable();
+           // equippableComponent.setModel(new NamespacedKey(Specialization.getInstance(), "copper_helmet"));
+            //meta.setEquippable(equippableComponent);
+            if (meta instanceof Damageable damageMeta) {
+                damageMeta.setMaxDamage(55);
+            }
+            itemStack.setItemMeta(meta);
+        }
+    };
+    
         CustomItem hammer = new CustomItem("hammer", "§rHammer", Material.MACE, "hammer", true) {
             @Override
             public void onCreateItem(ItemStack itemStack, ItemMeta meta, Player player_who_crafted) {
