@@ -7,6 +7,7 @@ import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -18,7 +19,12 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.RecipeChoice;
+import org.bukkit.inventory.ShapedRecipe;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.components.CustomModelDataComponent;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffectType;
 
 import java.util.List;
@@ -28,6 +34,7 @@ import java.util.List;
  * @author  alectriciti, jfrogy
  */
 public class DefineCustomItems implements Listener {
+    NamespacedKey MACE_KEY = new NamespacedKey("specialization", "is_mace");
 
     public Bandage bandage;
     public DefineCustomItems(Specialization plugin) {
@@ -58,6 +65,72 @@ public class DefineCustomItems implements Listener {
     }
 
     CustomItem masterwork_sword = new CustomWeapon("masterwork_sword");
+
+    CustomItem wooden_shears = new CustomItem( "wooden_shears", "§rWooden shears", Material.SHEARS, "wooden_shears", true ) {
+        @Override
+        public void init() {
+            NamespacedKey RECIPE_KEY = new NamespacedKey(Specialization.getInstance(), "wooden_shears_recipe");
+            ShapedRecipe recipe = new ShapedRecipe(RECIPE_KEY, createItemStack(1));
+
+            recipe.shape("I ", " I", "  ");
+            RecipeChoice resource = new RecipeChoice.MaterialChoice(
+                    Material.OAK_PLANKS,
+                    Material.ACACIA_PLANKS,
+                    Material.BIRCH_PLANKS,
+                    Material.SPRUCE_PLANKS,
+                    Material.JUNGLE_PLANKS,
+                    Material.DARK_OAK_PLANKS,
+                    Material.MANGROVE_PLANKS,
+                    Material.PALE_OAK_PLANKS,
+                    Material.BAMBOO_PLANKS
+            );
+            recipe.setIngredient('I', resource);
+            Bukkit.addRecipe(recipe, true);
+        }
+        @Override
+        public void onCreateItem(ItemStack itemStack, ItemMeta meta, Player player_who_crafted) {
+            CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
+            cmd.setStrings(List.of("wooden_shears"));
+            meta.setCustomModelDataComponent(cmd);
+            if (meta instanceof Damageable damageMeta) {
+                damageMeta.setMaxDamage(1);
+            }
+            itemStack.setItemMeta(meta);
+        }
+    };
+    CustomItem flint_shears = new CustomItem("flint_shears", "§rFlint shears", Material.SHEARS, "flint_shears", true) {
+        @Override
+        public void init() {
+            NamespacedKey RECIPE_KEY = new NamespacedKey(Specialization.getInstance(), "flint_shears_recipe");
+            ShapedRecipe recipe = new ShapedRecipe(RECIPE_KEY, createItemStack(1));
+            recipe.shape("I ", " I", "  ");
+
+            recipe.setIngredient('I', Material.FLINT);
+            Bukkit.addRecipe(recipe, true);
+        }
+        @Override
+        public void onCreateItem(ItemStack itemStack, ItemMeta meta, Player player_who_crafted) {
+            CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
+            cmd.setStrings(List.of("flint_shears"));
+            meta.setCustomModelDataComponent(cmd);
+            if (meta instanceof Damageable damageMeta) {
+                damageMeta.setMaxDamage(9);
+            }
+            itemStack.setItemMeta(meta);
+        }
+    };
+
+        CustomItem hammer = new CustomItem("hammer", "§rHammer", Material.MACE, "hammer", true) {
+            @Override
+            public void onCreateItem(ItemStack itemStack, ItemMeta meta, Player player_who_crafted) {
+                meta.getPersistentDataContainer().set(MACE_KEY, PersistentDataType.BYTE, (byte) 1);
+                CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
+                cmd.setStrings(List.of("hammer"));
+
+                meta.setCustomModelDataComponent(cmd);
+                itemStack.setItemMeta(meta);
+            }
+        };
 
         // Example Sword
         CustomItem cool_sword = new CustomItem("cool_sword", "Cool Sword", Material.DIAMOND_SWORD, "cool_sword", false) {
