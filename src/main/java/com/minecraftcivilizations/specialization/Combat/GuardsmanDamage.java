@@ -52,7 +52,7 @@ public class GuardsmanDamage implements Listener {
                 attribute.removeModifier(modifier);
             }
             modifier = new AttributeModifier(MAX_HEALTH_KEY,
-                    event.getNewLevel() * 2.0, // add +2 health per level
+                    event.getNewLevel() * 1.0, // add +1 health per level
                     AttributeModifier.Operation.ADD_NUMBER
             );
             attribute.addModifier(modifier);
@@ -74,35 +74,8 @@ public class GuardsmanDamage implements Listener {
 
         int lvl = customPlayer.getSkillLevel(SkillType.GUARDSMAN);
 
-        double multiplier = 0.5;
-        double add = 0.0;
-        SkillLevel skill_level = SkillLevel.getSkillLevelFromInt(lvl);
-        switch(skill_level){
-            case NOVICE -> {
-                multiplier = 0.333;
-                add = 0.25;
-            }
-            case APPRENTICE -> {
-                multiplier = 0.375;
-                add = 0.4;
-            }
-            case JOURNEYMAN -> {
-                multiplier = 0.4;
-                add = 0.5;
-            }
-            case EXPERT ->  {
-                multiplier = 0.45;
-                add = 0.6;
-            }
-            case MASTER ->  {
-                multiplier = 0.475;
-                add = 0.8;
-            }
-            case GRANDMASTER -> {
-                multiplier = 0.5;
-                add = 1.0;
-            }
-        }
+        double multiplier = 0.66 + 0.34/5*lvl;
+        double add = 0.25 + 0.75/5*lvl;
 
         //debugging
         String crit_msg = ""; String extra_msg = ""; String armor_msg = "";
@@ -116,20 +89,19 @@ public class GuardsmanDamage implements Listener {
          * This allows for players to deal extra damage to friendly mobs if they're hostile
          */
         if(victim instanceof Player px){
-            multiplier *= 2.0;
         }else if(victim instanceof LivingEntity le){
             if(victim instanceof Enemy) {
                 // Hostile Mobs
-                multiplier *= 3.0;
+                multiplier *= 1.5;
             }else if(combatManager.getMobManager().isMobVariation(victim)){
                 // Mob Variations
                 MobVariation variation = combatManager.getMobManager().getMobVariation(victim);
                 if(variation.isAngry() || variation.doesHunting()){
-                    multiplier *= 3.0;
+                    multiplier *= 1.5;
                 }
             }else if(victim instanceof Mob){
                 // Non hostile-mob
-                multiplier *= 3.0;
+                multiplier *= 1.5;
                 add = 0.0;
             }
         }

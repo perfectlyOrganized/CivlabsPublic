@@ -4,7 +4,10 @@ import com.minecraftcivilizations.specialization.Specialization;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Item.CustomItem;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Item.CustomItemRegistry;
 import org.bukkit.*;
+import org.bukkit.entity.Item;
 import org.bukkit.inventory.*;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,6 +54,22 @@ public class Recipes {
                 failedExceptions.add(key.getKey() + " (" + e.getMessage() + ")");
             }
         }
+        // ----- String recipe
+        NamespacedKey stringRecipeKEY = new NamespacedKey(Specialization.getInstance(), "wool_to_string_recipe");
+        ShapelessRecipe stringRecipe = new ShapelessRecipe(stringRecipeKEY, new ItemStack(Material.STRING,2));
+        RecipeChoice wool = new RecipeChoice.MaterialChoice(Tag.WOOL);
+        stringRecipe.addIngredient(wool);
+
+        stringRecipe.addIngredient(Material.SHEARS);
+        if (!recipeExists(stringRecipeKEY, stringRecipe.getResult())) {
+            try {
+                Bukkit.addRecipe(stringRecipe, true);
+                successCount++;
+            } catch (Exception e) {
+                failedExceptions.add("wool_to_string_recipe (" + e.getMessage() + ")");
+            }
+        } else skippedDuplicateCount++;
+
 
         // ----- CUSTOM "RAIL" RECIPE -----
         NamespacedKey railKey = new NamespacedKey(Specialization.getInstance(), "rail_alt");

@@ -1,0 +1,26 @@
+{
+    "model": {
+        "type": "select",
+        "property": "custom_model_data",
+        "fallback": {
+            "type": "model",
+            "model": "item/shears"
+        },
+        "cases": [
+            {
+                "when": "flint_shears",
+                "model": {
+                    "type":"model",
+                    "model": "item/flint_shears"
+                }
+            },
+            {
+                "when": "wooden_shears",
+                "model": {
+                    "type":"model",
+                    "model": "item/wooden_shears"
+                }
+            }
+        ]
+    }
+}
