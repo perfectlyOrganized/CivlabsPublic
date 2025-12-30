@@ -1,0 +1,19 @@
+{
+    "model": {
+        "type": "select",
+        "property": "custom_model_data",
+        "fallback": {
+            "type": "model",
+            "model": "item/stone_hoe"
+        },
+        "cases": [
+            {
+                "when": "copper_hoe",
+                "model": {
+                    "type":"model",
+                    "model": "item/copper_hoe"
+                }
+            }
+        ]
+    }
+}

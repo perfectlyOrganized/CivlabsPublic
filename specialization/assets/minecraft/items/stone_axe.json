@@ -1,0 +1,19 @@
+{
+    "model": {
+        "type": "select",
+        "property": "custom_model_data",
+        "fallback": {
+            "type": "model",
+            "model": "item/stone_axe"
+        },
+        "cases": [
+            {
+                "when": "copper_axe",
+                "model": {
+                    "type":"model",
+                    "model": "item/copper_axe"
+                }
+            }
+        ]
+    }
+}

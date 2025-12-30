@@ -234,7 +234,8 @@ public class PVPManager implements Listener, CommandExecutor {
             as.setPersistent(true);
             as.setInvulnerable(true);
             as.getPersistentDataContainer().set(MARKER_KEY, PersistentDataType.STRING, id.toString());
-            as.getPersistentDataContainer().set(DEAD_KEY, PersistentDataType.INTEGER, 0);
+            // #TODO test this shit
+           // if (!playerDownedListener.isDowned(player)) as.getPersistentDataContainer().set(DEAD_KEY, PersistentDataType.INTEGER, 0);;
             as.getAttribute(Attribute.SCALE).setBaseValue(0.01);
 
             // Serialize only main inventory (slots 0-35)

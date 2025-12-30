@@ -1,0 +1,19 @@
+{
+    "model": {
+        "type": "select",
+        "property": "custom_model_data",
+        "fallback": {
+            "type": "model",
+            "model": "item/chainmail_helmet"
+        },
+        "cases": [
+            {
+                "when": "copper_helmet",
+                "model": {
+                    "type":"model",
+                    "model": "item/copper_helmet"
+                }
+            }
+        ]
+    }
+}

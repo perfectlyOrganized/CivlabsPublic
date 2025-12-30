@@ -1,0 +1,19 @@
+{
+    "model": {
+        "type": "select",
+        "property": "custom_model_data",
+        "fallback": {
+            "type": "model",
+            "model": "item/chainmail_chestplate"
+        },
+        "cases": [
+            {
+                "when": "copper_chestplate",
+                "model": {
+                    "type":"model",
+                    "model": "item/copper_chestplate"
+                }
+            }
+        ]
+    }
+}

@@ -11,6 +11,7 @@ import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Item.ItemUtils;
 import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Options.Pair;
+import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -23,10 +24,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
-import org.bukkit.inventory.Recipe;
-import org.bukkit.inventory.ShapelessRecipe;
+import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.Plugin;
@@ -110,6 +108,16 @@ public class CraftingListener implements Listener {
 
         }
     }
+    private String getRecipeKey(Recipe recipe) {
+        // for custom recipes like "bandage_recipe"
+        if (recipe instanceof ShapelessRecipe shapelessRecipe) {
+            return String.valueOf(shapelessRecipe.getKey());
+        } else if (recipe instanceof ShapedRecipe shapedRecipe) {
+            return String.valueOf(shapedRecipe.getKey());
+        }
+        return "";
+    }
+
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onCraft(CraftItemEvent event) {
         if (!(event.getWhoClicked() instanceof Player player) || event.getCurrentItem() == null) return;
@@ -138,9 +146,13 @@ public class CraftingListener implements Listener {
             }
             Debug.broadcast("analytics", player.getName() + " crafted complex item: " + crafted.getType() + " x" + amount);
         }
+        String key = getRecipeKey(event.getRecipe());
+        if (!SpecializationConfig.getXpGainFromCraftingConfig().doesFieldExist(key)) {
+            key = crafted.getType().toString();
+        }
 
         Pair<SkillType, Double> xp_gain_pair = SpecializationConfig.getXpGainFromCraftingConfig()
-                .get(crafted.getType(), new TypeToken<>() {});
+                .get(key, new TypeToken<>() {});
 
         int craftedAmount = getCraftedAmount(event);
 
@@ -301,6 +313,8 @@ public class CraftingListener implements Listener {
             case BRICK:
             case PACKED_MUD:
             case SNOW_BLOCK:
+            case SUGAR:
+                return 0.25;
             case GLASS_PANE:
                 return 0.33;
             case SANDSTONE:

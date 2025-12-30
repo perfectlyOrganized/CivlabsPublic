@@ -6,6 +6,8 @@ import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import net.kyori.adventure.text.Component;
 import org.bukkit.*;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -121,20 +123,160 @@ public class DefineCustomItems implements Listener {
             itemStack.setItemMeta(meta);
         }
     };
-    CustomItem copper_axe = new CustomItem("copper_axe", "§rCopper Axe", Material.IRON_AXE, "copper_axe", true) {
+    CustomItem copper_axe = new CustomItem("copper_axe", "§rCopper Axe", Material.STONE_AXE, "copper_axe", true) {
+        @Override
+        public void init() {
+            NamespacedKey RECIPE_KEY = new NamespacedKey(Specialization.getInstance(), "copper_axe_recipe");
+            ShapedRecipe recipe = new ShapedRecipe(RECIPE_KEY, createItemStack(1));
+            recipe.shape("BI ", "IS ", " S ");
+
+            recipe.setIngredient('I', Material.COPPER_INGOT);
+            recipe.setIngredient('B', Material.COPPER_BLOCK);
+            recipe.setIngredient('S', Material.STICK);
+            Bukkit.addRecipe(recipe, true);
+        }
         @Override
         public void onCreateItem(ItemStack itemStack, ItemMeta meta, Player player_who_crafted) {
             CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
             cmd.setStrings(List.of("copper_axe"));
             meta.setCustomModelDataComponent(cmd);
-            if (meta instanceof Damageable damageMeta) {
-                damageMeta.setMaxDamage(190);
-            }
-            ToolComponent tool = meta.getTool();
-            tool.addRule(Tag.MINEABLE_PICKAXE, 5.0f, true);
 
+            ToolComponent tool = meta.getTool();
+            tool.addRule(Tag.MINEABLE_AXE, 5.0f, true);
+            meta.setTool(tool);
+
+            if (meta instanceof Damageable damageMeta) {
+                damageMeta.setMaxDamage(170);
+            }
+            meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, new AttributeModifier(Attribute.ATTACK_DAMAGE.getKey(), 7, AttributeModifier.Operation.ADD_NUMBER));
+            meta.addAttributeModifier(Attribute.ATTACK_SPEED, new AttributeModifier(Attribute.ATTACK_SPEED.getKey(), -2.8, AttributeModifier.Operation.ADD_NUMBER));
+            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+            itemStack.setItemMeta(meta);
         }
     };
+    CustomItem copper_pickaxe = new CustomItem("copper_pickaxe", "§rCopper Pickaxe", Material.STONE_PICKAXE, "copper_pickaxe", true) {
+        @Override
+        public void init() {
+            NamespacedKey RECIPE_KEY = new NamespacedKey(Specialization.getInstance(), "copper_pickaxe_recipe");
+            ShapedRecipe recipe = new ShapedRecipe(RECIPE_KEY, createItemStack(1));
+            recipe.shape("IBI", " S ", " S ");
+
+            recipe.setIngredient('I', Material.COPPER_INGOT);
+            recipe.setIngredient('B', Material.COPPER_BLOCK);
+            recipe.setIngredient('S', Material.STICK);
+            Bukkit.addRecipe(recipe, true);
+        }
+        @Override
+        public void onCreateItem(ItemStack itemStack, ItemMeta meta, Player player_who_crafted) {
+            CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
+            cmd.setStrings(List.of("copper_pickaxe"));
+            meta.setCustomModelDataComponent(cmd);
+
+            ToolComponent tool = meta.getTool();
+            tool.addRule(Tag.MINEABLE_PICKAXE, 5.0f, true);
+            tool.addRule(Material.STONE, 7.5f, true);
+            meta.setTool(tool);
+
+            if (meta instanceof Damageable damageMeta) {
+                damageMeta.setMaxDamage(170);
+            }
+            meta.addAttributeModifier(Attribute.ATTACK_SPEED, new AttributeModifier(Attribute.ATTACK_SPEED.getKey(), -2.8, AttributeModifier.Operation.ADD_NUMBER));
+            meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, new AttributeModifier(Attribute.ATTACK_DAMAGE.getKey(), 2.5, AttributeModifier.Operation.ADD_NUMBER));
+            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+            itemStack.setItemMeta(meta);
+        }
+    };
+    CustomItem copper_sword = new CustomItem("copper_sword", "§rCopper Sword", Material.STONE_SWORD, "copper_sword", true) {
+        @Override
+        public void init() {
+            NamespacedKey RECIPE_KEY = new NamespacedKey(Specialization.getInstance(), "copper_sword_recipe");
+            ShapedRecipe recipe = new ShapedRecipe(RECIPE_KEY, createItemStack(1));
+            recipe.shape(" I ", " B ", " S ");
+
+            recipe.setIngredient('I', Material.COPPER_INGOT);
+            recipe.setIngredient('B', Material.COPPER_BLOCK);
+            recipe.setIngredient('S', Material.STICK);
+            Bukkit.addRecipe(recipe, true);
+        }
+        @Override
+        public void onCreateItem(ItemStack itemStack, ItemMeta meta, Player player_who_crafted) {
+            CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
+            cmd.setStrings(List.of("copper_sword"));
+            meta.setCustomModelDataComponent(cmd);
+
+            if (meta instanceof Damageable damageMeta) {
+                damageMeta.setMaxDamage(170);
+            }
+            meta.addAttributeModifier(Attribute.ATTACK_SPEED, new AttributeModifier(Attribute.ATTACK_SPEED.getKey(), -2.4, AttributeModifier.Operation.ADD_NUMBER));
+            meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, new AttributeModifier(Attribute.ATTACK_DAMAGE.getKey(), 4.5, AttributeModifier.Operation.ADD_NUMBER));
+            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+            itemStack.setItemMeta(meta);
+        }
+    };
+    CustomItem copper_hoe = new CustomItem("copper_hoe", "§rCopper Hoe", Material.STONE_HOE, "copper_hoe", true) {
+        @Override
+        public void init() {
+            NamespacedKey RECIPE_KEY = new NamespacedKey(Specialization.getInstance(), "copper_hoe_recipe");
+            ShapedRecipe recipe = new ShapedRecipe(RECIPE_KEY, createItemStack(1));
+            recipe.shape("IB ", " S ", " S ");
+
+            recipe.setIngredient('I', Material.COPPER_INGOT);
+            recipe.setIngredient('B', Material.COPPER_BLOCK);
+            recipe.setIngredient('S', Material.STICK);
+            Bukkit.addRecipe(recipe, true);
+        }
+        @Override
+        public void onCreateItem(ItemStack itemStack, ItemMeta meta, Player player_who_crafted) {
+            CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
+            cmd.setStrings(List.of("copper_hoe"));
+
+            ToolComponent tool = meta.getTool();
+            tool.addRule(Tag.MINEABLE_HOE, 0.4f, true);
+            meta.setCustomModelDataComponent(cmd);
+            meta.setTool(tool);
+
+            if (meta instanceof Damageable damageMeta) {
+                damageMeta.setMaxDamage(170);
+            }
+
+            meta.addAttributeModifier(Attribute.ATTACK_SPEED, new AttributeModifier(Attribute.ATTACK_SPEED.getKey(), -2.8, AttributeModifier.Operation.ADD_NUMBER));
+            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+            itemStack.setItemMeta(meta);
+        }
+    };
+    CustomItem copper_shovel = new CustomItem("copper_shovel", "§rCopper Shovel", Material.STONE_SHOVEL, "copper_shovel", true) {
+        @Override
+        public void init() {
+            NamespacedKey RECIPE_KEY = new NamespacedKey(Specialization.getInstance(), "copper_shovel_recipe");
+            ShapedRecipe recipe = new ShapedRecipe(RECIPE_KEY, createItemStack(1));
+            recipe.shape(" B ", " S ", " S ");
+
+            recipe.setIngredient('B', Material.COPPER_BLOCK);
+            recipe.setIngredient('S', Material.STICK);
+            Bukkit.addRecipe(recipe, true);
+        }
+        @Override
+        public void onCreateItem(ItemStack itemStack, ItemMeta meta, Player player_who_crafted) {
+            CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
+            cmd.setStrings(List.of("copper_shovel"));
+            meta.setCustomModelDataComponent(cmd);
+
+            ToolComponent tool = meta.getTool();
+            tool.addRule(Tag.MINEABLE_SHOVEL, 5.0f, true);
+            tool.addRule(Tag.SAND, 7.5f, true);
+            tool.addRule(Tag.DIRT, 7.5f, true);
+            meta.setTool(tool);
+
+            if (meta instanceof Damageable damageMeta) {
+                damageMeta.setMaxDamage(170);
+            }
+            meta.addAttributeModifier(Attribute.ATTACK_SPEED, new AttributeModifier(Attribute.ATTACK_SPEED.getKey(), -2.8, AttributeModifier.Operation.ADD_NUMBER));
+            meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, new AttributeModifier(Attribute.ATTACK_DAMAGE.getKey(), 2.5, AttributeModifier.Operation.ADD_NUMBER));
+            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+            itemStack.setItemMeta(meta);
+        }
+    };
+
     // durability: 55 80 	75 	65
     CustomItem copper_helmet = new CustomItem("copper_helmet", "§rCopper Helmet", Material.CHAINMAIL_HELMET, "copper_helmet", true) {
         @Override

@@ -1,0 +1,19 @@
+{
+    "model": {
+        "type": "select",
+        "property": "custom_model_data",
+        "fallback": {
+            "type": "model",
+            "model": "item/chainmail_leggings"
+        },
+        "cases": [
+            {
+                "when": "copper_leggings",
+                "model": {
+                    "type":"model",
+                    "model": "item/copper_leggings"
+                }
+            }
+        ]
+    }
+}
