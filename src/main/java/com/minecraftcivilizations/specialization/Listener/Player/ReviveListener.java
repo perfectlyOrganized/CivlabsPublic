@@ -311,14 +311,24 @@ public class ReviveListener implements Listener {
         }
     }
 
-    private boolean isHealer(Player player) {
-        CustomPlayer cHealer = CoreUtil.getPlayer(player.getUniqueId());
-        int lvl = cHealer.getSkillLevel(SkillType.HEALER);
-        if (lvl == 0) {
+//    private boolean isHealer(Player player) {
+//        CustomPlayer cHealer = CoreUtil.getPlayer(player.getUniqueId());
+//        int lvl = cHealer.getSkillLevel(SkillType.HEALER);
+//        if (lvl == 0) {
 //            player.sendMessage("§0[§0§6CivLabs§0]§8 » §7You are not skilled enough for that");
-            return false;
+//            return false;
+//        }
+//        return true;
+//    }
+
+    private boolean isGuardsman(Player player) {
+        CustomPlayer cGuardsman  = CoreUtil.getPlayer(player.getUniqueId());
+        int lvl = cGuardsman.getSkillLevel(SkillType.GUARDSMAN);
+        if (lvl >= 4) {
+//            player.sendMessage("§0[§0§6CivLabs§0]§8 » §7You are not skilled enough for that");
+            return true;
         }
-        return true;
+        return false;
     }
 
     private boolean allInjuriesCleared(Inventory inv) {
@@ -355,9 +365,9 @@ public class ReviveListener implements Listener {
 // -------------------------------
     @EventHandler(priority = EventPriority.LOWEST) //king of pickup logic check
     public void onPickupPassenger(PlayerInteractAtEntityEvent e) {
-        Player healer = e.getPlayer();
+        Player player = e.getPlayer();
         Entity target = e.getRightClicked();
-        if (healer.isDead()) return;
+        if (player.isDead()) return;
         if (e.getHand() != EquipmentSlot.HAND) return;
         if (target.getVehicle() instanceof Sheep) {
             return; //must not be leashed
@@ -372,13 +382,13 @@ public class ReviveListener implements Listener {
 
         Byte targetdowned = target.getPersistentDataContainer().get(new NamespacedKey(Specialization.getInstance(), "is_downed"), PersistentDataType.BYTE);
         if ((targetdowned == null || targetdowned == 0)) return; //target must be down
-        Byte healerdowned = healer.getPersistentDataContainer().get(new NamespacedKey(Specialization.getInstance(), "is_downed"), PersistentDataType.BYTE);
-        if (!(healerdowned == null || healerdowned == 0)) return; //healer must NOT be downed
+        Byte playerdowned = player.getPersistentDataContainer().get(new NamespacedKey(Specialization.getInstance(), "is_downed"), PersistentDataType.BYTE);
+        if (!(playerdowned == null || playerdowned == 0)) return; //healer must NOT be downed
 
-        if (!isHealer(healer)) return; //must be healer
+        if (!isGuardsman(player)) return; //must be guardsman
 
         boolean hasPlayerPassenger = false;
-        for (Entity passenger : healer.getPassengers()) {
+        for (Entity passenger : player.getPassengers()) {
             if (passenger instanceof Player) {
                 hasPlayerPassenger = true;
                 break;
@@ -386,8 +396,8 @@ public class ReviveListener implements Listener {
         }
 
         if (hasPlayerPassenger) return;// must not have any passangers already
-        ItemStack main = healer.getInventory().getItemInMainHand();
-        ItemStack off = healer.getInventory().getItemInOffHand();
+        ItemStack main = player.getInventory().getItemInMainHand();
+        ItemStack off = player.getInventory().getItemInOffHand();
 
         CustomItem used = CustomItem.getManager().getCustomItem(main) != null
                 ? CustomItem.getManager().getCustomItem(main)
@@ -397,7 +407,7 @@ public class ReviveListener implements Listener {
             return; // They interacted with the bandage → block passenger pickup
         }
         if (main.getType() == Material.LEAD || off.getType() == Material.LEAD) return;
-        if (healer.getPassengers().contains(target)) return; // already a passenger
+        if (player.getPassengers().contains(target)) return; // already a passenger
 
 
         if (target instanceof Player downedplayer) {
@@ -410,16 +420,16 @@ public class ReviveListener implements Listener {
         }
 
 
-        healer.addPassenger(target);
+        player.addPassenger(target);
         AttributeModifier slow = new AttributeModifier(CARRY_SLOW_KEY, -0.5, AttributeModifier.Operation.MULTIPLY_SCALAR_1);
 
-        if (healer.getAttribute(Attribute.MOVEMENT_SPEED) != null) {
+        if (player.getAttribute(Attribute.MOVEMENT_SPEED) != null) {
 //            healer.sendMessage("slowness applied");
-            healer.getAttribute(Attribute.MOVEMENT_SPEED).addModifier(slow);
+            player.getAttribute(Attribute.MOVEMENT_SPEED).addModifier(slow);
 //            healerSlowModifiers.put(healer.getUniqueId(), slow);
         }
 
-        Debug.broadcast("revive", healer.getName()+"§7is now carrying " + target.getName());
+        Debug.broadcast("revive", player.getName()+"§7is now carrying " + target.getName());
     }
 
 
