@@ -1,6 +1,6 @@
 {
-    "parent": "minecraft:item/handheld",
-    "textures": {
-        "layer0": "item/copper_hoe"
-    }
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "minecraft:item/copper_hoe"
+  }
 }
