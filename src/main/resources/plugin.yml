@@ -5,6 +5,8 @@ api-version: '1.21.8'
 depend:
   - MinecraftCivilizationsCore
   - ProtocolLib
+softdepend:
+  - CraftEngine
 authors: [ DNFneca ]
 description: Lyphea
 
