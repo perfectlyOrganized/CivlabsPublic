@@ -1,0 +1,22 @@
+{
+    "item.mace.smash_air": {
+        "sounds": [
+            "item/mace/smash_air1",
+            "item/mace/smash_air2",
+            "item/mace/smash_air3"
+        ]
+    },
+    "item.mace.smash_ground": {
+        "sounds": [
+            "item/mace/smash_ground1",
+            "item/mace/smash_ground2",
+            "item/mace/smash_ground3",
+            "item/mace/smash_ground4"
+        ]
+    },
+    "item.mace.smash_ground_heavy": {
+        "sounds": [
+            "item/mace/smash_ground_heavy"
+        ]
+    }
+}
