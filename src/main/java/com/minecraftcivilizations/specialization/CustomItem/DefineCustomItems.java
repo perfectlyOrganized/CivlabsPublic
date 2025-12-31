@@ -150,7 +150,6 @@ public class DefineCustomItems implements Listener {
             }
             meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, new AttributeModifier(Attribute.ATTACK_DAMAGE.getKey(), 7, AttributeModifier.Operation.ADD_NUMBER));
             meta.addAttributeModifier(Attribute.ATTACK_SPEED, new AttributeModifier(Attribute.ATTACK_SPEED.getKey(), -2.8, AttributeModifier.Operation.ADD_NUMBER));
-            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             itemStack.setItemMeta(meta);
         }
     };
@@ -182,7 +181,6 @@ public class DefineCustomItems implements Listener {
             }
             meta.addAttributeModifier(Attribute.ATTACK_SPEED, new AttributeModifier(Attribute.ATTACK_SPEED.getKey(), -2.8, AttributeModifier.Operation.ADD_NUMBER));
             meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, new AttributeModifier(Attribute.ATTACK_DAMAGE.getKey(), 2.5, AttributeModifier.Operation.ADD_NUMBER));
-            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             itemStack.setItemMeta(meta);
         }
     };
@@ -209,7 +207,6 @@ public class DefineCustomItems implements Listener {
             }
             meta.addAttributeModifier(Attribute.ATTACK_SPEED, new AttributeModifier(Attribute.ATTACK_SPEED.getKey(), -2.4, AttributeModifier.Operation.ADD_NUMBER));
             meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, new AttributeModifier(Attribute.ATTACK_DAMAGE.getKey(), 4.5, AttributeModifier.Operation.ADD_NUMBER));
-            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             itemStack.setItemMeta(meta);
         }
     };
@@ -240,7 +237,6 @@ public class DefineCustomItems implements Listener {
             }
 
             meta.addAttributeModifier(Attribute.ATTACK_SPEED, new AttributeModifier(Attribute.ATTACK_SPEED.getKey(), -2.8, AttributeModifier.Operation.ADD_NUMBER));
-            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             itemStack.setItemMeta(meta);
         }
     };
@@ -272,25 +268,40 @@ public class DefineCustomItems implements Listener {
             }
             meta.addAttributeModifier(Attribute.ATTACK_SPEED, new AttributeModifier(Attribute.ATTACK_SPEED.getKey(), -2.8, AttributeModifier.Operation.ADD_NUMBER));
             meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, new AttributeModifier(Attribute.ATTACK_DAMAGE.getKey(), 2.5, AttributeModifier.Operation.ADD_NUMBER));
-            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             itemStack.setItemMeta(meta);
         }
     };
 
-    // durability: 55 80 	75 	65
     CustomItem copper_helmet = new CustomItem("copper_helmet", "§rCopper Helmet", Material.CHAINMAIL_HELMET, "copper_helmet", true) {
+        @Override
+        public void init() {
+            NamespacedKey RECIPE_KEY = new NamespacedKey(Specialization.getInstance(), "copper_helmet_recipe");
+            ShapedRecipe recipe = new ShapedRecipe(RECIPE_KEY, createItemStack(1));
+            recipe.shape("IBI", "I I", "   ");
+
+            recipe.setIngredient('I', Material.COPPER_INGOT);
+            recipe.setIngredient('B', Material.COPPER_BLOCK);
+            Bukkit.addRecipe(recipe, true);
+        }
+
         @Override
         public void onCreateItem(ItemStack itemStack, ItemMeta meta, Player player_who_crafted) {
             CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
             cmd.setStrings(List.of("copper_helmet"));
             meta.setCustomModelDataComponent(cmd);
-            //meta.setItemModel(new NamespacedKey(Specialization.getInstance(), "copper_helmet"));
-            //EquippableComponent equippableComponent = meta.getEquippable();
-           // equippableComponent.setModel(new NamespacedKey(Specialization.getInstance(), "copper_helmet"));
-            //meta.setEquippable(equippableComponent);
+
             if (meta instanceof Damageable damageMeta) {
-                damageMeta.setMaxDamage(55);
+                damageMeta.setMaxDamage(121);
             }
+
+            // Armor attribute (zwischen Leder 1 und Eisen 2) - Kupfer bekommt 2
+            NamespacedKey armorKey = new NamespacedKey(Specialization.getInstance(), "copper_helmet_armor");
+            meta.addAttributeModifier(Attribute.ARMOR, new AttributeModifier(
+                    armorKey,
+                    2.0,
+                    AttributeModifier.Operation.ADD_NUMBER,
+                    EquipmentSlotGroup.HEAD
+            ));
             itemStack.setItemMeta(meta);
         }
     };
