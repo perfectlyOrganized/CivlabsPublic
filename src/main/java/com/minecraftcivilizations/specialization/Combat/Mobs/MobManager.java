@@ -7,6 +7,8 @@ import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.minecraftcivilizations.specialization.util.CoreUtil;
 import com.minecraftcivilizations.specialization.util.WorldUtils;
+import io.papermc.paper.threadedregions.scheduler.RegionScheduler;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -73,33 +75,7 @@ public class MobManager implements Listener {
         STEP_HEIGHT_KEY = new NamespacedKey(plugin, "custom_step_height");
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         BukkitRunnable cleanupTask = new MobCleanupSystem(this).start();
-        startNightWolfCleanupTask();
     }
-
-    public void startNightWolfCleanupTask() {
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                for (World world : Bukkit.getWorlds()) {
-                    for (Wolf wolf : world.getEntitiesByClass(Wolf.class)) {
-
-                        // Only affect night wolves
-                        if (!isMobVariation(wolf)) continue;
-
-                        MobVariation variation = getMobVariation(wolf);
-                        if (!"night_wolf".equals(variation.getId())) continue;
-
-                        // Check for nearby players (48 block radius)
-                        if (world.getNearbyPlayers(wolf.getLocation(), 48).isEmpty()) {
-                            wolf.remove();
-                        }
-                    }
-                }
-            }
-        }.runTaskTimer(Specialization.getInstance(), 20L * 30, 20L * 30); // every 30s
-    }
-
-
 
 
 //    @EventHandler(priority = EventPriority.LOWEST)
