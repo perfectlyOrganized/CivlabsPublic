@@ -147,13 +147,12 @@ public class CraftingListener implements Listener {
             Debug.broadcast("analytics", player.getName() + " crafted complex item: " + crafted.getType() + " x" + amount);
         }
         String key = getRecipeKey(event.getRecipe());
-        if (!SpecializationConfig.getXpGainFromCraftingConfig().doesFieldExist(key)) {
+        Pair<SkillType, Double> temp_xp_gain_pair = SpecializationConfig.getXpGainFromCraftingConfig().get(key, new TypeToken<>() {});
+        if (temp_xp_gain_pair == null) {
             key = crafted.getType().toString();
+            temp_xp_gain_pair = SpecializationConfig.getXpGainFromCraftingConfig().get(key, new TypeToken<>() {});
         }
-
-        Pair<SkillType, Double> xp_gain_pair = SpecializationConfig.getXpGainFromCraftingConfig()
-                .get(key, new TypeToken<>() {});
-
+        Pair<SkillType, Double> xp_gain_pair = temp_xp_gain_pair;
         int craftedAmount = getCraftedAmount(event);
 
         String amtstring = craftedAmount+"x ";
