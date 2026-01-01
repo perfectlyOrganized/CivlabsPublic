@@ -88,13 +88,25 @@ public class ArmorEquipAttributes implements Listener {
         if (mat == null) return; //not compatible
 
         Material item_type = null;
-        if (current.getType().name().contains("IRON_")) {
+        String typeName = current.getType().name();
+        if (typeName.startsWith("IRON_")) {
             item_type = Material.IRON_INGOT;
-        }else if(current.getType().name().contains("DIAMOND_")){
+        } else if (typeName.startsWith("DIAMOND_")) {
             item_type = Material.DIAMOND;
-        }else if(current.getType().name().contains("GOLDEN_")){
+        } else if (typeName.startsWith("GOLDEN_")) {
             item_type = Material.GOLD_INGOT;
+        } else if (typeName.startsWith("COPPER_")) {
+            item_type = Material.COPPER_INGOT;
+        } else if (typeName.startsWith("LEATHER_")) {
+            item_type = Material.LEATHER;
+        } else if (typeName.startsWith("NETHERITE_")) {
+            item_type = Material.NETHERITE_INGOT;
+//        } else if (typeName.startsWith("CHAINMAIL_")) {
+//            item_type = Material.CHAIN;
+        } else if (typeName.startsWith("TURTLE_")) {
+            item_type = Material.TURTLE_SCUTE;
         }
+
 
         material_weight = getMaterialWeight(mat);
         slot_weight = getSlotModifier(slot);
