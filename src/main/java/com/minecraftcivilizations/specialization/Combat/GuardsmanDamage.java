@@ -52,7 +52,7 @@ public class GuardsmanDamage implements Listener {
                 attribute.removeModifier(modifier);
             }
             modifier = new AttributeModifier(MAX_HEALTH_KEY,
-                    event.getNewLevel() * 1.0, // add +1 health per level
+                    event.getNewLevel() * 2.0, // add +1 health per level
                     AttributeModifier.Operation.ADD_NUMBER
             );
             attribute.addModifier(modifier);
