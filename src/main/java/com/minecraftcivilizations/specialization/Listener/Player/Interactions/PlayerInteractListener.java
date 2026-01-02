@@ -195,6 +195,7 @@ public class PlayerInteractListener implements Listener {
         Pair<SkillType, Double> pair =
                 SpecializationConfig.getXpGainFromBreakingConfig()
                         .get(Material.SUGAR_CANE, new TypeToken<Pair<SkillType, Double>>() {});
+
         double xpPer = pair != null && pair.secondValue() != null ? pair.secondValue() : 0d;
 
         if (cascadingSugarcane.contains(e.getPlayer().getUniqueId())) {

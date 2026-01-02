@@ -4,6 +4,7 @@ import com.google.gson.reflect.TypeToken;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
+import com.minecraftcivilizations.specialization.Specialization;
 import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Options.Pair;
 import org.bukkit.Material;
@@ -35,18 +36,27 @@ public class FurnaceListener implements Listener {
     private void furnaceSmelt(Player player, ItemStack item, int amount) {
         CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
         Pair<SkillType, Double> pair = SpecializationConfig.getXpGainFromSmeltingConfig().get(item.getType(), new TypeToken<>() {});
+        if (pair == null) {
+            Specialization.getInstance().getLogger().warning("No XP gain configuration found for furnace smelted item: " + item.getType());
+        }
         customPlayer.addSkillXp(pair.firstValue(), pair.secondValue() * amount);
     }
 
     private void smokerSmelt(Player player, ItemStack item, int amount) {
         CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
         Pair<SkillType, Double> pair = SpecializationConfig.getXpGainFromSmokingConfig().get(item.getType(), new TypeToken<>() {});
+        if (pair == null) {
+            Specialization.getInstance().getLogger().warning("No XP gain configuration found for smoker smelted item: " + item.getType());
+        }
         customPlayer.addSkillXp(pair.firstValue(), pair.secondValue() * amount);
     }
 
     private void blastSmelt(Player player, ItemStack item, int amount) {
         CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
         Pair<SkillType, Double> pair = SpecializationConfig.getXpGainFromBlastingConfig().get(item.getType().name(), new TypeToken<>() {});
+        if (pair == null) {
+            Specialization.getInstance().getLogger().warning("No XP gain configuration found for blast smelted item: " + item.getType());
+        }
         customPlayer.addSkillXp(pair.firstValue(), pair.secondValue() * amount);
     }
 }

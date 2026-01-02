@@ -69,6 +69,9 @@ public class BreakBlockListener implements Listener {
             breakSpeedAttr.setBaseValue(SpecializationConfig.getBlockHardnessConfig().get(event.getBlock().getType(), Double.class));
             Pair<SkillType, Double> pair = SpecializationConfig.getXpGainFromBreakingConfig().get(event.getBlock().getType(), new TypeToken<>() {
             });
+            if (pair == null) {
+                Specialization.getInstance().getLogger().warning("No XP gain configuration found for broken block: " + event.getBlock().getType());
+            }
             CustomPlayer player = CoreUtil.getPlayer(event.getPlayer().getUniqueId());
             BlockData blockData = event.getBlock().getBlockData();
 
