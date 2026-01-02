@@ -4,6 +4,7 @@ import com.google.gson.reflect.TypeToken;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
+import com.minecraftcivilizations.specialization.Specialization;
 import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Options.Pair;
 import org.bukkit.event.EventHandler;
@@ -19,6 +20,8 @@ public class PlaceBlockListener implements Listener {
             if(!event.getBlock().getType().isBlock()) return;
             CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(event.getPlayer().getUniqueId());
             customPlayer.addSkillXp(pair.firstValue(), pair.secondValue());
+        } else {
+            Specialization.getInstance().getLogger().warning("No XP gain configured for placing block type: " + event.getBlockPlaced().getType());
         }
     }
 

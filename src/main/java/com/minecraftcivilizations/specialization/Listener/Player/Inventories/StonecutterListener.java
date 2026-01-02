@@ -49,7 +49,11 @@ public class StonecutterListener implements Listener {
 
         Pair<SkillType, Double> pair = SpecializationConfig.getXpGainFromStonecuttingConfig()
                 .get(result.getType(), new TypeToken<>() {});
-        if (pair == null || pair.firstValue() == null || pair.secondValue() == null) return;
+
+        if (pair == null || pair.firstValue() == null || pair.secondValue() == null) {
+            plugin.getLogger().warning("No XP gain configuration found for stonecutting block: " + result.getType());
+            return;
+        }
 
         double xpToGive = pair.secondValue() * amount;
 

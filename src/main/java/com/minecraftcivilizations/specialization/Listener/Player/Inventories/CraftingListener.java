@@ -142,6 +142,9 @@ public class CraftingListener implements Listener {
         Pair<SkillType, Double> xp_gain_pair = SpecializationConfig.getXpGainFromCraftingConfig()
                 .get(crafted.getType(), new TypeToken<>() {});
 
+        if (xp_gain_pair == null) {
+            plugin.getLogger().warning("No XP gain configuration found for crafted item: " + crafted.getType());
+        }
         int craftedAmount = getCraftedAmount(event);
 
         String amtstring = craftedAmount+"x ";
