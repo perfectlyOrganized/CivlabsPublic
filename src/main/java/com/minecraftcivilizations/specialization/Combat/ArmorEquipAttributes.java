@@ -10,6 +10,7 @@ import com.minecraftcivilizations.specialization.util.MathUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import io.papermc.paper.event.entity.EntityEquipmentChangedEvent;
 import net.md_5.bungee.api.ChatColor;
+import net.momirealms.craftengine.bukkit.api.CraftEngineItems;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
@@ -95,7 +96,7 @@ public class ArmorEquipAttributes implements Listener {
             item_type = Material.DIAMOND;
         } else if (typeName.startsWith("GOLDEN_")) {
             item_type = Material.GOLD_INGOT;
-        } else if (typeName.startsWith("COPPER_")) {
+        } else if (CraftEngineItems.isCustomItem(current) && CraftEngineItems.getCustomItemId(current).value().startsWith("COPPER_")) {
             item_type = Material.COPPER_INGOT;
         } else if (typeName.startsWith("LEATHER_")) {
             item_type = Material.LEATHER;
@@ -391,21 +392,22 @@ public class ArmorEquipAttributes implements Listener {
 //        }
 
 //        Debug.broadcast("armor", "removing attribute modifiers and applying");
+        if (!CraftEngineItems.isCustomItem(item)) {
+            Collection<AttributeModifier> attributeModifiers = meta.getAttributeModifiers(Attribute.ARMOR);
+            if(attributeModifiers!=null) {
+                for (AttributeModifier mod : attributeModifiers) {
+                    // handle armor modifier
+                    meta.removeAttributeModifier(Attribute.ARMOR, mod);
+                }
+            }
+            attributeModifiers = meta.getAttributeModifiers(Attribute.ARMOR_TOUGHNESS);
+            if(attributeModifiers!=null) {
+                for (AttributeModifier mod : attributeModifiers) {
+                    // handle armor modifier
+                    meta.removeAttributeModifier(Attribute.ARMOR_TOUGHNESS, mod);
+                }
+            }
 
-        Collection<AttributeModifier> attributeModifiers = meta.getAttributeModifiers(Attribute.ARMOR);
-        if(attributeModifiers!=null) {
-            for (AttributeModifier mod : attributeModifiers) {
-                // handle armor modifier
-                meta.removeAttributeModifier(Attribute.ARMOR, mod);
-            }
-        }
-        attributeModifiers = meta.getAttributeModifiers(Attribute.ARMOR_TOUGHNESS);
-        if(attributeModifiers!=null) {
-            for (AttributeModifier mod : attributeModifiers) {
-                // handle armor modifier
-                meta.removeAttributeModifier(Attribute.ARMOR_TOUGHNESS, mod);
-            }
-        }
 //        meta.removeAttributeModifier(Attribute.ARMOR);
 //        meta.removeAttributeModifier(Attribute.ARMOR_TOUGHNESS);
 //        meta.removeAttributeModifier(Attribute.ARMOR);
@@ -426,18 +428,19 @@ public class ArmorEquipAttributes implements Listener {
 //            }
 //        }
 
-        ArmorStats vanillaStats = ArmorStats.getVanillaStats(item.getType());
-        // VANILLA ARMOR OVERRIDE
-        AttributeModifier mod_armor = new AttributeModifier(
-                new NamespacedKey(Specialization.getInstance(), item.getType().name().toLowerCase()+"_armor"),
-                vanillaStats.getArmor(),
-                AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.ARMOR);
-        meta.addAttributeModifier(Attribute.ARMOR, mod_armor);
-        AttributeModifier mod_tough = new AttributeModifier(
-                new NamespacedKey(Specialization.getInstance(), item.getType().name().toLowerCase()+"_toughness"),
-                vanillaStats.getToughness(),
-                AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.ARMOR);
-        meta.addAttributeModifier(Attribute.ARMOR_TOUGHNESS, mod_tough);
+            ArmorStats vanillaStats = ArmorStats.getVanillaStats(item.getType());
+            // VANILLA ARMOR OVERRIDE
+            AttributeModifier mod_armor = new AttributeModifier(
+                    new NamespacedKey(Specialization.getInstance(), item.getType().name().toLowerCase()+"_armor"),
+                    vanillaStats.getArmor(),
+                    AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.ARMOR);
+            meta.addAttributeModifier(Attribute.ARMOR, mod_armor);
+            AttributeModifier mod_tough = new AttributeModifier(
+                    new NamespacedKey(Specialization.getInstance(), item.getType().name().toLowerCase()+"_toughness"),
+                    vanillaStats.getToughness(),
+                    AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.ARMOR);
+            meta.addAttributeModifier(Attribute.ARMOR_TOUGHNESS, mod_tough);
+        }
 
         if(custom_stats_override.getKnockback_resist()>0) {
             AttributeModifier mod_knockback = new AttributeModifier(
@@ -489,6 +492,7 @@ public class ArmorEquipAttributes implements Listener {
     }
 
     public static double getMaterialWeight(Material mat) {
+        // #TODO move to config!
         double material_weight = 0;
         switch (mat) {
             case LEATHER:
