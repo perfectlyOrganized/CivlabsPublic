@@ -12,6 +12,7 @@ import org.bukkit.Keyed;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class RecipeBlocker implements Listener {
 
@@ -34,6 +35,10 @@ public class RecipeBlocker implements Listener {
         }
     }
     public static Set<NamespacedKey> getRecipes(SkillType skillType, int level) {
-       return (Set<NamespacedKey>) SpecializationConfig.getUnlockedRecipesConfig().getStringList(skillType + "_" + SkillLevel.getSkillLevelFromInt(level)).stream().map(NamespacedKey::fromString).toList();
+        return SpecializationConfig.getUnlockedRecipesConfig()
+                .getStringList(skillType + "_" + SkillLevel.getSkillLevelFromInt(level))
+                .stream()
+                .map(NamespacedKey::fromString)
+                .collect(Collectors.toSet());
     }
 }
