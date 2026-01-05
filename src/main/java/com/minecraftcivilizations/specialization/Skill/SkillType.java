@@ -1,6 +1,9 @@
 package com.minecraftcivilizations.specialization.Skill;
 
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
+import com.typesafe.config.ConfigException;
+import minecraftcivilizations.com.minecraftCivilizationsCore.Config.ConfigFile;
+import minecraftcivilizations.com.minecraftCivilizationsCore.Options.Pair;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Material;
 
@@ -15,11 +18,11 @@ public enum SkillType {
     BLACKSMITH;
 
     public String getSkillDescription() {
-        return SpecializationConfig.getSkillsConfig().get(this + "_DESCRIPTION", String.class);
+        return SpecializationConfig.getSkillsConfig().getString(this + "_DESCRIPTION");
     }
 
     public Material getSkillWorkstation() {
-        return SpecializationConfig.getSkillsConfig().get(this + "_WORKSTATION", Material.class);
+        return Material.getMaterial(SpecializationConfig.getSkillsConfig().getString(this + "_WORKSTATION"));
     }
 
     /**
@@ -43,5 +46,20 @@ public enum SkillType {
         return StringUtils.capitalize(skillType.name().toLowerCase());
     }
 
+    public static Pair<SkillType, Double> getSkillXpFromConfig(ConfigFile config, String key) {
+        Double xp = 0.0;
+        SkillType skillType = SkillType.BUILDER;
+        for (SkillType skill : SkillType.values()) {
+            try {
+                xp = config.getDouble(skill.name() + "." + key);
+            } catch(ConfigException.Missing _) {}
+            if (xp != 0) {
+                skillType = skill;
+                break;
+            }
+        }
+        return new Pair<>(skillType,xp);
+
+    }
 
 }

@@ -30,7 +30,7 @@ public class ArmorDamageReduction {
     public ArmorDamageReduction(CombatManager combatManager) {
         this.combatManager = combatManager;
 
-        enabled = SpecializationConfig.getArmorDamageReductionConfig().get("ENABLED", Boolean.class);
+        enabled = SpecializationConfig.getArmorDamageReductionConfig().getBoolean("ENABLED");
     }
 
     /**
@@ -206,7 +206,7 @@ public class ArmorDamageReduction {
      * Calculate damage reduction for a specific armor piece based on material and slot
      */
     private double calculateArmorReduction(ItemStack armor, String slotReductionKey) {
-        double baseReduction = SpecializationConfig.getArmorDamageReductionConfig().get(slotReductionKey, Double.class);
+        double baseReduction = SpecializationConfig.getArmorDamageReductionConfig().getDouble(slotReductionKey);
         double materialMultiplier = getMaterialMultiplier(armor);
 
         return baseReduction * materialMultiplier;
@@ -256,7 +256,7 @@ public class ArmorDamageReduction {
 
     //Grabs cfg
     private double cfg(String key){
-        return SpecializationConfig.getArmorDamageReductionConfig().get(key, Double.class);
+        return SpecializationConfig.getArmorDamageReductionConfig().getDouble(key);
     }
     
     /**

@@ -36,14 +36,14 @@ public class HungerSystem implements Listener {
     private final Map<UUID, PlayerActivity> playerActivity = new HashMap<>();
     private final Map<UUID, Double> playerHungerBuffer = new HashMap<>();
 
-    private static final double  SPRINTING_DRAIN = SpecializationConfig.getHungerConfig().get("SPRINTING_DRAIN", Double.class);
-    private static final double WALKING_DRAIN = SpecializationConfig.getHungerConfig().get("WALKING_DRAIN", Double.class);
-    private static final double SWIMMING_DRAIN = SpecializationConfig.getHungerConfig().get("SWIMMING_DRAIN", Double.class);
-    private static final double CROUCHING_DRAIN = SpecializationConfig.getHungerConfig().get("CROUCHING_DRAIN", Double.class);
-    private static final double IDLE_DRAIN = SpecializationConfig.getHungerConfig().get("IDLE_DRAIN", Double.class);
+    private static final double  SPRINTING_DRAIN = SpecializationConfig.getHungerConfig().getDouble("SPRINTING_DRAIN");
+    private static final double WALKING_DRAIN = SpecializationConfig.getHungerConfig().getDouble("WALKING_DRAIN");
+    private static final double SWIMMING_DRAIN = SpecializationConfig.getHungerConfig().getDouble("SWIMMING_DRAIN");
+    private static final double CROUCHING_DRAIN = SpecializationConfig.getHungerConfig().getDouble("CROUCHING_DRAIN");
+    private static final double IDLE_DRAIN = SpecializationConfig.getHungerConfig().getDouble("IDLE_DRAIN");
 
-    private static final long DRAIN_INTERVAL = SpecializationConfig.getHungerConfig().get("DRAIN_INTERVAL_IN_TICKS", Long.class);
-    private static final long IDLE_CHECK_TIME = SpecializationConfig.getHungerConfig().get("IDLE_CHECK_TIME_IN_TICKS", Long.class);
+    private static final long DRAIN_INTERVAL = SpecializationConfig.getHungerConfig().getInteger("DRAIN_INTERVAL_IN_TICKS");
+    private static final long IDLE_CHECK_TIME = SpecializationConfig.getHungerConfig().getInteger("IDLE_CHECK_TIME_IN_TICKS");
     private final EmoteManager emoteCommand;
 
     public HungerSystem(Specialization plugin, EmoteManager emoteCommand) {

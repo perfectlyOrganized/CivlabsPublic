@@ -41,10 +41,14 @@ public class PacketListener extends PacketAdapter {
         if (event.getPacketType() == PacketType.Play.Server.SYSTEM_CHAT) {
             var comp = event.getPacket().getChatComponents().read(0);
             if (comp != null) {
-                String json = comp.getJson();
-                if (json != null && (json.contains("sleep") || json.contains("Sleeping"))) {
-                    event.setCancelled(true);
-                    return;
+                try {
+                    String json = comp.getJson();
+                    if (json != null && (json.contains("sleep") || json.contains("Sleeping"))) {
+                        event.setCancelled(true);
+                        return;
+                    }
+                }  catch (NullPointerException exception) {
+                    plugin.getLogger().warning(String.format("Error occurred when blocking sleep message: %s", exception));
                 }
             }
         }

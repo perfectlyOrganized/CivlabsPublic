@@ -30,7 +30,7 @@ public class Instinct {
      * This is the main entry point for the Instinct system
      */
     public static void onMobStartBreakingBlock(Monster mob) {
-        if (!SpecializationConfig.getInstinctConfig().get("INSTINCT_ENABLED", Boolean.class)) {
+        if (!SpecializationConfig.getInstinctConfig().getBoolean("INSTINCT_ENABLED")) {
             return;
         }
 
@@ -54,11 +54,11 @@ public class Instinct {
 
     private static double getDetectionRadius(int guardsmanLevel) {
         if (guardsmanLevel >= 3) {
-            return SpecializationConfig.getInstinctConfig().get("INSTINCT_DETECTION_RADIUS_LEVEL_3", Double.class);
+            return SpecializationConfig.getInstinctConfig().getDouble("INSTINCT_DETECTION_RADIUS_LEVEL_3");
         } else if (guardsmanLevel >= 2) {
-            return SpecializationConfig.getInstinctConfig().get("INSTINCT_DETECTION_RADIUS_LEVEL_2", Double.class);
+            return SpecializationConfig.getInstinctConfig().getDouble("INSTINCT_DETECTION_RADIUS_LEVEL_2");
         } else {
-            return SpecializationConfig.getInstinctConfig().get("INSTINCT_DETECTION_RADIUS_LEVEL_1", Double.class);
+            return SpecializationConfig.getInstinctConfig().getDouble("INSTINCT_DETECTION_RADIUS_LEVEL_1");
         }
     }
 
@@ -73,7 +73,7 @@ public class Instinct {
 
         lastDetectionTime.put(mobId, currentTime);
 
-        int detectionDuration = SpecializationConfig.getInstinctConfig().get("INSTINCT_GLOW_DURATION_TICKS", Integer.class);
+        int detectionDuration = SpecializationConfig.getInstinctConfig().getInteger("INSTINCT_GLOW_DURATION_TICKS");
 
         LocatorBarManager locatorBarManager = LocatorBarManager.getInstance();
         if (locatorBarManager != null) {

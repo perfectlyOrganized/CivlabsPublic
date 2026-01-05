@@ -11,12 +11,14 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.minecraft.world.level.block.SweetBerryBushBlock;
+import net.minecraft.world.level.block.SweetBerryBushBlock;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.Ageable;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.block.data.Bisected;
 import org.bukkit.block.data.type.Bed;
@@ -60,7 +62,7 @@ public class RightClickListener implements Listener {
 
         if (player.getInventory().getItemInMainHand().getType() == Material.COPPER_INGOT) {
             CustomPlayer customPlayer = CoreUtil.getPlayer(player.getUniqueId());
-            if (customPlayer.getSkillLevel(SkillType.BUILDER) >= SpecializationConfig.getReinforcementConfig().get("LIGHT_REINFORCEMENT_LEVEL", Integer.class)) {
+            if (customPlayer.getSkillLevel(SkillType.BUILDER) >= SpecializationConfig.getReinforcementConfig().getInteger("LIGHT_REINFORCEMENT_LEVEL")) {
                 List<Block> blocks = getMultiBlocks(clicked);
                 boolean success = false;
                 for (Block block : blocks) {
@@ -77,7 +79,7 @@ public class RightClickListener implements Listener {
         } else if (player.getInventory().getItemInMainHand().getType() == Material.IRON_INGOT) {
             CustomPlayer customPlayer = CoreUtil.getPlayer(player.getUniqueId());
 
-            if (customPlayer.getSkillLevel(SkillType.BUILDER) >= SpecializationConfig.getReinforcementConfig().get("HEAVY_REINFORCEMENT_LEVEL", Integer.class)) {
+            if (customPlayer.getSkillLevel(SkillType.BUILDER) >= SpecializationConfig.getReinforcementConfig().getInteger("HEAVY_REINFORCEMENT_LEVEL")) {
                 List<Block> blocks = getMultiBlocks(clicked);
                 boolean success = false;
                 for (Block block : blocks) {

@@ -7,6 +7,8 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
@@ -43,8 +45,8 @@ public final class XpGainMonitor {
     public static void init() {
         var cfg = SpecializationConfig.getXpMonitorConfig();
         for (SkillType type : SkillType.values()) {
-            Double t = cfg.get(type.name() + ".threshold", Double.class);
-            Long cd = cfg.get(type.name() + ".cooldown-seconds", Long.class);
+            Double t = cfg.getDouble(type.name() + ".threshold");
+            Long cd = Long.valueOf(cfg.getInteger(type.name() + ".cooldown-seconds"));
             thresholds.put(type.name(), t != null ? t : 500.0);
             cooldowns.put(type.name(), cd != null ? cd : 30L);
         }
@@ -97,25 +99,29 @@ public final class XpGainMonitor {
         boolean addedToBatch = false;
 
         if (rapidLevel != null) {
-            String readable = switch (rapidLevel) {
-                case "§cCRITICAL" -> "has been gaining " + type.name().toLowerCase() + " XP extremely rapidly§f";
-                case "§6WARNING" -> "has been gaining " + type.name().toLowerCase() + " XP very rapidly§f";
-                default -> "has been gaining " + type.name().toLowerCase() + " XP rapidly§f.";
+            Component readable = switch (rapidLevel) {
+                case "§cCRITICAL" -> Component.text()
+                        .append(Component.text("has been gaining " + type.name().toLowerCase() + " XP extremely rapidly"))
+                        .append(Component.text("§f")) // If you need to reset color, use resetStyle() instead
+                        .build();
+                case "§6WARNING" -> Component.text()
+                        .append(Component.text("has been gaining " + type.name().toLowerCase() + " XP very rapidly"))
+                        .append(Component.text("§f"))
+                        .build();
+                default -> Component.text("has been gaining " + type.name().toLowerCase() + " XP rapidly.");
             };
-            String dot = dotRapid(rapidLevel);
-            String msg = dot + " rapid " +
-                    type.name().toLowerCase() +
-                    " (" + maxPerBucket + "/" + BUCKET_MS + "ms)";
-            playerBatch.put(type.name(), msg);
 
-            addedToBatch = true;
-        }
+            // Create the message as a Component instead of String
+            Component message = Component.text()
+                    .append(dotRapid(rapidLevel))
+                    .append(Component.text(" rapid "))
+                    .append(Component.text(type.name().toLowerCase()))
+                    .append(Component.text(" (" + maxPerBucket + "/" + BUCKET_MS + "ms)"))
+                    .build();
 
-        if (thresholdExceeded) {
-            String msg = DOT_THRESHOLD + " threshold " +
-                    type.name().toLowerCase() +
-                    " (" + Math.round(totalXp) + "/" + Math.round(threshold) + ")";
-            playerBatch.put(type.name(), msg);
+            // If you need to store this as a string (for playerBatch), serialize it
+            String serializedMsg = LegacyComponentSerializer.legacySection().serialize(message);
+            playerBatch.put(type.name(), serializedMsg);
 
             addedToBatch = true;
         }
@@ -139,7 +145,12 @@ public final class XpGainMonitor {
                 String summary = buildSummary(playerBatch);
                 Component hover = buildHover(playerBatch, counts, sustainingBuckets, totalBuckets, maxPerBucket, sustainRatio);
 
-                Component msg = Component.text("§4§lXP-Alert §8» ")
+                Component msg = Component.text("XP-Alert ")
+                        .color(NamedTextColor.DARK_RED)
+                        .decorate(TextDecoration.BOLD)
+                        .append(Component.text("» ")
+                                .color(NamedTextColor.DARK_GRAY)
+                                .decoration(TextDecoration.BOLD, false))
                         .append(Component.text(player.getName(), NamedTextColor.WHITE))
                         .append(Component.text(" — " + summary, NamedTextColor.GRAY))
                         .hoverEvent(HoverEvent.showText(hover))
@@ -205,27 +216,24 @@ public final class XpGainMonitor {
         return hover;
     }
 
-    private static String dotRapid(String level) {
+    private static Component dotRapid(String level) {
         return switch (level) {
-            case "§cCRITICAL" -> "§c●";
-            case "§6WARNING"  -> "§6●";
-            case "§eNOTICE"   -> "§e●";
-            default -> "§7●";
+            case "§cCRITICAL" -> Component.text("●", NamedTextColor.RED);
+            case "§6WARNING" -> Component.text("●", NamedTextColor.GOLD);
+            case "§eNOTICE" -> Component.text("●", NamedTextColor.YELLOW);
+            default -> Component.text("●", NamedTextColor.GRAY);
         };
     }
 
     public static void saveConfigToDisk() {
         var cfg = SpecializationConfig.getXpMonitorConfig();
-
         for (String key : thresholds.keySet()) {
-            cfg.set(key + ".threshold", thresholds.get(key));
+            cfg.setDouble(key + ".threshold", thresholds.get(key));
         }
 
         for (String key : cooldowns.keySet()) {
-            cfg.set(key + ".cooldown-seconds", cooldowns.get(key));
+            cfg.setInteger(key + ".cooldown-seconds", cooldowns.get(key).intValue());
         }
-
-        cfg.save(); // whatever your config wrapper uses
     }
 
 

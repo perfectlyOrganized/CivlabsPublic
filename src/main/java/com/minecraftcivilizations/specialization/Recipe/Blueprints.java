@@ -169,7 +169,7 @@ public class Blueprints {
     }
 
     public static List<ItemStack> getBluePrintBaseItems() {
-        String regex = SpecializationConfig.getBlueprintConfig().get("BLUEPRINT_ITEM_RECIPES", String.class);
+        String regex = SpecializationConfig.getLibrarianConfig().getString("BLUEPRINT_ITEM_RECIPES");
         return RegistryAccess.registryAccess().getRegistry(RegistryKey.ITEM).stream().filter(item -> item.key().value().matches(regex)).map(ItemType::createItemStack).toList();
     }
 

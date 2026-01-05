@@ -8,6 +8,7 @@ import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.util.CoreUtil;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
+import com.typesafe.config.Config;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.ItemLore;
 import io.papermc.paper.registry.RegistryAccess;
@@ -50,8 +51,8 @@ public class PlayerInteractListener implements Listener {
     @EventHandler
     public void onOpenBlockInventory(InventoryOpenEvent e) {
         InventoryType type = e.getInventory().getType();
-        List<InventoryType> defaultAllow = SpecializationConfig.getCanUseBlockConfig().get("default", new TypeToken<>() {});
-        if (defaultAllow.contains(type)) return;
+        List<String> defaultAllow = SpecializationConfig.getCanUseBlockConfig().getStringList("default");
+        if (defaultAllow.contains(type.toString())) return;
 
         CustomPlayer player = CoreUtil.getPlayer(e.getPlayer());
         for (Skill skill : player.getSkills()) {
@@ -61,8 +62,8 @@ public class PlayerInteractListener implements Listener {
             for (SkillLevel skillLevel : SkillLevel.values()) {
                 if (skillLevel.getLevel() <= playerSkillLevel) {
                     String configKey = skillType + "_" + skillLevel;
-                    List<InventoryType> types = SpecializationConfig.getCanUseBlockConfig().get(configKey, new TypeToken<>() {});
-                    if (types != null && types.contains(type)) {
+                    List<String> types = SpecializationConfig.getCanUseBlockConfig().getStringList(configKey);
+                    if (types != null && types.contains(type.toString())) {
                         return;
                     }
                 }
@@ -112,12 +113,12 @@ public class PlayerInteractListener implements Listener {
             return;
 
         CustomPlayer player = CoreUtil.getPlayer(e.getPlayer());
-        int xpBase = SpecializationConfig.getLibrarianConfig().get("BLESS_ITEM_XP_LEVEL_REQUIREMENT", Integer.class);
-        int skillMin = SpecializationConfig.getLibrarianConfig().get("BLESS_ITEM_LIBRARIAN_LEVEL", Integer.class);
+        int xpBase = SpecializationConfig.getLibrarianConfig().getInteger("BLESS_ITEM_XP_LEVEL_REQUIREMENT");
+        int skillMin = SpecializationConfig.getLibrarianConfig().getInteger("BLESS_ITEM_LIBRARIAN_LEVEL");
         int xpLevelAmount = xpBase * (player.getSkillLevel(SkillType.LIBRARIAN) - skillMin + 1);
         if (xpLevelAmount > e.getPlayer().getLevel()) return;
 
-        String regex = SpecializationConfig.getLibrarianConfig().get("ENCHANTABLE_TOOL_REGEX", String.class);
+        String regex = SpecializationConfig.getLibrarianConfig().getString("ENCHANTABLE_TOOL_REGEX");
         String typeName = e.getItem().getType().name().toLowerCase();
         if (!Pattern.compile(regex).matcher(typeName).find()) return;
         if (player.getSkillLevel(SkillType.LIBRARIAN) < skillMin) return;
@@ -131,7 +132,7 @@ public class PlayerInteractListener implements Listener {
         }
 
         List<NamespacedKey> bannedBlessEnchants =
-                SpecializationConfig.getLibrarianConfig().get("BANNED_BLESS_ENCHANTS", new TypeToken<>() {});
+                SpecializationConfig.getLibrarianConfig().getStringList("BANNED_BLESS_ENCHANTS").stream().map(NamespacedKey::fromString).toList();
 
         List<Enchantment> validEnchants = RegistryAccess.registryAccess()
                 .getRegistry(RegistryKey.ENCHANTMENT)
@@ -191,20 +192,18 @@ public class PlayerInteractListener implements Listener {
 
         CustomPlayer cp = CoreUtil.getPlayer(e.getPlayer());
         if (cp == null) return;
+        Config farmerConfig = SpecializationConfig.getXpGainFromBreakingConfig().getObject(SkillType.FARMER.toString());
+        double xp = farmerConfig.getDouble(Material.SUGAR_CANE.toString());
 
-        Pair<SkillType, Double> pair =
-                SpecializationConfig.getXpGainFromBreakingConfig()
-                        .get(Material.SUGAR_CANE, new TypeToken<Pair<SkillType, Double>>() {});
-        double xpPer = pair != null && pair.secondValue() != null ? pair.secondValue() : 0d;
 
         if (cascadingSugarcane.contains(e.getPlayer().getUniqueId())) {
-            if (xpPer > 0) cp.addSkillXp(SkillType.FARMER, xpPer);
+            if (xp > 0) cp.addSkillXp(SkillType.FARMER, xp);
             return;
         }
 
         cascadingSugarcane.add(e.getPlayer().getUniqueId());
         try {
-            if (xpPer > 0) cp.addSkillXp(SkillType.FARMER, xpPer);
+            if (xp > 0) cp.addSkillXp(SkillType.FARMER, xp);
 
             List<Block> stack = new ArrayList<>();
             Block b = e.getBlock().getRelative(BlockFace.UP);
@@ -296,7 +295,7 @@ public class PlayerInteractListener implements Listener {
             String renameText = view.getRenameText();
             if (renameText != null && renameText.matches("^\\[lore [0-9]].*")) {
                 CustomPlayer player = CoreUtil.getPlayer(e.getWhoClicked());
-                int level = SpecializationConfig.getLibrarianConfig().get("ITEM_LORE_LIBRARIAN_LEVEL", Integer.class);
+                int level = SpecializationConfig.getLibrarianConfig().getInteger("ITEM_LORE_LIBRARIAN_LEVEL");
                 if (player.getSkillLevel(SkillType.LIBRARIAN) < level) return;
 
                 int number = Integer.parseInt(String.valueOf(renameText.charAt(6)));

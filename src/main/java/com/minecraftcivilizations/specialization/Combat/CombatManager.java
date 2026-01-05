@@ -463,7 +463,7 @@ public class CombatManager implements Listener {
             assert player != null;
 //            CustomPlayer killer = CoreUtil.getPlayer(e.getEntity().getKiller().getUniqueId());
 //            EntityType entity = e.getEntity().getType();
-            List<NamespacedKey> items = SpecializationConfig.getMobDropsConfig().get(e.getEntityType(), new TypeToken<>() {});
+            List<NamespacedKey> items = SpecializationConfig.getMobDropsConfig().getStringList(e.getEntityType().name()).stream().map(NamespacedKey::fromString).toList();
             Material.matchMaterial(e.getEntityType().getKey().getKey());
         }
     }

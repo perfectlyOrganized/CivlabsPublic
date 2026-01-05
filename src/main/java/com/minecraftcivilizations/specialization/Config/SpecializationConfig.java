@@ -5,7 +5,6 @@ import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.Specialization;
 import lombok.Getter;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Config.ConfigFile;
-import minecraftcivilizations.com.minecraftCivilizationsCore.Options.Pair;
 import org.bukkit.*;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.EntityType;
@@ -13,9 +12,8 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.*;
 import org.bukkit.potion.PotionEffectType;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Supplier;
 
 @Getter
 public class SpecializationConfig {
@@ -68,8 +66,6 @@ public class SpecializationConfig {
     @Getter
     private static ConfigFile chatConfig;
     @Getter
-    private static ConfigFile blueprintConfig;
-    @Getter
     private static ConfigFile mobConfig;
     @Getter
     private static ConfigFile mobDropsConfig;
@@ -100,383 +96,568 @@ public class SpecializationConfig {
     @Getter
     private static ConfigFile locatorBarConfig;
 
-    private static List<EntityType> BREEDABLE =  List.of(EntityType.AXOLOTL, EntityType.CAMEL, EntityType.CAT, EntityType.CHICKEN, EntityType.COD, EntityType.COW, EntityType.DONKEY, EntityType.FOX, EntityType.FROG, EntityType.GOAT, EntityType.HOGLIN, EntityType.HORSE, EntityType.LLAMA, EntityType.MOOSHROOM, EntityType.OCELOT, EntityType.PANDA, EntityType.PARROT, EntityType.PIG, EntityType.RABBIT, EntityType.SHEEP, EntityType.STRIDER, EntityType.TADPOLE, EntityType.TURTLE, EntityType.WOLF);
+    private static final List<EntityType> BREEDABLE =  List.of(EntityType.AXOLOTL, EntityType.CAMEL, EntityType.CAT, EntityType.CHICKEN, EntityType.COD, EntityType.COW, EntityType.DONKEY, EntityType.FOX, EntityType.FROG, EntityType.GOAT, EntityType.HOGLIN, EntityType.HORSE, EntityType.LLAMA, EntityType.MOOSHROOM, EntityType.OCELOT, EntityType.PANDA, EntityType.PARROT, EntityType.PIG, EntityType.RABBIT, EntityType.SHEEP, EntityType.STRIDER, EntityType.TADPOLE, EntityType.TURTLE, EntityType.WOLF);
     public static final List<EntityType> TAMEABLE = List.of(EntityType.WOLF, EntityType.OCELOT, EntityType.CAT, EntityType.PARROT, EntityType.HORSE, EntityType.DONKEY, EntityType.MULE, EntityType.LLAMA, EntityType.TRADER_LLAMA);
 
 
     public static void initialize() {
-        playerConfig = new ConfigFile(Specialization.getInstance(), "playerConfig", null, fields -> {
-            fields.add(new Pair<>("SPECIALIZATION_BONUS", 0.3));
-            fields.add(new Pair<>("MULTI_CLASS_PENALTY", 0.15));
-            fields.add(new Pair<>("LINEAR_DECAY_RATE", 0.02));
-            fields.add(new Pair<>("CROSS_SKILL_PENALTY", 0.25));
+        Specialization.getInstance().getLogger().severe("LOADING 1");
+        Supplier<Map<String, Object>> playerDefaults = () -> {
+            Map<String, Object> data = new HashMap<>();
+            data.put("SPECIALIZATION_BONUS", 0.3);
+            data.put("MULTI_CLASS_PENALTY", 0.15);
+            data.put("LINEAR_DECAY_RATE", 0.02);
+            data.put("CROSS_SKILL_PENALTY", 0.25);
+            return data;
+        };
+        playerConfig = new ConfigFile(Specialization.getInstance(), "playerConfig", playerDefaults);
 
-        });
+        Supplier<Map<String, Object>> locatorBarDefaults = () -> {
+            Map<String, Object> data = new HashMap<>();
+            data.put("LOCATOR_BAR_ENABLED", true);
+            data.put("DEFAULT_RECEIVE_RANGE", 0.0);
+            data.put("DEFAULT_TRANSMIT_RANGE", 64.0);
+            data.put("TEMPORARY_VISIBILITY_RANGE", 128.0);
+            data.put("OBSERVER_RECEIVE_RANGE", 128.0);
+            return data;
+        };
+        locatorBarConfig = new ConfigFile(Specialization.getInstance(), "locatorBarConfig", locatorBarDefaults);
 
-        locatorBarConfig = new ConfigFile(Specialization.getInstance(), "locatorBarConfig", null, fields -> {
-            fields.add(new Pair<>("LOCATOR_BAR_ENABLED", true));
-            fields.add(new Pair<>("DEFAULT_RECEIVE_RANGE", 0.0));
-            fields.add(new Pair<>("DEFAULT_TRANSMIT_RANGE", 64.0));
-            fields.add(new Pair<>("TEMPORARY_VISIBILITY_RANGE", 128.0));
-            fields.add(new Pair<>("OBSERVER_RECEIVE_RANGE", 128.0));
-        });
+        Supplier<Map<String, Double>> reinforcementDefaults = () -> {
+            Map<String, Double> data = new HashMap<>();
+            data.put("LIGHT_REINFORCEMENT_MULTIPLIER", 0.2);
+            data.put("HEAVY_REINFORCEMENT_MULTIPLIER", 0.1);
+            data.put("LIGHT_REINFORCEMENT_LEVEL", 1.0);
+            data.put("HEAVY_REINFORCEMENT_LEVEL", 2.0);
+            data.put("LIGHT_EXPLOSION_RESISTANCE", 0.75);
+            data.put("HEAVY_EXPLOSION_RESISTANCE", 0.95);
+            return data;
+        };
+        reinforcementConfig = new ConfigFile(Specialization.getInstance(), "reinforcementConfig", reinforcementDefaults);
 
-        reinforcementConfig = new ConfigFile(Specialization.getInstance(), "reinforcementConfig", null, fields -> {
-            fields.add(new Pair<>("LIGHT_REINFORCEMENT_MULTIPLIER", 0.2D));
-            fields.add(new Pair<>("HEAVY_REINFORCEMENT_MULTIPLIER", 0.1D));
-            fields.add(new Pair<>("LIGHT_REINFORCEMENT_LEVEL", 1));
-            fields.add(new Pair<>("HEAVY_REINFORCEMENT_LEVEL", 2));
-            fields.add(new Pair<>("LIGHT_EXPLOSION_RESISTANCE", 0.75));
-            fields.add(new Pair<>("HEAVY_EXPLOSION_RESISTANCE", 0.95));
-        });
-
-
-        unlockedRecipesConfig = new ConfigFile(Specialization.getInstance(), "unlockedRecipesConfig", "The array of unlocked recipes, they don't need to repeat between levels, the ones for novice are unlocked for the next ones", fields -> {
+        Supplier<Map<String, Object>> unlockedRecipesDefaults = () -> {
+            Map<String, Object> data = new HashMap<>();
             for (SkillType skillType : SkillType.values()) {
                 for (SkillLevel skillLevel : SkillLevel.values()) {
-                    fields.add(new Pair<>(skillType + "_" + skillLevel, new HashSet<NamespacedKey>()));
+                    data.put(skillType + "_" + skillLevel, new HashSet<NamespacedKey>());
                 }
             }
-        });
+            return data;
+        };
+        unlockedRecipesConfig = new ConfigFile(Specialization.getInstance(), "unlockedRecipesConfig", unlockedRecipesDefaults);
 
-        xpGainFromCraftingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromCrafting", null, fields -> {
+        Supplier<Map<String, Map<String, Object>>> xpGainFromCraftingDefaults = () -> {
+            Map<String, Map<String, Object>> data = new HashMap<>();
+            for (SkillType skillType : SkillType.values()) {
+                data.put(skillType.name(), new HashMap<>());
+            }
+            Map<String, Object> skillType = data.get(SkillType.BLACKSMITH.name());
             for (Material inputMaterial : Material.values()) {
                 if (inputMaterial.isItem() && inputMaterial != Material.AIR) {
-                    fields.add(new Pair<>(inputMaterial, new Pair<>(SkillType.BLACKSMITH, 1D)));
+                    skillType.put(inputMaterial.key().value().toUpperCase(Locale.ROOT), 1D);
                 }
             }
-        });
+            return data;
+        };
+        xpGainFromCraftingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromCrafting", xpGainFromCraftingDefaults);
 
-        xpGainFromStonecuttingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromStonecutting", null, fields -> {
+        Supplier<Map<String, Map<String, Object>>> xpGainFromStonecuttingDefaults = () -> {
+            Map<String, Map<String, Object>> data = new HashMap<>();
+            for (SkillType skillType : SkillType.values()) {
+                data.put(skillType.name(), new HashMap<>());
+            }
+            Map<String, Object> skillType = data.get(SkillType.BUILDER.name());
             for (Material inputMaterial : Material.values()) {
                 if (inputMaterial.isItem() && inputMaterial != Material.AIR) {
                     Bukkit.recipeIterator().forEachRemaining((recipe) -> {
                         if (recipe instanceof StonecuttingRecipe stonecuttingRecipe) {
                             if (stonecuttingRecipe.getResult().equals(ItemStack.of(inputMaterial))) {
-                                fields.add(new Pair<>(inputMaterial, new Pair<>(SkillType.BUILDER, "1")));
+                                skillType.put(inputMaterial.name(), 1);
                             }
                         }
                     });
                 }
             }
-        });
+            return data;
+        };
+        xpGainFromStonecuttingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromStonecutting", xpGainFromStonecuttingDefaults);
 
-        combatConfig = new ConfigFile(Specialization.getInstance(), "combatConfig", null, fields -> {
-            fields.add(new Pair<>("CROSSBOW_BASE_VELOCITY", 1.2));
-            fields.add(new Pair<>("CROSSBOW_BASE_PIERCING_VELOCITY", 1.1));
-            fields.add(new Pair<>("CROSSBOW_BASE_MULTISHOT_VELOCITY", 1.3));
-            fields.add(new Pair<>("CROSSBOW_BASE_QUICKCHARGE_VELOCITY", 1.15));
-        });
+        Supplier<Map<String, Double>> combatDefaults = () -> {
+            Map<String, Double> data = new HashMap<>();
+            data.put("CROSSBOW_BASE_VELOCITY", 1.2);
+            data.put("CROSSBOW_BASE_PIERCING_VELOCITY", 1.1);
+            data.put("CROSSBOW_BASE_MULTISHOT_VELOCITY", 1.3);
+            data.put("CROSSBOW_BASE_QUICKCHARGE_VELOCITY", 1.15);
+            return data;
+        };
+        combatConfig = new ConfigFile(Specialization.getInstance(), "combatConfig", combatDefaults);
 
-        serverConfig = new ConfigFile(Specialization.getInstance(), "serverConfig", null, fields -> {
-            fields.add(new Pair<>("SERVER_ANALYTIC","server_1"));
-        });
+        Supplier<Map<String, String>> serverDefaults = () -> {
+            Map<String, String> data = new HashMap<>();
+            data.put("SERVER_ANALYTIC", "server_1");
+            return data;
+        };
+        serverConfig = new ConfigFile(Specialization.getInstance(), "serverConfig", serverDefaults);
 
-        hungerConfig = new ConfigFile(Specialization.getInstance(), "hungerConfig", null, fields -> {
-            fields.add(new Pair<>("SPRINTING_DRAIN", 2));
-            fields.add(new Pair<>("WALKING_DRAIN", 0.5));
-            fields.add(new Pair<>("CROUCHING_DRAIN", 0.2));
-            fields.add(new Pair<>("SWIMMING_DRAIN", 4));
-            fields.add(new Pair<>("IDLE_DRAIN", 0.1));
-            fields.add(new Pair<>("DRAIN_INTERVAL_IN_TICKS", 100L));
-            fields.add(new Pair<>("IDLE_CHECK_TIME_IN_TICKS", 100L));
-            fields.add(new Pair<>("HUNGER_REDUCTION_ON_NON_UNIQUE_CONSECUTIVE_FOOD", 1));
-        });
+        Supplier<Map<String, Double>> hungerDefaults = () -> {
+            Map<String, Double> data = new HashMap<>();
+            data.put("SPRINTING_DRAIN", 2.0);
+            data.put("WALKING_DRAIN", 0.5);
+            data.put("CROUCHING_DRAIN", 0.2);
+            data.put("SWIMMING_DRAIN", 4.0);
+            data.put("IDLE_DRAIN", 0.1);
+            data.put("DRAIN_INTERVAL_IN_TICKS", 100.0);
+            data.put("IDLE_CHECK_TIME_IN_TICKS", 100.0);
+            data.put("HUNGER_REDUCTION_ON_NON_UNIQUE_CONSECUTIVE_FOOD", 1.0);
+            return data;
+        };
+        hungerConfig = new ConfigFile(Specialization.getInstance(), "hungerConfig", hungerDefaults);
 
-        mobConfig = new ConfigFile(Specialization.getInstance(), "mobConfig", null, fields -> {
-            fields.add(new Pair<>("DAYTIME_MOB_DAMAGE_MULTIPLIER", 4.0));
-            fields.add(new Pair<>("NIGHTTIME_MOB_DAMAGE_MULTIPLIER", 10.0));
-            fields.add(new Pair<>("NIGHT_GUARDSMAN_MOB_DAMAGE_PERCENT_REDUCTION", 30));
-            fields.add(new Pair<>("DAYTIME_SPEED_BUFF", .03));
-            fields.add(new Pair<>("NIGHTTIME_SPEED_BUFF", .2));
-            fields.add(new Pair<>("MOB_RULE_TARGET_RANGE", 48));
+        Supplier<Map<String, Object>> mobDefaults = () -> {
+            Map<String, Object> data = new HashMap<>();
+            data.put("DAYTIME_MOB_DAMAGE_MULTIPLIER", 4.0);
+            data.put("NIGHTTIME_MOB_DAMAGE_MULTIPLIER", 10.0);
+            data.put("NIGHT_GUARDSMAN_MOB_DAMAGE_PERCENT_REDUCTION", 30);
+            data.put("DAYTIME_SPEED_BUFF", .03);
+            data.put("NIGHTTIME_SPEED_BUFF", .2);
+            data.put("MOB_RULE_TARGET_RANGE", 48);
+            data.put("BLOCK_BREAK_CHANCE_PERCENTAGE", 30);
+            data.put("BLOCK_BREAK_IGNORE_LIST_REGEX", List.of(".*BRICK.*", "OBSIDIAN"));
+            data.put("VISUAL_BREAKING_INCREASE_PER_TICK_PERCENTAGE", 1.0);
+            return data;
+        };
+        mobConfig = new ConfigFile(Specialization.getInstance(), "mobConfig", mobDefaults);
 
-            fields.add(new Pair<>("BLOCK_BREAK_CHANCE_PERCENTAGE", 30));
-            fields.add(new Pair<>("BLOCK_BREAK_IGNORE_LIST_REGEX", List.of(".*BRICK.*", "OBSIDIAN")));
-            fields.add(new Pair<>("VISUAL_BREAKING_INCREASE_PER_TICK_PERCENTAGE", 1f));
-        });
-
-        mobDropsConfig = new ConfigFile(Specialization.getInstance(), "mobDrops", null, fields -> {
-            for(EntityType entityType : EntityType.values()) {
-                if(entityType.isAlive()){
-                    fields.add(new Pair<>(entityType, List.of(Material.AIR.getKey())));
+        Supplier<Map<String, Object>> mobDropsDefaults = () -> {
+            Map<String, Object> data = new HashMap<>();
+            for (EntityType entityType : EntityType.values()) {
+                if (entityType.isAlive()) {
+                    data.put(entityType.name(), List.of());
                 }
             }
-        });
+            return data;
+        };
+        mobDropsConfig = new ConfigFile(Specialization.getInstance(), "mobDrops", mobDropsDefaults);
 
-        xpGainFromRepairingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromRepairing", null, fields -> {
+        Supplier<Map<String, Map<String, Object>>> xpGainFromRepairingDefaults = () -> {
+            Map<String, Map<String, Object>> data = new HashMap<>();
+            for (SkillType skillType : SkillType.values()) {
+                data.put(skillType.name(), new HashMap<>());
+            }
+            Map<String, Object> skillType = data.get(SkillType.BLACKSMITH.name());
             for (Material inputMaterial : Material.values()) {
                 if (inputMaterial.isItem() && inputMaterial != Material.AIR && inputMaterial.getMaxDurability() > 0) {
-                    fields.add(new Pair<>(inputMaterial, new Pair<>(SkillType.BLACKSMITH, "1")));
+                    skillType.put(inputMaterial.name(), 0.0);
                 }
             }
-        });
+            return data;
+        };
+        xpGainFromRepairingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromRepairing", xpGainFromRepairingDefaults);
 
-        guardsmanConfig = new ConfigFile(Specialization.getInstance(), "guardsmanConfig", null, fields -> {
-            for(EntityType entityType : EntityType.values()) {
-                fields.add(new Pair<>(entityType, 1D));
+        Supplier<Map<String, Double>> guardsmanDefaults = () -> {
+            Map<String, Double> data = new HashMap<>();
+            for (EntityType entityType : EntityType.values()) {
+                data.put(entityType.name(), 1.0);
             }
-            fields.add(new Pair<>("NON_GUARDSMAN_DAMAGE_REDUCTION", 0.25));
-        });
+            data.put("NON_GUARDSMAN_DAMAGE_REDUCTION", 0.25);
+            return data;
+        };
+        guardsmanConfig = new ConfigFile(Specialization.getInstance(), "guardsmanConfig", guardsmanDefaults);
 
-        downedConfig = new ConfigFile(Specialization.getInstance(), "downedConfig", null, fields -> {
-            for(PotionEffectType potionEffectType : Registry.EFFECT) {
-                fields.add(new Pair<>(potionEffectType.getKey().getKey(), new Pair<>(1D, 0D)));
-            }
-            fields.add(new Pair<>("TIME_TO_DEATH_IN_TICKS", 2400));
-            fields.add(new Pair<>("OFFSET_TO_GROUND", 1.9));
-        });
+        Supplier<Map<String, Double>> downedDefaults = () -> {
+            Map<String, Double> data = new HashMap<>();
+            data.put("TIME_TO_DEATH_IN_TICKS", 2400.0);
+            data.put("OFFSET_TO_GROUND", 1.9);
+            return data;
+        };
+        downedConfig = new ConfigFile(Specialization.getInstance(), "downedConfig", downedDefaults);
 
-        canFarmerBreakConfig = new ConfigFile(Specialization.getInstance(), "canFarmerBreakConfig", null, fields -> {
+        Supplier<Map<String, String>> canFarmerBreakDefaults = () -> {
+            Map<String, String> data = new HashMap<>();
             for (Material inputMaterial : Material.values()) {
                 if (inputMaterial.isBlock()) {
-                    fields.add(new Pair<>(inputMaterial.toString(), SkillLevel.NOVICE));
+                    data.put(inputMaterial.toString(), SkillLevel.NOVICE.name());
                 }
             }
-        });
+            return data;
+        };
+        canFarmerBreakConfig = new ConfigFile(Specialization.getInstance(), "canFarmerBreakConfig", canFarmerBreakDefaults);
 
-        canMinerLvlBreakConfig = new ConfigFile(Specialization.getInstance(), "canMinerLvlBreakConfig", null, fields -> {
+        Supplier<Map<String, String>> canMinerLvlBreakDefaults = () -> {
+            Map<String, String> data = new HashMap<>();
             for (Material inputMaterial : Material.values()) {
                 if (inputMaterial.isBlock()) {
-                    fields.add(new Pair<>(inputMaterial.toString(), SkillLevel.NOVICE));
+                    data.put(inputMaterial.toString(), SkillLevel.NOVICE.name());
                 }
             }
-        });
+            return data;
+        };
+        canMinerLvlBreakConfig = new ConfigFile(Specialization.getInstance(), "canMinerLvlBreakConfig", canMinerLvlBreakDefaults);
 
-
-        berserkConfig = new ConfigFile(Specialization.getInstance(), "berserkConfig", null, fields -> {
-            for(PotionEffectType potionEffectType : Registry.MOB_EFFECT) {
-                fields.add(new Pair<>(potionEffectType.getKey(), new PotionEffectData(0, 0)));
+        Supplier<Map<String, Object>> berserkDefaults = () -> {
+            Map<String, Object> data = new HashMap<>();
+            for (PotionEffectType potionEffectType : Registry.MOB_EFFECT) {
+                data.put(potionEffectType.key().value().toUpperCase(Locale.ROOT), new PotionEffectData(0, 0).toMap());
             }
-        });
+            return data;
+        };
+        berserkConfig = new ConfigFile(Specialization.getInstance(), "berserkConfig", berserkDefaults);
 
-        xpGainFromBlastingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromBlasting", null, fields -> {
+        Supplier<Map<String, Map<String, Object>>> xpGainFromBlastingDefaults = () -> {
+            Map<String, Map<String, Object>> data = new HashMap<>();
+            for (SkillType skillType : SkillType.values()) {
+                data.put(skillType.name(), new HashMap<>());
+            }
+            Map<String, Object> skillType = data.get(SkillType.MINER.name());
             for (Material inputMaterial : Material.values()) {
                 if (inputMaterial.isItem() && inputMaterial != Material.AIR) {
                     Bukkit.recipeIterator().forEachRemaining((recipe) -> {
                         if (recipe instanceof BlastingRecipe blastingRecipe) {
                             if (blastingRecipe.getResult().equals(ItemStack.of(inputMaterial))) {
-                                fields.add(new Pair<>(inputMaterial, new Pair<>(SkillType.MINER, "1")));
+                                skillType.put(inputMaterial.name(), 0);
                             }
                         }
                     });
                 }
             }
-        });
+            return data;
+        };
+        xpGainFromBlastingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromBlasting", xpGainFromBlastingDefaults);
 
-        xpGainFromSmeltingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromSmelting", null, fields -> {
+        Supplier<Map<String, Map<String, Object>>> xpGainFromSmeltingDefaults = () -> {
+            Map<String, Map<String, Object>> data = new HashMap<>();
+            for (SkillType skillType : SkillType.values()) {
+                data.put(skillType.name(), new HashMap<>());
+            }
+            Map<String, Object> skillType = data.get(SkillType.FARMER.name());
             for (Material inputMaterial : Material.values()) {
                 if (inputMaterial.isItem() && inputMaterial != Material.AIR) {
                     Bukkit.recipeIterator().forEachRemaining((recipe) -> {
                         if (recipe instanceof FurnaceRecipe furnaceRecipe) {
                             if (furnaceRecipe.getResult().equals(ItemStack.of(inputMaterial))) {
-                                fields.add(new Pair<>(inputMaterial, new Pair<>(SkillType.FARMER, "1")));
+                                skillType.put(inputMaterial.name(), 0);
                             }
                         }
                     });
                 }
             }
-        });
+            return data;
+        };
+        xpGainFromSmeltingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromSmelting", xpGainFromSmeltingDefaults);
 
-        xpGainFromSmokingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromSmoking", null, fields -> {
+        Supplier<Map<String, Map<String, Object>>> xpGainFromSmokingDefaults = () -> {
+            Map<String, Map<String, Object>> data = new HashMap<>();
+            for (SkillType skillType : SkillType.values()) {
+                data.put(skillType.name(), new HashMap<>());
+            }
+            Map<String, Object> skillType = data.get(SkillType.FARMER.name());
             for (Material inputMaterial : Material.values()) {
                 if (inputMaterial.isItem() && inputMaterial != Material.AIR) {
                     Bukkit.recipeIterator().forEachRemaining((recipe) -> {
                         if (recipe instanceof SmokingRecipe smokingRecipe) {
                             if (smokingRecipe.getResult().equals(ItemStack.of(inputMaterial))) {
-                                fields.add(new Pair<>(inputMaterial, new Pair<>(SkillType.FARMER, "1")));
+                                skillType.put(inputMaterial.name(), 0);
                             }
                         }
                     });
                 }
             }
-        });
+            return data;
+        };
+        xpGainFromSmokingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromSmoking", xpGainFromSmokingDefaults);
 
-        xpGainFromBreakingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromBreaking", null, fields -> {
+        Supplier<Map<String, Map<String, Double>>> xpGainFromBreakingDefaults = () -> {
+            Map<String, Map<String, Double>> data = new HashMap<>();
+            for (SkillType skillType : SkillType.values()) {
+                data.put(skillType.name(), new HashMap<>());
+            }
+            Map<String, Double> skillType = data.get(SkillType.FARMER.name());
             for (Material inputMaterial : Material.values()) {
                 if (inputMaterial.isBlock()) {
-                    fields.add(new Pair<>(inputMaterial, new Pair<>(SkillType.MINER, "0")));
+                    skillType.put(inputMaterial.key().value().toUpperCase(Locale.ROOT), 0.0);
                 }
             }
-        });
+            return data;
+        };
+        xpGainFromBreakingConfig = new ConfigFile(
+                Specialization.getInstance(),
+                "xpGainFromBreaking",
+                xpGainFromBreakingDefaults
+        );
 
-        xpGainFromPlacingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromPlacing", null, fields -> {
-            for (Material inputMaterial : Material.values()) {
-                if (inputMaterial.isBlock()) {
-                    fields.add(new Pair<>(inputMaterial, new Pair<>(SkillType.BUILDER, "0")));
+        Supplier<Map<String, Map<String, Object>>> xpGainFromPlacingDefaults = () -> {
+            Map<String, Map<String, Object>> data = new HashMap<>();
+            for (SkillType skillType : SkillType.values()) {
+                data.put(skillType.name(), new HashMap<>());
+            }
+            Map<String, Object> skillType = data.get(SkillType.BUILDER.name());
+            for (Material material : Material.values()) {
+                if (material.isBlock()) {
+                    skillType.put(material.key().value().toUpperCase(Locale.ROOT), 0.0);
                 }
             }
-        });
-        canUseBlockConfig = new ConfigFile(Specialization.getInstance(), "canUseBlock", "use InventoryType's not blocks, full list here: https://jd.papermc.io/paper/1.21.8/org/bukkit/event/inventory/InventoryType.html", fields -> {
-            fields.add(new Pair<>("default", List.of(InventoryType.CRAFTING, InventoryType.FURNACE)));
+            return data;
+        };
+        xpGainFromPlacingConfig = new ConfigFile(
+                Specialization.getInstance(),
+                "xpGainFromPlacing",
+                xpGainFromPlacingDefaults
+        );
+
+        Supplier<Map<String, List<String>>> canUseBlockDefaults = () -> {
+            Map<String, List<String>> data = new HashMap<>();
+            data.put("default", Arrays.asList(InventoryType.CRAFTING.toString(), InventoryType.FURNACE.toString()));
             for (SkillType skillType : SkillType.values()) {
                 for (SkillLevel skillLevel : SkillLevel.values()) {
-                    fields.add(new Pair<>(skillType + "_" + skillLevel, List.of()));
+                    data.put(skillType + "_" + skillLevel, new ArrayList<>());
                 }
             }
-        });
+            return data;
+        };
+        canUseBlockConfig = new ConfigFile(
+                Specialization.getInstance(),
+                "canUseBlock",
+                canUseBlockDefaults
+        );
 
-        classSkillEffectsConfig = new ConfigFile(Specialization.getInstance(), "classSkillEffectsConfig", "use potion effect type, full list here: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/potion/PotionEffectType.html", fields -> {
+        Supplier<Map<String, List<Map<String, Object>>>> classSkillEffectsDefaults = () -> {
+            Map<String, List<Map<String, Object>>> data = new HashMap<>();
             for (SkillType skillType : SkillType.values()) {
                 for (SkillLevel skillLevel : SkillLevel.values()) {
-                    fields.add(new Pair<>(skillType + "_" + skillLevel, List.of(new Pair<>(PotionEffectType.STRENGTH.getKey(), 0))));
+                    Map<String, Object> effectMap = new HashMap<>();
+                    effectMap.put("effect", "minecraft:haste");
+                    effectMap.put("amplifier", 0);
+                    data.put(skillType + "_" + skillLevel, List.of(effectMap));
                 }
             }
-        });
+            return data;
+        };
+        classSkillEffectsConfig = new ConfigFile(
+                Specialization.getInstance(),
+                "classSkillEffectsConfig",
+                classSkillEffectsDefaults
+        );
 
-        allRecipeBank = new ConfigFile(Specialization.getInstance(), "allRecipeBank", null, fields -> {
+        Supplier<Map<String, List<String>>> allRecipeBankDefaults = () -> {
+            Map<String, List<String>> data = new HashMap<>();
             Set<NamespacedKey> allRecipes = new HashSet<>();
-
             Bukkit.recipeIterator().forEachRemaining((recipe) -> {
                 if (recipe instanceof Keyed keyed) {
                     allRecipes.add(keyed.getKey());
                 }
             });
+            data.put("ALL_RECIPES", allRecipes.stream().map(NamespacedKey::toString).toList());
+            return data;
+        };
+        allRecipeBank = new ConfigFile(
+                Specialization.getInstance(),
+                "allRecipeBank",
+                allRecipeBankDefaults
+        );
 
-            fields.add(new Pair<>("ALL_RECIPES", allRecipes));
-        });
-
-        blockHardnessConfig = new ConfigFile(Specialization.getInstance(), "blockHardnessConfig", null, fields -> {
+        Supplier<Map<String, Double>> blockHardnessDefaults = () -> {
+            Map<String, Double> data = new HashMap<>();
             for (Material material : Material.values()) {
                 if (material.isBlock() && !material.isAir()) {
-                    fields.add(new Pair<>(material, 1D));
+                    data.put(material.key().value().toUpperCase(Locale.ROOT), 1.0);
                 }
             }
-        });
+            return data;
+        };
+        blockHardnessConfig = new ConfigFile(
+                Specialization.getInstance(),
+                "blockHardnessConfig",
+                blockHardnessDefaults
+        );
 
-        armorDamageReductionConfig = new ConfigFile(Specialization.getInstance(), "armorDamageReductionConfig", "Flat percentage damage reduction against mobs for each armor piece. Values are percentages (0.1 = 10% reduction)", fields -> {
-            // Base armor slot reductions (applied to all armor materials)
-            fields.add(new Pair<>("HELMET_BASE_REDUCTION", 0.05));
-            fields.add(new Pair<>("CHESTPLATE_BASE_REDUCTION", 0.15));
-            fields.add(new Pair<>("LEGGINGS_BASE_REDUCTION", 0.10));
-            fields.add(new Pair<>("BOOTS_BASE_REDUCTION", 0.05));
-            
-            // Material-specific multipliers (multiply base reduction)
-            fields.add(new Pair<>("LEATHER_MULTIPLIER", 0.5));
-            fields.add(new Pair<>("CHAINMAIL_MULTIPLIER", 0.75));
-            fields.add(new Pair<>("IRON_MULTIPLIER", 1.0));
-            fields.add(new Pair<>("DIAMOND_MULTIPLIER", 1.5));
-            fields.add(new Pair<>("GOLDEN_MULTIPLIER", 0.8));
-            fields.add(new Pair<>("NETHERITE_MULTIPLIER", 2.0));
-            
-            // Maximum total damage reduction cap (prevents invincibility)
-            fields.add(new Pair<>("MAX_TOTAL_REDUCTION", 0.8));
-            
-            // Enable/disable the system
-            fields.add(new Pair<>("ENABLED", true));
-        });
+        Supplier<Map<String, Object>> armorDamageReductionDefaults = () -> {
+            Map<String, Object> data = new HashMap<>();
+            data.put("HELMET_BASE_REDUCTION", 0.05);
+            data.put("CHESTPLATE_BASE_REDUCTION", 0.15);
+            data.put("LEGGINGS_BASE_REDUCTION", 0.10);
+            data.put("BOOTS_BASE_REDUCTION", 0.05);
+            data.put("LEATHER_MULTIPLIER", 0.5);
+            data.put("CHAINMAIL_MULTIPLIER", 0.75);
+            data.put("IRON_MULTIPLIER", 1.0);
+            data.put("DIAMOND_MULTIPLIER", 1.5);
+            data.put("GOLDEN_MULTIPLIER", 0.8);
+            data.put("NETHERITE_MULTIPLIER", 2.0);
+            data.put("MAX_TOTAL_REDUCTION", 0.8);
+            data.put("ENABLED", true);
+            return data;
+        };
+        armorDamageReductionConfig = new ConfigFile(
+                Specialization.getInstance(),
+                "armorDamageReductionConfig",
+                armorDamageReductionDefaults
+        );
 
-        healthConfig = new ConfigFile(Specialization.getInstance(), "healthConfig", null, fields -> {
-            fields.add(new Pair<>("MAX_HEALTH", 20D));
-            fields.add(new Pair<>("DEATH_REDUCED_MAX_HEALTH", 8D));
-            fields.add(new Pair<>("BLESSED_FOOD_HEALTH_RESTORE_AMOUNT", 2D));
-            fields.add(new Pair<>("HEALTH_ENABLED", true));
-            fields.add(new Pair<>("LIMIT_SLEEP_REGEN_PER_DAY", true));
-            fields.add(new Pair<>("SLEEP_REGEN_CAP", 5));
-            fields.add(new Pair<>("SLEEP_REGEN_TICK_SPEED", 900));
-        });
+        Supplier<Map<String, Object>> healthDefaults = () -> {
+            Map<String, Object> data = new HashMap<>();
+            data.put("MAX_HEALTH", 20D);
+            data.put("DEATH_REDUCED_MAX_HEALTH", 8D);
+            data.put("BLESSED_FOOD_HEALTH_RESTORE_AMOUNT", 2D);
+            data.put("HEALTH_ENABLED", true);
+            data.put("LIMIT_SLEEP_REGEN_PER_DAY", true);
+            data.put("SLEEP_REGEN_CAP", 5);
+            data.put("SLEEP_REGEN_TICK_SPEED", 900);
+            return data;
+        };
+        healthConfig = new ConfigFile(
+                Specialization.getInstance(),
+                "healthConfig",
+                healthDefaults
+        );
 
-        bedOwnershipConfig = new ConfigFile(Specialization.getInstance(), "bedOwnershipConfig", null, fields -> {
-            fields.add(new Pair<>("BED_OWNERSHIP_ENABLED", true));
-            fields.add(new Pair<>("ALLOW_BED_SHARING", false));
-            fields.add(new Pair<>("BED_OWNERSHIP_MESSAGE", "§cThis bed is already claimed by another player!"));
-            fields.add(new Pair<>("BED_CLAIM_MESSAGE", "§aYou have claimed this bed as your spawn point!"));
-            fields.add(new Pair<>("BED_UNCLAIM_MESSAGE", "§7Your previous bed has been unclaimed."));
-            fields.add(new Pair<>("BED_RESPAWN_HUNGER_REDUCTION_ENABLED", true));
-            fields.add(new Pair<>("BED_RESPAWN_HUNGER_DIVISOR", 3));
-            fields.add(new Pair<>("BED_RESPAWN_MINIMUM_HUNGER", 1));
-            fields.add(new Pair<>("BED_RESPAWN_SHOW_MESSAGE", true));
-        });
+        Supplier<Map<String, Object>> bedOwnershipDefaults = () -> {
+            Map<String, Object> data = new HashMap<>();
+            data.put("BED_OWNERSHIP_ENABLED", true);
+            data.put("ALLOW_BED_SHARING", false);
+            data.put("BED_OWNERSHIP_MESSAGE", "§cThis bed is already claimed by another player!");
+            data.put("BED_CLAIM_MESSAGE", "§aYou have claimed this bed as your spawn point!");
+            data.put("BED_UNCLAIM_MESSAGE", "§7Your previous bed has been unclaimed.");
+            data.put("BED_RESPAWN_HUNGER_REDUCTION_ENABLED", true);
+            data.put("BED_RESPAWN_HUNGER_DIVISOR", 3);
+            data.put("BED_RESPAWN_MINIMUM_HUNGER", 1);
+            data.put("BED_RESPAWN_SHOW_MESSAGE", true);
+            return data;
+        };
+        bedOwnershipConfig = new ConfigFile(
+                Specialization.getInstance(),
+                "bedOwnershipConfig",
+                bedOwnershipDefaults
+        );
 
-        skillsConfig = new ConfigFile(Specialization.getInstance(), "skillsConfig", null, fields -> {
+        Supplier<Map<String, Object>> skillsDefaults = () -> {
+            Map<String, Object> data = new HashMap<>();
             for (SkillType skillType : SkillType.values()) {
-                fields.add(new Pair<>(skillType + "_WORKSTATION", Material.COMPOSTER));
-                fields.add(new Pair<>(skillType + "_DESCRIPTION", "Description"));
+                data.put(skillType + "_WORKSTATION", Material.COMPOSTER.key().value().toUpperCase(Locale.ROOT));
+                data.put(skillType + "_DESCRIPTION", "Description");
             }
-        });
+            return data;
+        };
+        skillsConfig = new ConfigFile(
+                Specialization.getInstance(),
+                "skillsConfig",
+                skillsDefaults
+        );
 
-        skillRequirementsConfig = new ConfigFile(Specialization.getInstance(), "skillRequirementsConfig", "the number represents the percentage of total xp in this skill needed to level it up each level", fields -> {
+        Supplier<Map<String, Double>> skillRequirementsDefaults = () -> {
+            Map<String, Double> data = new HashMap<>();
             for (SkillType skillType : SkillType.values()) {
                 for (SkillLevel skillLevel : SkillLevel.values()) {
-                    fields.add(new Pair<>(skillType + "_" + skillLevel + "_REQUIREMENT", 0D));
+                    data.put(skillType + "_" + skillLevel + "_REQUIREMENT", 0D);
                 }
             }
-        });
+            return data;
+        };
+        skillRequirementsConfig = new ConfigFile(
+                Specialization.getInstance(),
+                "skillRequirementsConfig",
+                skillRequirementsDefaults
+        );
 
-        librarianConfig = new ConfigFile(Specialization.getInstance(), "librarianConfig", null, fields -> {
-            fields.add(new Pair<>("ENCHANTABLE_TOOL_REGEX", "^(?i)(?:(wooden|stone|iron|diamond|golden|netherite)_(?:(pickaxe|axe|shovel|sword|hoe))|(leather|chainmail|iron|diamond|golden|netherite)_(?:(helmet|chestplate|leggings|boots))|fishing_rod|shears|flint_and_steel|bow|crossbow|trident|mace|elytra|book|shield)"));
-            fields.add(new Pair<>("BANNED_BLESS_ENCHANTS", List.of(Enchantment.MENDING.getKey())));
-            fields.add(new Pair<>("BLESS_ITEM_LIBRARIAN_LEVEL", 2));
-            fields.add(new Pair<>("BLESS_ITEM_XP_LEVEL_REQUIREMENT", 3));
-            fields.add(new Pair<>("ITEM_LORE_LIBRARIAN_LEVEL", 3));
-        });
+        Supplier<Map<String, Object>> librarianDefaults = () -> {
+            Map<String, Object> data = new HashMap<>();
+            data.put("ENCHANTABLE_TOOL_REGEX", "^(?i)(?:(wooden|stone|iron|diamond|golden|netherite)_(?:(pickaxe|axe|shovel|sword|hoe))|(leather|chainmail|iron|diamond|golden|netherite)_(?:(helmet|chestplate|leggings|boots))|fishing_rod|shears|flint_and_steel|bow|crossbow|trident|mace|elytra|book|shield)");
+            data.put("BLUEPRINT_ITEM_RECIPES", "^(?i)(?:(wooden|stone|iron|diamond|golden|netherite)_(?:(pickaxe|axe|shovel|sword|hoe))|(leather|chainmail|iron|diamond|golden|netherite)_(?:(helmet|chestplate|leggings|boots))|fishing_rod|shears|flint_and_steel|bow|crossbow|trident|mace|elytra|book|shield)");
+            data.put("BANNED_BLESS_ENCHANTS", List.of(Enchantment.MENDING.getKey().value()));
+            data.put("BLESS_ITEM_LIBRARIAN_LEVEL", 2);
+            data.put("BLESS_ITEM_XP_LEVEL_REQUIREMENT", 3);
+            data.put("ITEM_LORE_LIBRARIAN_LEVEL", 3);
+            return data;
+        };
+        librarianConfig = new ConfigFile(
+                Specialization.getInstance(),
+                "librarianConfig",
+                librarianDefaults
+        );
 
-        farmerConfig = new ConfigFile(Specialization.getInstance(), "farmerConfig", null, fields -> {
-            for(EntityType animal : BREEDABLE) {
-                fields.add(new Pair<>("FARMER_BREED_LEVEL_" + animal,  SkillLevel.JOURNEYMAN.getLevel()));
+        Supplier<Map<String, Object>> farmerDefaults = () -> {
+            Map<String, Object> data = new HashMap<>();
+            for (EntityType animal : BREEDABLE) {
+                data.put("FARMER_BREED_LEVEL_" + animal, SkillLevel.JOURNEYMAN.getLevel());
             }
-            for(SkillLevel skillLevel : SkillLevel.values()) {
-                fields.add(new Pair<>("FARMER_GET_DROPS_CHANCE_" + skillLevel, 0.5));
+            for (SkillLevel skillLevel : SkillLevel.values()) {
+                data.put("FARMER_GET_DROPS_CHANCE_" + skillLevel, 0.5);
             }
-            //push
-        });
+            return data;
+        };
+        farmerConfig = new ConfigFile(
+                Specialization.getInstance(),
+                "farmerConfig",
+                farmerDefaults
+        );
 
-        tameableConfig = new ConfigFile(Specialization.getInstance(), "tamingConfig", null, fields -> {
-            for(EntityType tameable : TAMEABLE) {
-                fields.add(new Pair<>("TAME_" + tameable, new Pair<>(SkillType.FARMER, SkillLevel.NOVICE.getLevel())));
+        Supplier<Map<String, Map<String, Object>>> tameableDefaults = () -> {
+            Map<String, Map<String, Object>> data = new HashMap<>();
+            for (SkillType skillType : SkillType.values()) {
+                data.put(skillType.name(), new HashMap<>());
             }
-        });
+            Map<String, Object> skillType = data.get(SkillType.FARMER.name());
+            for (EntityType tameable : TAMEABLE) {
+                skillType.put("TAME_" + tameable, SkillLevel.NOVICE.getLevel());
+            }
+            return data;
+        };
+        tameableConfig = new ConfigFile(
+                Specialization.getInstance(),
+                "tamingConfig",
+                tameableDefaults
+        );
 
-        blueprintConfig = new ConfigFile(Specialization.getInstance(), "librarianConfig", null, fields -> {
-            fields.add(new Pair<>("BLUEPRINT_ITEM_RECIPES", "^(?i)(?:(wooden|stone|iron|diamond|golden|netherite)_(?:(pickaxe|axe|shovel|sword|hoe))|(leather|chainmail|iron|diamond|golden|netherite)_(?:(helmet|chestplate|leggings|boots))|fishing_rod|shears|flint_and_steel|bow|crossbow|trident|mace|elytra|book|shield)"));
-        });
+        Supplier<Map<String, Object>> chatDefaults = () -> {
+            Map<String, Object> data = new HashMap<>();
+            data.put("CHAT_RADIUS", 32.0);
+            data.put("DEFAULT_FORMAT", "%s > %s");
+            data.put("ANNOUNCEMENT_FORMAT", "<aqua>[Announcement]<gray> %s");
+            data.put("ANNOUNCEMENT_PREFIX", "#");
+            return data;
+        };
+        chatConfig = new ConfigFile(
+                Specialization.getInstance(),
+                "chatConfig",
+                chatDefaults
+        );
 
-        chatConfig = new ConfigFile(Specialization.getInstance(), "chatConfig", null, fields -> {
-            fields.add(new Pair<>("CHAT_RADIUS", 32.0));
-            fields.add(new Pair<>("DEFAULT_FORMAT", "%s > %s"));
-            fields.add(new Pair<>("ANNOUNCEMENT_FORMAT", "<aqua>[Announcement]<gray> %s"));
-            fields.add(new Pair<>("ANNOUNCEMENT_PREFIX", "#"));
-        });
+        Supplier<Map<String, Object>> instinctDefaults = () -> {
+            Map<String, Object> data = new HashMap<>();
+            data.put("INSTINCT_ENABLED", true);
+            data.put("INSTINCT_DETECTION_RADIUS_LEVEL_1", 8.0);
+            data.put("INSTINCT_DETECTION_RADIUS_LEVEL_2", 12.0);
+            data.put("INSTINCT_DETECTION_RADIUS_LEVEL_3", 16.0);
+            data.put("INSTINCT_GLOW_DURATION_TICKS", 300);
+            return data;
+        };
+        instinctConfig = new ConfigFile(
+                Specialization.getInstance(),
+                "instinctConfig",
+                instinctDefaults
+        );
 
-        instinctConfig = new ConfigFile(Specialization.getInstance(), "instinctConfig", null, fields -> {
-            fields.add(new Pair<>("INSTINCT_ENABLED", true));
-            fields.add(new Pair<>("INSTINCT_DETECTION_RADIUS_LEVEL_1", 8.0));
-            fields.add(new Pair<>("INSTINCT_DETECTION_RADIUS_LEVEL_2", 12.0));
-            fields.add(new Pair<>("INSTINCT_DETECTION_RADIUS_LEVEL_3", 16.0));
-            fields.add(new Pair<>("INSTINCT_GLOW_DURATION_TICKS", 300));
-        });
-
-        xpMonitorConfig = new ConfigFile(Specialization.getInstance(), "XpMonitorAlertThresholds", null, fields -> {
-            // FARMER
-            fields.add(new Pair<>("FARMER.threshold", 600.0));
-            fields.add(new Pair<>("FARMER.cooldown-seconds", 30));
-
-            // BUILDER
-            fields.add(new Pair<>("BUILDER.threshold", 600.0));
-            fields.add(new Pair<>("BUILDER.cooldown-seconds", 30));
-
-            // MINER
-            fields.add(new Pair<>("MINER.threshold", 600.0));
-            fields.add(new Pair<>("MINER.cooldown-seconds", 30));
-
-            // HEALER
-            fields.add(new Pair<>("HEALER.threshold", 600.0));
-            fields.add(new Pair<>("HEALER.cooldown-seconds", 30));
-
-            // LIBRARIAN
-            fields.add(new Pair<>("LIBRARIAN.threshold", 550.0));
-            fields.add(new Pair<>("LIBRARIAN.cooldown-seconds", 30));
-
-            // GUARDSMAN
-            fields.add(new Pair<>("GUARDSMAN.threshold", 550.0));
-            fields.add(new Pair<>("GUARDSMAN.cooldown-seconds", 30));
-
-            // BLACKSMITH
-            fields.add(new Pair<>("BLACKSMITH.threshold", 600.0));
-            fields.add(new Pair<>("BLACKSMITH.cooldown-seconds", 30));
-        });
-
-
+        Supplier<Map<String, Object>> xpMonitorDefaults = () -> {
+            Map<String, Object> data = new HashMap<>();
+            data.put("FARMER.threshold", 600.0);
+            data.put("FARMER.cooldown-seconds", 30);
+            data.put("BUILDER.threshold", 600.0);
+            data.put("BUILDER.cooldown-seconds", 30);
+            data.put("MINER.threshold", 600.0);
+            data.put("MINER.cooldown-seconds", 30);
+            data.put("HEALER.threshold", 600.0);
+            data.put("HEALER.cooldown-seconds", 30);
+            data.put("LIBRARIAN.threshold", 550.0);
+            data.put("LIBRARIAN.cooldown-seconds", 30);
+            data.put("GUARDSMAN.threshold", 550.0);
+            data.put("GUARDSMAN.cooldown-seconds", 30);
+            data.put("BLACKSMITH.threshold", 600.0);
+            data.put("BLACKSMITH.cooldown-seconds", 30);
+            return data;
+        };
+        xpMonitorConfig = new ConfigFile(
+                Specialization.getInstance(),
+                "XpMonitorAlertThresholds",
+                xpMonitorDefaults
+        );
     }//change
 
 }

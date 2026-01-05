@@ -1,10 +1,12 @@
 import io.papermc.paperweight.userdev.ReobfArtifactConfiguration
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id "java"
     id("xyz.jpenilla.run-paper") version "2.3.1"
     id("io.papermc.paperweight.userdev") version "2.0.0-beta.18"
     id("com.gradleup.shadow") version "9.0.1"
+    id 'org.jetbrains.kotlin.jvm' version '2.1.0'
 }
 
 group = 'com.minecraftcivilizations'
@@ -12,6 +14,7 @@ version = '0.0.0.1'
 
 repositories {
     mavenCentral()
+    mavenLocal()
     maven {
         name = "papermc-repo"
         url = "https://repo.papermc.io/repository/maven-public/"
@@ -54,6 +57,8 @@ configurations {
 
 dependencies {
     paperweight.paperDevBundle("1.21.8-R0.1-SNAPSHOT")
+    implementation 'com.typesafe:config:1.4.3'
+    //implementation(files("libs/MinecraftCivilizationCore-0.5.1"))
     implementation("com.minecraftcivilizations:minecraftcivilizationscore:0.5.1")
     implementation "com.google.code.gson:gson:2.13.1"
     implementation "co.aikar:acf-paper:0.5.1-SNAPSHOT"
@@ -70,6 +75,7 @@ dependencies {
     testAnnotationProcessor("org.projectlombok:lombok:1.18.38")
 
     shadow 'co.aikar:acf-paper:0.5.1-SNAPSHOT'
+    shadow "org.jetbrains.kotlin:kotlin-stdlib:2.1.0"
 }
 
 jar {
@@ -98,8 +104,6 @@ tasks {
 def targetJavaVersion = 23
 java {
     def javaVersion = JavaVersion.toVersion(targetJavaVersion)
-    sourceCompatibility = javaVersion
-    targetCompatibility = javaVersion
 }
 
 
@@ -140,4 +144,11 @@ tasks.register('copyPluginJar', Copy) {
 
 tasks.build {
     dependsOn tasks.copyPluginJar
+}
+tasks.withType(KotlinCompile).configureEach {
+    kotlinOptions {
+        jvmTarget = "23"
+        // Allow Kotlin to use Java preview features
+        freeCompilerArgs += ["-Xjdk-release=23", "-Xexpect-builtin-kotlin-types"]
+    }
 }

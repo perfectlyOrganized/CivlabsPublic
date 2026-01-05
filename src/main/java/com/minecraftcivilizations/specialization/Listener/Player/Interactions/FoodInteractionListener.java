@@ -84,8 +84,8 @@ public class FoodInteractionListener implements Listener {
                             }
                         }
 
-                        int blessXp = SpecializationConfig.getHealthConfig().get("BLESSED_FOOD_HEALER_XP", Integer.class);
-                        int hungerCost = SpecializationConfig.getHealthConfig().get("BLESSED_FOOD_HUNGER_COST", Integer.class);
+                        int blessXp = SpecializationConfig.getHealthConfig().getInteger("BLESSED_FOOD_HEALER_XP");
+                        int hungerCost = SpecializationConfig.getHealthConfig().getInteger("BLESSED_FOOD_HUNGER_COST");
 
                         ItemStack singleItem = item.clone();
                         singleItem.setAmount(1);
@@ -144,7 +144,7 @@ public class FoodInteractionListener implements Listener {
 
         // Existing custom food logic
         if (!customPlayer.eatFood(consumed.getType())) {
-            int reduction = SpecializationConfig.getHungerConfig().get("HUNGER_REDUCTION_ON_NON_UNIQUE_CONSECUTIVE_FOOD", Integer.class);
+            int reduction = SpecializationConfig.getHungerConfig().getInteger("HUNGER_REDUCTION_ON_NON_UNIQUE_CONSECUTIVE_FOOD");
             player.setSaturation(player.getSaturation() - reduction);
         }
 
@@ -250,10 +250,10 @@ public class FoodInteractionListener implements Listener {
 
 
         // Keep your existing “restore max health if below normal” behavior
-        if (SpecializationConfig.getHealthConfig().get("HEALTH_ENABLED", Boolean.class)) {
+        if (SpecializationConfig.getHealthConfig().getBoolean("HEALTH_ENABLED")) {
             double currentMaxHealth = Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).getValue();
-            double normalMaxHealth = SpecializationConfig.getHealthConfig().get("MAX_HEALTH", Double.class);
-            double healthRestoreAmount = SpecializationConfig.getHealthConfig().get("BLESSED_FOOD_HEALTH_RESTORE_AMOUNT", Double.class);
+            double normalMaxHealth = SpecializationConfig.getHealthConfig().getDouble("MAX_HEALTH");
+            double healthRestoreAmount = SpecializationConfig.getHealthConfig().getDouble("BLESSED_FOOD_HEALTH_RESTORE_AMOUNT");
 
             if (currentMaxHealth < normalMaxHealth) {
                 double newMaxHealth = Math.min(normalMaxHealth, currentMaxHealth + healthRestoreAmount);

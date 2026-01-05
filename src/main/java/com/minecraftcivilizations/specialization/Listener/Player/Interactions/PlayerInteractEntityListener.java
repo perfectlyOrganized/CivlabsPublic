@@ -4,11 +4,14 @@ import com.google.gson.reflect.TypeToken;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Listener.Player.PlayerDownedListener;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.Skill.Skill;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.minecraftcivilizations.specialization.util.CoreUtil;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigException;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Options.Pair;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Boat;
@@ -38,7 +41,7 @@ public class PlayerInteractEntityListener implements Listener {
     public void onPlayerBreed(EntityBreedEvent e){
         if(e.getBreeder() instanceof Player player) {
             CustomPlayer cPlayer = CoreUtil.getPlayer(player);
-            Integer level = SpecializationConfig.getFarmerConfig().get("FARMER_BREED_LEVEL_" + e.getMother().getType(), Integer.class);
+            Integer level = SpecializationConfig.getFarmerConfig().getInteger("FARMER_BREED_LEVEL_" + e.getMother().getType());
             if(level != null && cPlayer.getSkillLevel(SkillType.FARMER) < level){
                 e.setCancelled(true);
             }
@@ -49,8 +52,19 @@ public class PlayerInteractEntityListener implements Listener {
     public void onPlayerTame(EntityTameEvent e){
         if(e.getOwner() instanceof Player player) {
             CustomPlayer cPlayer = CoreUtil.getPlayer(player);
-            Pair<SkillType,Integer> level = SpecializationConfig.getTameableConfig().get("TAME_" + e.getEntity().getType(), new TypeToken<>(){});
-            if(level != null && cPlayer.getSkillLevel(level.firstValue()) < level.secondValue()){
+            boolean canTame = false;
+            for (SkillType skill : SkillType.values()) {
+                Config tames = SpecializationConfig.getTameableConfig().getObject(skill.toString());
+                int requirement = -1;
+                try {
+                    requirement = tames.getInt("TAME_" + e.getEntity().getType());
+                } catch(ConfigException.Missing _) {}
+                if (requirement != -1 && cPlayer.getSkillLevel(skill) > requirement) {
+                    canTame = true;
+                    break;
+                }
+            }
+            if(canTame){
                 e.setCancelled(true);
             }
         }

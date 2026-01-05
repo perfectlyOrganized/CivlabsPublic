@@ -3,7 +3,9 @@ package com.minecraftcivilizations.specialization.Listener.Player.Inventories;
 import com.google.gson.reflect.TypeToken;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.Skill.Skill;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
+import com.typesafe.config.ConfigException;
 import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Options.Pair;
 import org.bukkit.Bukkit;
@@ -46,12 +48,9 @@ public class StonecutterListener implements Listener {
         ItemStack inputBefore = cloneSafe(view.getItem(0)); // stonecutter input slot before craft
 
         int amount = getStonecutAmount(event);
+        Pair<SkillType, Double> pair = SkillType.getSkillXpFromConfig(SpecializationConfig.getXpGainFromStonecuttingConfig(), result.getType().toString());
 
-        Pair<SkillType, Double> pair = SpecializationConfig.getXpGainFromStonecuttingConfig()
-                .get(result.getType(), new TypeToken<>() {});
-        if (pair == null || pair.firstValue() == null || pair.secondValue() == null) return;
-
-        double xpToGive = pair.secondValue() * amount;
+        double xpToGive = pair.value() * amount;
 
         // One tick later, check if craft actually happened
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
@@ -69,7 +68,7 @@ public class StonecutterListener implements Listener {
 
             CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance()
                     .getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
-            customPlayer.addSkillXp(pair.firstValue(), xpToGive);
+            customPlayer.addSkillXp(pair.key(), xpToGive);
             LOGGER.fine("Gave " + xpToGive + " XP to " + player.getName()
                     + " for stonecutting " + amount + "x " + result.getType());
         }, 1L);
