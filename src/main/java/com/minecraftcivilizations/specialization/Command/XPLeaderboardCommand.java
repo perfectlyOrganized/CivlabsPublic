@@ -14,6 +14,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.FileNotFoundException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -128,7 +129,14 @@ public class XPLeaderboardCommand extends BaseCommand {
     // --- Utility Methods ---
     private List<CustomPlayer> getOnlineCustomPlayers() {
         return Bukkit.getOnlinePlayers().stream()
-                .map(p -> MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().load(p.getUniqueId()))
+                .map(p -> {
+                    try {
+                        return MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().load(p.getUniqueId());
+                    } catch (FileNotFoundException e) {
+                        MinecraftCivilizationsCore.getInstance().getLogger().severe(String.format("Can't load player %s",p.name()));
+                    }
+                    return null;
+                })
                 .filter(Objects::nonNull)
                 .filter(cp -> cp instanceof CustomPlayer)
                 .map(cp -> (CustomPlayer) cp)
