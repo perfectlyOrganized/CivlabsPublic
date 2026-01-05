@@ -184,7 +184,7 @@ public class ArmorEquipAttributes implements Listener {
         /**
          * Roll weight
          */
-        if(rng1 < base_chance) {
+        if(rng1 < base_chance && item_type != null) {
             switch(item_type){
                 case IRON_INGOT -> {
                     if(ThreadLocalRandom.current().nextDouble()<rare_chance) {
