@@ -62,6 +62,7 @@ import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.*;
@@ -224,8 +225,14 @@ public final class Specialization extends JavaPlugin {
         MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().setCustomPlayerClass(CustomPlayer.class);
 
         MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().setOnPrePlayerJoin(playerJoinEvent -> {
+
             try {
-                CustomPlayer load = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().load(playerJoinEvent.getUniqueId());
+                CustomPlayer load = null;
+                try {
+                    load = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().load(playerJoinEvent.getUniqueId());
+                } catch (FileNotFoundException e) {
+                    Specialization.getInstance().getLogger().severe(String.format("Couldn't load player %s", playerJoinEvent.getPlayerProfile().getName()));
+                }
                 Component localName;
                 String real_name = playerJoinEvent.getName();
                 if (load != null) {
@@ -292,7 +299,12 @@ public final class Specialization extends JavaPlugin {
         });
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            CustomPlayer loadedPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().load(player.getUniqueId());
+            CustomPlayer loadedPlayer = null;
+            try {
+                loadedPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().load(player.getUniqueId());
+            } catch (FileNotFoundException e) {
+                Specialization.getInstance().getLogger().severe(String.format("Couldn't load player %s", player.name()));
+            }
             if (loadedPlayer != null) {
                 MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().addCustomPlayer(loadedPlayer);
             }

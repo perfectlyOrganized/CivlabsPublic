@@ -29,6 +29,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.io.FileNotFoundException;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -81,7 +82,12 @@ public class CustomPlayer extends minecraftcivilizations.com.minecraftCivilizati
     }
 
     private void loadPlayer() {
-        CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().load(this.getUuid());
+        CustomPlayer customPlayer = null;
+        try {
+            customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().load(this.getUuid());
+        } catch (FileNotFoundException e) {
+            Specialization.getInstance().getLogger().severe(String.format("Couldn't load player %s", this.getUuid()));
+        }
 
         if (customPlayer != null) {
             //Loads existing player
