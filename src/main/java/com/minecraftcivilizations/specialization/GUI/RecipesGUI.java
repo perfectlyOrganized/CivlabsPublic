@@ -3,6 +3,7 @@ package com.minecraftcivilizations.specialization.GUI;
 import com.google.gson.reflect.TypeToken;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.Recipe.RecipeBlocker;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
@@ -132,8 +133,7 @@ public class RecipesGUI extends GUI {
                 itemMeta.lore(LoreUtils.createDescriptionLoreLine("Click to view recipes you'll unlock"));
             });
             guiItem.setOnClick(() -> {
-                Set<NamespacedKey> stringHashSetPair = SpecializationConfig.getUnlockedRecipesConfig().get(skillType + "_" + SkillLevel.getSkillLevelFromInt(requiredLevel), new TypeToken<>() {
-                });
+                Set<NamespacedKey> stringHashSetPair = RecipeBlocker.getRecipes(skillType, requiredLevel);
                 ArrayList<ItemStack> itemStacks = new ArrayList<>(0);
                 if (stringHashSetPair != null) {
                     for (NamespacedKey namespacedKey : stringHashSetPair) {
@@ -155,8 +155,7 @@ public class RecipesGUI extends GUI {
             itemMeta.lore(LoreUtils.createDescriptionLoreLine("Click to view recipes you've unlocked"));
         });
         guiItem.setOnClick(() -> {
-            Set<NamespacedKey> stringHashSetPair = SpecializationConfig.getUnlockedRecipesConfig().get(skillType + "_" + SkillLevel.getSkillLevelFromInt(requiredLevel), new TypeToken<>() {
-            });
+            Set<NamespacedKey> stringHashSetPair = RecipeBlocker.getRecipes(skillType, requiredLevel);
             ArrayList<ItemStack> itemStacks = new ArrayList<>(0);
             if (stringHashSetPair != null) {
                 for (NamespacedKey namespacedKey : stringHashSetPair) {

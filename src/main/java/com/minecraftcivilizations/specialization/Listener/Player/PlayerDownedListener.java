@@ -546,9 +546,11 @@ public class PlayerDownedListener implements Listener {
                 .clickEvent(ClickEvent.runCommand("/giveup"))
                 .hoverEvent(HoverEvent.showText(Component.text("Click to give up and respawn")));
 
-        Component msg = Component.text("§7Press Here to ", NamedTextColor.GRAY)
+        Component msg = Component.text()
+                .append(Component.text("Press Here to ", NamedTextColor.GRAY))
                 .append(giveUp)
-                .append(Component.text(" & Respawn", NamedTextColor.GRAY));
+                .append(Component.text(" & Respawn", NamedTextColor.GRAY))
+                .build();
 
         // Send main message
 //        player.sendMessage(msg);

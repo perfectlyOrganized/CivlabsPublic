@@ -46,14 +46,14 @@ public class BreakBlockMobGoal implements Goal<Monster> {
         if(monster.getWorld().isDayTime()) return false;
         // if(monster.getLocation().getY() > 60) return false;
 
-        double percentage = SpecializationConfig.getMobConfig().get("BLOCK_BREAK_CHANCE_PERCENTAGE", Double.class);
+        double percentage = SpecializationConfig.getMobConfig().getDouble("BLOCK_BREAK_CHANCE_PERCENTAGE");
         if(random.nextDouble() > percentage / 100d) return false;
 
         if(!monster.getWorld().equals(monster.getTarget().getWorld())) return false;
 
         Debug.broadcast("breakblock", "breaking should activate");
         Vector vectorToPlayer = monster.getTarget().getLocation().subtract(monster.getEyeLocation()).toVector();
-        int targetRange = SpecializationConfig.getMobConfig().get("MOB_RULE_TARGET_RANGE", Integer.class);
+        int targetRange = SpecializationConfig.getMobConfig().getInteger("MOB_RULE_TARGET_RANGE");
         if(vectorToPlayer.lengthSquared() > targetRange*targetRange) return false;
         RayTraceResult result = monster.getWorld().rayTrace(monster.getEyeLocation(), vectorToPlayer.normalize(), 5, FluidCollisionMode.NEVER, true, .15, null);
         if(result == null || result.getHitBlock() == null) {
@@ -64,7 +64,7 @@ public class BreakBlockMobGoal implements Goal<Monster> {
 
         block = result.getHitBlock();
         if (ReinforcementManager.isReinforced(block)) return false;
-        List<String> deniedBlocks = SpecializationConfig.getMobConfig().get("BLOCK_BREAK_IGNORE_LIST_REGEX", new TypeToken<>(){});
+        List<String> deniedBlocks = SpecializationConfig.getMobConfig().getStringList("BLOCK_BREAK_IGNORE_LIST_REGEX");
         return block.getType() != Material.AIR && deniedBlocks.stream().noneMatch(it -> block.getType().name().matches(it));
     }
 
@@ -85,8 +85,8 @@ public class BreakBlockMobGoal implements Goal<Monster> {
 
     @Override
     public void tick() {
-        float breakPercentagePerTick = SpecializationConfig.getMobConfig().get("VISUAL_BREAKING_INCREASE_PER_TICK_PERCENTAGE", Float.class);
-        breakAmount += breakPercentagePerTick / 100f;
+        double breakPercentagePerTick = SpecializationConfig.getMobConfig().getDouble("VISUAL_BREAKING_INCREASE_PER_TICK_PERCENTAGE");
+        breakAmount += (float) (breakPercentagePerTick / 100);
         if(breakAmount >= 1.0){
             if(block.getBlockData().getMaterial().getHardness() > 0) {
                 block.breakNaturally(true, false);

@@ -221,7 +221,7 @@ public class HuntPlayerMobGoal implements Goal<Mob> {
         // Occasional chance check before attempting to break anything.
         // Only run this check when we don't currently have a candidate block.
         if (block == null) {
-            double percentage = SpecializationConfig.getMobConfig().get("BLOCK_BREAK_CHANCE_PERCENTAGE", Double.class);
+            double percentage = SpecializationConfig.getMobConfig().getDouble("BLOCK_BREAK_CHANCE_PERCENTAGE");
             if (random.nextDouble() > percentage / 100d) {
                 // Skip breaking attempt this cycle; try again later (every 20 ticks)
                 reacquire_tick++;

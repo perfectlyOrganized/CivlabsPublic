@@ -7,6 +7,7 @@ import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.minecraftcivilizations.specialization.util.CoreUtil;
 import com.minecraftcivilizations.specialization.util.WorldUtils;
+import lombok.extern.slf4j.Slf4j;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -48,6 +49,7 @@ import static com.minecraftcivilizations.specialization.util.MathUtils.*;
  * @see MobOverrideRule for individual rules for converting a mob into a variant
  * @see MobVariation for specific entity profile settings
  */
+@Slf4j
 public class MobManager implements Listener {
 
     public static final String TAKEDOWN_CHANCE = "takedown chance: ";
@@ -466,23 +468,23 @@ public class MobManager implements Listener {
                         , 100);
 
 
-        MobVariation night_wolves = new MobVariation("night_wolf", WOLF)
-                .anger(true)
-                .damage(0.75, 1.0)
-                .health(1.5)
-                .speed(1.25, 1.5)
-                .setGainsXpOverride(true)
-                .hunts(32)
-                .breaks(0.75)
-                .stepheight(0.5)
-                .xpScale(2.5)
-                .spawnExtra(3)
-                .breeds("black", "black", "black") //,"chestnut", "woods", "striped")
-                .replaceOriginalMob()
-                .despawnFaraway();
-
-        new MobOverrideRule(8, CREEPER)
-                .addVariation(night_wolves, 10).spawnInPacks();
+//        MobVariation night_wolves = new MobVariation("night_wolf", WOLF)
+//                .anger(true)
+//                .damage(0.75, 1.0)
+//                .health(1.5)
+//                .speed(1.25, 1.5)
+//                .setGainsXpOverride(true)
+//                .hunts(32)
+//                .breaks(0.75)
+//                .stepheight(0.5)
+//                .xpScale(2.5)
+//                .spawnExtra(3)
+//                .breeds("black", "black", "black") //,"chestnut", "woods", "striped")
+//                .replaceOriginalMob()
+//                .despawnFaraway();
+//
+//        new MobOverrideRule(8, CREEPER)
+//                .addVariation(night_wolves, 10).spawnInPacks();
 
         new MobOverrideRule(100, CREEPER)
                 .addVariation(new MobVariation("creeper")

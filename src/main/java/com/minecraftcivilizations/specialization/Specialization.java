@@ -123,14 +123,16 @@ public final class Specialization extends JavaPlugin {
     @Override
     public void onEnable() {
         logger = getLogger();
-
+        logger.severe("THIS IS IMPORTANT");
         Skill.InitCacheXPLevelFormula();
         debug = new Debug(this);
         saveResource("first_names.txt", true);
         saveResource("last_names.txt", true);
+        logger.severe("THIS IS IMPORTANT 2");
         SpecializationConfig.initialize();
         // TODO PDC-xp-hotfix
         //  Skill.InitializeSkillKeys(this);
+        logger.severe("THIS IS IMPORTANT 3");
 
 
         localChat = new LocalChat();
