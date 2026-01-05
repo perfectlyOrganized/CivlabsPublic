@@ -1,5 +1,8 @@
 package com.minecraftcivilizations.specialization.Recipe;
 
+import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
+import com.minecraftcivilizations.specialization.Skill.SkillLevel;
+import com.minecraftcivilizations.specialization.Skill.SkillType;
 import org.bukkit.NamespacedKey;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -29,5 +32,8 @@ public class RecipeBlocker implements Listener {
                 e.getInventory().setResult(null);
             }
         }
+    }
+    public static Set<NamespacedKey> getRecipes(SkillType skillType, int level) {
+       return (Set<NamespacedKey>) SpecializationConfig.getUnlockedRecipesConfig().getStringList(skillType + "_" + SkillLevel.getSkillLevelFromInt(level)).stream().map(NamespacedKey::fromString).toList();
     }
 }

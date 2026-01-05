@@ -13,6 +13,7 @@ import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.minecraftcivilizations.specialization.util.CoreUtil;
 import com.minecraftcivilizations.specialization.util.LoreUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
+import com.typesafe.config.Config;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -190,18 +191,18 @@ public class CustomPlayer extends minecraftcivilizations.com.minecraftCivilizati
             SkillLevelChangeEvent level_change_event = new SkillLevelChangeEvent(this, player, skillType, previousLevel, currentLevel, xp);
             Bukkit.getPluginManager().callEvent(level_change_event);
             applyEffects(); //disabled for testing new combat
-            String skill_name = SkillType.getDisplayName(skillType);
+            String skill_name = getDisplayName(skillType);
             if (previousLevel < currentLevel) {
                 player.playSound(player, Sound.ENTITY_PLAYER_LEVELUP, 100, 1);
-                PlayerUtil.message(player, LoreUtils.createLoreLine("You have leveled up " + skill_name + ", you are now " + SkillType.getDisplayName(skillType) + " " + SkillLevel.getDisplayName(currentLevel), NamedTextColor.WHITE));
+                PlayerUtil.message(player, LoreUtils.createLoreLine("You have leveled up " + skill_name + ", you are now " + getDisplayName(skillType) + " " + SkillLevel.getDisplayName(currentLevel), NamedTextColor.WHITE));
                 Debug.broadcast("levelup", player.getName()+" <gray>leveled up <yellow>"+skill_name+ "</yellow> to level <green>"+currentLevel);
             } else {
                 player.playSound(player, Sound.ITEM_BOTTLE_FILL_DRAGONBREATH, 100F, 1.5F);
-                PlayerUtil.message(player, LoreUtils.createLoreLine("Your " + skill_name + "ing ability has deteriorated, you are now " + SkillType.getDisplayName(skillType) + " " + SkillLevel.getDisplayName(currentLevel), NamedTextColor.WHITE));
+                PlayerUtil.message(player, LoreUtils.createLoreLine("Your " + skill_name + "ing ability has deteriorated, you are now " + getDisplayName(skillType) + " " + SkillLevel.getDisplayName(currentLevel), NamedTextColor.WHITE));
             }
             while (currentLevel > 0) {
-                Set<NamespacedKey> recipes =
-                        SpecializationConfig.getUnlockedRecipesConfig().get(skillType.name() + "_" + SkillLevel.getSkillLevelFromInt(currentLevel), new TypeToken<>(){});
+                List<NamespacedKey> recipes = SpecializationConfig.getUnlockedRecipesConfig().getStringList(skillType.name() + "_" + SkillLevel.getSkillLevelFromInt(currentLevel)).stream().map(NamespacedKey::fromString).toList();
+
                 for (NamespacedKey entry : recipes) {
                     player.discoverRecipe(entry);
                 }
@@ -215,18 +216,22 @@ public class CustomPlayer extends minecraftcivilizations.com.minecraftCivilizati
     public void applyEffects(){
         Player player = Bukkit.getPlayer(getUuid());
         Arrays.stream(SkillType.values()).forEach(skill -> {
-            List<Pair<NamespacedKey, Integer>> potions = SpecializationConfig.getClassSkillEffectsConfig().get(skill + "_" + getSkillLevelEnum(skill), new TypeToken<>(){});
+            List<? extends Config> potionList = SpecializationConfig.getClassSkillEffectsConfig().getList(skill.name() + "_" + getSkillLevelEnum(skill).name());
             assert player != null;
-            for(Pair<NamespacedKey, Integer> dataEffect : potions) {
-                PotionEffectType potionEffectType = Registry.EFFECT.get(dataEffect.firstValue());
-                if(dataEffect.secondValue() < 0) continue;
-                if(potionEffectType == null) throw new IllegalStateException("invalid potion effect type in config" + dataEffect.firstValue());
+            for (Config potionConfig : potionList) {
+                int amplifier = potionConfig.getInt("amplifier");
+                NamespacedKey effectKey = NamespacedKey.fromString(potionConfig.getString("effect"));
+
+                assert effectKey != null;
+                PotionEffectType potionEffectType = Registry.EFFECT.get(effectKey);
+                if(amplifier < 0) continue;
+                if(potionEffectType == null) throw new IllegalStateException("invalid potion effect type in config" + effectKey);
                 if(player.getActivePotionEffects().stream().anyMatch(effect -> effect.getType().equals(potionEffectType) && effect.getDuration() == -1)){
                     player.removePotionEffect(potionEffectType);
                 }
-                if(player.getActivePotionEffects().stream().noneMatch(effect -> effect.getType().equals(potionEffectType) && effect.getAmplifier() > dataEffect.secondValue())){
+                if(player.getActivePotionEffects().stream().noneMatch(effect -> effect.getType().equals(potionEffectType) && effect.getAmplifier() > amplifier)){
                     player.removePotionEffect(potionEffectType);
-                    player.addPotionEffect(new PotionEffect(potionEffectType,-1, dataEffect.secondValue(), false, false, true));
+                    player.addPotionEffect(new PotionEffect(potionEffectType,-1, amplifier, false, false, true));
                 }
             }
         });
@@ -235,7 +240,7 @@ public class CustomPlayer extends minecraftcivilizations.com.minecraftCivilizati
     public SkillLevel getSkillLevelEnumByXpOnly(SkillType skillType) {
         double xp = getSkill(skillType).getXp();
         int level = 0;
-        while (level < SkillLevel.values().length && xp >= Skill.getXPNeededForLevel(level + 1)) {
+        while (level < SkillLevel.values().length && xp >= getXPNeededForLevel(level + 1)) {
             level++;
         }
         return SkillLevel.getSkillLevelFromInt(level);
@@ -291,7 +296,7 @@ public class CustomPlayer extends minecraftcivilizations.com.minecraftCivilizati
     }
 
     private boolean isMissingPercentForLevel(SkillType skillType, int level) {
-        return getPercentOfTotal(skillType) < SpecializationConfig.getSkillRequirementsConfig().get(skillType + "_" + SkillLevel.getSkillLevelFromInt(level) + "_REQUIREMENT", Double.class);
+        return getPercentOfTotal(skillType) < SpecializationConfig.getSkillRequirementsConfig().getDouble(skillType + "_" + SkillLevel.getSkillLevelFromInt(level) + "_REQUIREMENT");
     }
 
     public double getGUIDistributionOfTotalSkills(SkillType skillType) {
@@ -304,8 +309,8 @@ public class CustomPlayer extends minecraftcivilizations.com.minecraftCivilizati
         double XPMax = getXPNeededForLevel(level + 1);
 
         Skill skill = getSkill(skillType);
-        double percentageNeededMin = SpecializationConfig.getSkillRequirementsConfig().get(skill.getSkillType() + "_" + SkillLevel.getSkillLevelFromInt(level) + "_REQUIREMENT", Double.class);
-        double percentageNeededMax = SpecializationConfig.getSkillRequirementsConfig().get(skill.getSkillType() + "_" + SkillLevel.getSkillLevelFromInt(level + 1) + "_REQUIREMENT", Double.class);
+        double percentageNeededMin = SpecializationConfig.getSkillRequirementsConfig().getDouble(skill.getSkillType() + "_" + SkillLevel.getSkillLevelFromInt(level) + "_REQUIREMENT");
+        double percentageNeededMax = SpecializationConfig.getSkillRequirementsConfig().getDouble(skill.getSkillType() + "_" + SkillLevel.getSkillLevelFromInt(level + 1) + "_REQUIREMENT");
         double currentPercentage = getPercentOfTotal(skillType);
 
         double XPProgressAsPercentage;
@@ -344,7 +349,7 @@ public class CustomPlayer extends minecraftcivilizations.com.minecraftCivilizati
             }
             lastDowned = System.currentTimeMillis();
             new BukkitRunnable() {
-                final double totalTime = SpecializationConfig.getDownedConfig().get("TIME_TO_DEATH_IN_TICKS", Double.class);
+                final double totalTime = SpecializationConfig.getDownedConfig().getDouble("TIME_TO_DEATH_IN_TICKS");
                 double currentTime = 0;
                 @Override
                 public void run() {

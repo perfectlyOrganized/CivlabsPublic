@@ -88,7 +88,7 @@ public class LocalChat implements Listener {
 
         String fmt = SpecializationConfig
                 .getChatConfig()
-                .get("DEFAULT_FORMAT", String.class);
+                .getString("DEFAULT_FORMAT");
 
         Bukkit.getScheduler().runTask(Specialization.getInstance(), () -> {
             for (Player near : getNearbyPlayers(p)) {
@@ -106,14 +106,14 @@ public class LocalChat implements Listener {
     private boolean handleGlobalChat(Player p, String msg) {
         String prefix = SpecializationConfig
                 .getChatConfig()
-                .get("ANNOUNCEMENT_PREFIX", String.class);
+                .getString("ANNOUNCEMENT_PREFIX");
 
         if (!msg.startsWith(prefix) || !p.isOp()) return false;
 
         String actual = msg.substring(prefix.length()).trim();
         String fmt = SpecializationConfig
                 .getChatConfig()
-                .get("ANNOUNCEMENT_FORMAT", String.class);
+                .getString("ANNOUNCEMENT_FORMAT");
 
         Bukkit.getOnlinePlayers()
                 .forEach(pl -> pl.sendRichMessage(fmt.formatted(actual)));
@@ -124,7 +124,7 @@ public class LocalChat implements Listener {
     private List<Player> getNearbyPlayers(Player p) {
         double r = SpecializationConfig
                 .getChatConfig()
-                .get("CHAT_RADIUS", Double.class);
+                .getDouble("CHAT_RADIUS");
 
         return p.getNearbyEntities(r, r, r)
                 .stream()

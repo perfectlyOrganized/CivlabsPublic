@@ -87,14 +87,14 @@ public class PlayerMineListener implements Listener {
     }
 
     private double getBlockBreakMultiplier(org.bukkit.block.Block block) {
-        double multiplier = SpecializationConfig.getBlockHardnessConfig().get(block.getType(), Double.class);
+        double multiplier = SpecializationConfig.getBlockHardnessConfig().getDouble(block.getType().toString());
         
 
         if (ReinforcementManager.isLightlyReinforced(block)) {
-            multiplier = SpecializationConfig.getReinforcementConfig().get("LIGHT_REINFORCEMENT_MULTIPLIER", Double.class);
+            multiplier = SpecializationConfig.getReinforcementConfig().getDouble("LIGHT_REINFORCEMENT_MULTIPLIER");
         }
         if (ReinforcementManager.isHeavilyReinforced(block)) {
-            multiplier = SpecializationConfig.getReinforcementConfig().get("HEAVY_REINFORCEMENT_MULTIPLIER", Double.class);;
+            multiplier = SpecializationConfig.getReinforcementConfig().getDouble("HEAVY_REINFORCEMENT_MULTIPLIER");;
         }
         
         return multiplier;

@@ -66,12 +66,9 @@ public class BreakBlockListener implements Listener {
         AttributeInstance breakSpeedAttr = event.getPlayer().getAttribute(Attribute.BLOCK_BREAK_SPEED);
 
         if (breakSpeedAttr != null) {
-            breakSpeedAttr.setBaseValue(SpecializationConfig.getBlockHardnessConfig().get(event.getBlock().getType(), Double.class));
-            Pair<SkillType, Double> pair = SpecializationConfig.getXpGainFromBreakingConfig().get(event.getBlock().getType(), new TypeToken<>() {
-            });
-            if (pair == null) {
-                Specialization.getInstance().getLogger().warning("No XP gain configuration found for broken block: " + event.getBlock().getType());
-            }
+            breakSpeedAttr.setBaseValue(SpecializationConfig.getBlockHardnessConfig().getDouble(event.getBlock().getType().toString()));
+
+            Pair<SkillType, Double> pair = SkillType.getSkillXpFromConfig(SpecializationConfig.getXpGainFromBreakingConfig(), event.getBlock().getType().toString());
             CustomPlayer player = CoreUtil.getPlayer(event.getPlayer().getUniqueId());
             BlockData blockData = event.getBlock().getBlockData();
 
@@ -79,13 +76,13 @@ public class BreakBlockListener implements Listener {
                 handleReinforcedDrop(event.getBlock(), event.getPlayer());
             }
 
-            if (pair != null && pair.firstValue() != null && pair.secondValue() != null) {
+            if (pair != null && pair.key() != null && pair.value() != null) {
                 if (blockData instanceof Ageable age) {
                     if (age.getMaximumAge() == age.getAge()) {
-                        player.addSkillXp(pair.firstValue(), pair.secondValue(), event.getBlock().getLocation());
+                        player.addSkillXp(pair.key(), pair.value(), event.getBlock().getLocation());
                     }
                 } else {
-                    player.addSkillXp(pair.firstValue(), pair.secondValue(), event.getBlock().getLocation());
+                    player.addSkillXp(pair.key(), pair.value(), event.getBlock().getLocation());
                 }
             }
         }
@@ -119,8 +116,8 @@ public class BreakBlockListener implements Listener {
     public void minerListener(BlockBreakEvent event) {
         CustomPlayer player = CoreUtil.getPlayer(event.getPlayer());
         Material materialName = event.getBlock().getType();
-        SkillLevel skillRequired = SpecializationConfig.getCanMinerLvlBreakConfig().get(materialName.toString(), new TypeToken<>() {
-        });
+        SkillLevel skillRequired = SkillLevel.valueOf(SpecializationConfig.getCanMinerLvlBreakConfig().getString(materialName.toString()));
+
         if (skillRequired != null && player.getSkillLevel(SkillType.MINER) < skillRequired.getLevel()) {
             event.setDropItems(false);
             if (event.getPlayer().getGameMode() == GameMode.SURVIVAL)
@@ -131,8 +128,7 @@ public class BreakBlockListener implements Listener {
     public void farmerListener(BlockBreakEvent event) {
         CustomPlayer player = CoreUtil.getPlayer(event.getPlayer());
         Material materialName = event.getBlock().getType();
-        SkillLevel skillRequired = SpecializationConfig.getCanFarmerBreakConfig().get(materialName.toString(), new TypeToken<>() {
-        });
+        SkillLevel skillRequired = SkillLevel.valueOf(SpecializationConfig.getCanFarmerBreakConfig().getString(materialName.toString()));
 
         if (skillRequired != null && player.getSkillLevel(SkillType.FARMER) < skillRequired.getLevel()) {
             event.setDropItems(false);
@@ -140,7 +136,7 @@ public class BreakBlockListener implements Listener {
         }
 
         List<Material> otherFarmables = List.of(Material.COCOA_BEANS, Material.SUGAR_CANE, Material.CACTUS, Material.MELON, Material.PUMPKIN);
-        double chance = SpecializationConfig.getFarmerConfig().get("FARMER_GET_DROPS_CHANCE_" + player.getSkillLevelEnum(SkillType.FARMER), Double.class);
+        double chance = SpecializationConfig.getFarmerConfig().getDouble("FARMER_GET_DROPS_CHANCE_" + player.getSkillLevelEnum(SkillType.FARMER));
         double random = Math.random();
 
         if (random < chance) {
@@ -185,9 +181,9 @@ public class BreakBlockListener implements Listener {
             boolean heavy = isHeavilyReinforced(block);
             double factor;
             if(heavy){
-                factor = SpecializationConfig.getReinforcementConfig().get("HEAVY_EXPLOSION_RESISTANCE", Double.class);
+                factor = SpecializationConfig.getReinforcementConfig().getDouble("HEAVY_EXPLOSION_RESISTANCE");
             }else{
-                factor = SpecializationConfig.getReinforcementConfig().get("LIGHT_EXPLOSION_RESISTANCE", Double.class);
+                factor = SpecializationConfig.getReinforcementConfig().getDouble("LIGHT_EXPLOSION_RESISTANCE");
             }
             if(Math.random() < factor){
                 blocks.remove(block); //this removes the block from the event

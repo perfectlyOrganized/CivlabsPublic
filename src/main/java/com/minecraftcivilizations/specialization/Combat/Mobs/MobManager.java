@@ -7,6 +7,7 @@ import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.minecraftcivilizations.specialization.util.CoreUtil;
 import com.minecraftcivilizations.specialization.util.WorldUtils;
+import lombok.extern.slf4j.Slf4j;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -48,6 +49,7 @@ import static com.minecraftcivilizations.specialization.util.MathUtils.*;
  * @see MobOverrideRule for individual rules for converting a mob into a variant
  * @see MobVariation for specific entity profile settings
  */
+@Slf4j
 public class MobManager implements Listener {
 
     public static final String TAKEDOWN_CHANCE = "takedown chance: ";

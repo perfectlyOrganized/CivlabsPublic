@@ -41,8 +41,8 @@ public class LocatorBarManager implements Listener {
     }
 
     public void initializePlayerLocatorBar(Player player) {
-        double defaultReceiveRange = SpecializationConfig.getLocatorBarConfig().get("DEFAULT_RECEIVE_RANGE", Double.class);
-        double defaultTransmitRange = SpecializationConfig.getLocatorBarConfig().get("DEFAULT_TRANSMIT_RANGE", Double.class);
+        double defaultReceiveRange = SpecializationConfig.getLocatorBarConfig().getDouble("DEFAULT_RECEIVE_RANGE");
+        double defaultTransmitRange = SpecializationConfig.getLocatorBarConfig().getDouble("DEFAULT_TRANSMIT_RANGE");
         
         try {
             player.getAttribute(Attribute.WAYPOINT_RECEIVE_RANGE).setBaseValue(defaultReceiveRange);
@@ -60,7 +60,7 @@ public class LocatorBarManager implements Listener {
      * @param durationTicks How long the visibility lasts
      */
     public void grantTemporaryVisibility(Player observer, Entity target, int durationTicks) {
-        if (!SpecializationConfig.getLocatorBarConfig().get("LOCATOR_BAR_ENABLED", Boolean.class)) {
+        if (!SpecializationConfig.getLocatorBarConfig().getBoolean("LOCATOR_BAR_ENABLED")) {
             return;
         }
 
@@ -71,7 +71,7 @@ public class LocatorBarManager implements Listener {
                           .put(targetId, System.currentTimeMillis() + (durationTicks * 50L));
         
         if (target instanceof LivingEntity livingTarget) {
-            double visibilityRange = SpecializationConfig.getLocatorBarConfig().get("TEMPORARY_VISIBILITY_RANGE", Double.class);
+            double visibilityRange = SpecializationConfig.getLocatorBarConfig().getDouble("TEMPORARY_VISIBILITY_RANGE");
             
             try {
                 livingTarget.getAttribute(Attribute.WAYPOINT_TRANSMIT_RANGE).setBaseValue(visibilityRange);
@@ -81,7 +81,7 @@ public class LocatorBarManager implements Listener {
             }
         }
         
-        double observerRange = SpecializationConfig.getLocatorBarConfig().get("OBSERVER_RECEIVE_RANGE", Double.class);
+        double observerRange = SpecializationConfig.getLocatorBarConfig().getDouble("OBSERVER_RECEIVE_RANGE");
         
         try {
             observer.getAttribute(Attribute.WAYPOINT_RECEIVE_RANGE).setBaseValue(observerRange);
@@ -102,7 +102,7 @@ public class LocatorBarManager implements Listener {
     }
 
     public void setPlayerReceiveRange(Player player, double range) {
-        if (!SpecializationConfig.getLocatorBarConfig().get("LOCATOR_BAR_ENABLED", Boolean.class)) {
+        if (!SpecializationConfig.getLocatorBarConfig().getBoolean("LOCATOR_BAR_ENABLED")) {
             return;
         }
 
@@ -110,7 +110,7 @@ public class LocatorBarManager implements Listener {
     }
 
     public void setEntityTransmitRange(LivingEntity entity, double range) {
-        if (!SpecializationConfig.getLocatorBarConfig().get("LOCATOR_BAR_ENABLED", Boolean.class)) {
+        if (!SpecializationConfig.getLocatorBarConfig().getBoolean("LOCATOR_BAR_ENABLED")) {
             return;
         }
 
@@ -130,7 +130,7 @@ public class LocatorBarManager implements Listener {
         if (observerGrants != null) {
             observerGrants.remove(targetId);
             if (observerGrants.isEmpty()) {
-                double defaultReceiveRange = SpecializationConfig.getLocatorBarConfig().get("DEFAULT_RECEIVE_RANGE", Double.class);
+                double defaultReceiveRange = SpecializationConfig.getLocatorBarConfig().getDouble("DEFAULT_RECEIVE_RANGE");
                 observer.getAttribute(Attribute.WAYPOINT_RECEIVE_RANGE).setBaseValue(defaultReceiveRange);
                 temporaryVisibility.remove(observerId);
             }
@@ -138,7 +138,7 @@ public class LocatorBarManager implements Listener {
 
         // Reset target's transmit range to default
         if (target instanceof LivingEntity livingTarget) {
-            double defaultTransmitRange = SpecializationConfig.getLocatorBarConfig().get("DEFAULT_TRANSMIT_RANGE", Double.class);
+            double defaultTransmitRange = SpecializationConfig.getLocatorBarConfig().getDouble("DEFAULT_TRANSMIT_RANGE");
             livingTarget.getAttribute(Attribute.WAYPOINT_TRANSMIT_RANGE).setBaseValue(defaultTransmitRange);
         }
     }

@@ -8,6 +8,7 @@ import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
+import com.typesafe.config.ConfigException;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Item.ItemUtils;
 import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Options.Pair;
@@ -32,10 +33,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -139,12 +137,18 @@ public class CraftingListener implements Listener {
             Debug.broadcast("analytics", player.getName() + " crafted complex item: " + crafted.getType() + " x" + amount);
         }
 
-        Pair<SkillType, Double> xp_gain_pair = SpecializationConfig.getXpGainFromCraftingConfig()
-                .get(crafted.getType(), new TypeToken<>() {});
-
-        if (xp_gain_pair == null) {
-            plugin.getLogger().warning("No XP gain configuration found for crafted item: " + crafted.getType());
+        Double xp = 0.0;
+        SkillType skillType = SkillType.BLACKSMITH;
+        for (SkillType skill : SkillType.values()) {
+            try {
+                xp = SpecializationConfig.getXpGainFromCraftingConfig().getDouble(skill.name() + "." + crafted.getType());
+            } catch(ConfigException.Missing _) {}
+            if (xp != 0) {
+                skillType = skill;
+                break;
+            }
         }
+
         int craftedAmount = getCraftedAmount(event);
 
         String amtstring = craftedAmount+"x ";
@@ -156,7 +160,7 @@ public class CraftingListener implements Listener {
         CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
 
 
-        int lvl = (int)Math.max((double)customPlayer.getSkillLevel(xp_gain_pair.firstValue()), (double)customPlayer.getSkillLevel(SkillType.BLACKSMITH)*1.5);
+        int lvl = (int)Math.max((double)customPlayer.getSkillLevel(skillType), (double)customPlayer.getSkillLevel(SkillType.BLACKSMITH)*1.5);
         if(lvl>5)lvl = 5;
         double skill_benefit = (5-((double)lvl)/1.5);
         double base_reduction = getFoodReduction(crafted.getType());
@@ -243,17 +247,18 @@ public class CraftingListener implements Listener {
             Debug.broadcast(isolated_debug_channel, debug_isolated
                     .append(Debug.formatLocationClickable(player.getLocation(), true)), hover);
         }
-        SpecializationCraftItemEvent new_event = new SpecializationCraftItemEvent(event, player, craftedAmount, totalReduction, xp_gain_pair.firstValue(), lvl);
+        SpecializationCraftItemEvent new_event = new SpecializationCraftItemEvent(event, player, craftedAmount, totalReduction, skillType, lvl);
         Bukkit.getPluginManager().callEvent(new_event);
-        if (xp_gain_pair.firstValue() != null && xp_gain_pair.secondValue() != null) {
-            double xpToGive = xp_gain_pair.secondValue() * craftedAmount;
+        if (xp != 0) {
+            double xpToGive = xp * craftedAmount;
 
             int finalReduction = Math.max(totalReduction, 1);
+            SkillType finalSkillType = skillType;
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 if (player.isOnline()) {
                     player.setFoodLevel(player.getFoodLevel() - finalReduction);
                     if(!new_event.isXpCancelled()) {
-                        customPlayer.addSkillXp(xp_gain_pair.firstValue(), xpToGive);
+                        customPlayer.addSkillXp(finalSkillType, xpToGive);
                     }
                 }
             }, 1L);
@@ -594,9 +599,8 @@ public class CraftingListener implements Listener {
         for (SkillType skillType : SkillType.values()) {
             for (SkillLevel skillLevel : SkillLevel.values()) {
                 String configKey = skillType + "_" + skillLevel;
-                Set<NamespacedKey> skillRecipes = SpecializationConfig.getUnlockedRecipesConfig()
-                        .get(configKey, new TypeToken<>() {
-                        });
+                Set<NamespacedKey> skillRecipes = new HashSet<>(SpecializationConfig.getUnlockedRecipesConfig()
+                        .getStringList(configKey).stream().map(NamespacedKey::fromString).toList());
 
                 if (skillRecipes != null && skillRecipes.contains(recipeKey)) {
                     return customPlayer.getSkillLevel(skillType) < skillLevel.ordinal();
