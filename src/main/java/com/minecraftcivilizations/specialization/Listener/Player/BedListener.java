@@ -235,9 +235,9 @@ public class BedListener implements Listener {
     }
 
     //-----------BED HEALING ---------------------//
-    private static final double NIGHT_HEAL_CAP = SpecializationConfig.getHealthConfig().get("SLEEP_REGEN_CAP", double.class); // 2.5 hearts
-    private static final long BED_HEAL_INTERVAL = SpecializationConfig.getHealthConfig().get("SLEEP_REGEN_TICK_SPEED", long.class); // ticks between heals
-    private static final boolean LIMIT_SLEEP_REGEN_PER_DAY =  SpecializationConfig.getHealthConfig().get("LIMIT_SLEEP_REGEN_PER_DAY", boolean.class);
+    private static final double NIGHT_HEAL_CAP = SpecializationConfig.getHealthConfig().getDouble("SLEEP_REGEN_CAP"); // 2.5 hearts
+    private static final long BED_HEAL_INTERVAL = SpecializationConfig.getHealthConfig().getInteger("SLEEP_REGEN_TICK_SPEED"); // ticks between heals
+    private static final boolean LIMIT_SLEEP_REGEN_PER_DAY =  SpecializationConfig.getHealthConfig().getBoolean("LIMIT_SLEEP_REGEN_PER_DAY");
     private final Map<UUID, BedHealingTasks> bedHealTasks = new HashMap<>();
     private final Map<UUID, Long> lastHealDay = new HashMap<>();     // MC day index
     private final Map<UUID, Double> healedThisDay = new HashMap<>(); // healed today

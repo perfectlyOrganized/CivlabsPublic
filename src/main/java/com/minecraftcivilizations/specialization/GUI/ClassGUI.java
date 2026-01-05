@@ -157,8 +157,8 @@ public class ClassGUI extends GUI {
                 double currentXp = Math.round(skill.getXp() * 100) / 100D;
                 double xpToNextLevel = Math.round((Skill.getXPNeededForLevel(currentSkillLevel + 1) - skill.getXp()) * 100) / 100D ;
                 double percentOfTotalForNextLevel = Math.round(
-                        SpecializationConfig.getSkillRequirementsConfig().get(
-                                skill.getSkillType() + "_" + SkillLevel.getSkillLevelFromInt(currentSkillLevel + 1) + "_REQUIREMENT", Double.TYPE) * 100) / 100D;
+                        SpecializationConfig.getSkillRequirementsConfig().getDouble(
+                                skill.getSkillType() + "_" + SkillLevel.getSkillLevelFromInt(currentSkillLevel + 1) + "_REQUIREMENT") * 100) / 100D;
 
                 ItemStack itemStack = ItemStack.of(skill.getSkillType().getSkillWorkstation());
                 ItemMeta itemMeta = itemStack.getItemMeta();
@@ -248,7 +248,7 @@ public class ClassGUI extends GUI {
             }
 
             double currentXp = Math.round(skill.getXp() * 100) / 100D;
-            double percentOfTotalForNextLevel = Math.round(SpecializationConfig.getSkillRequirementsConfig().get(skill.getSkillType() + "_" + SkillLevel.getSkillLevelFromInt(currentSkillLevel + 1) + "_REQUIREMENT", Double.class) * 100) / 100D;
+            double percentOfTotalForNextLevel = Math.round(SpecializationConfig.getSkillRequirementsConfig().getDouble(skill.getSkillType() + "_" + SkillLevel.getSkillLevelFromInt(currentSkillLevel + 1) + "_REQUIREMENT") * 100) / 100D;
             double xpToNextLevel = Math.max(
                     Math.round((Skill.getXPNeededForLevel(currentSkillLevel + 1) - skill.getXp()) * 100) / 100D,
                     Math.round((percentOfTotalForNextLevel / 100 * customPlayer.getTotalXp() - currentXp) / (1.0 - percentOfTotalForNextLevel / 100))

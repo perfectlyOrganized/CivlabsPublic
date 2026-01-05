@@ -37,17 +37,17 @@ public class CrossBowListener implements Listener {
         
         Arrow arrow = (Arrow) projectile;
 
-        double baseVelocity = SpecializationConfig.getCombatConfig().get("CROSSBOW_BASE_VELOCITY", Double.class);
+        double baseVelocity = SpecializationConfig.getCombatConfig().getDouble("CROSSBOW_BASE_VELOCITY");
         arrow.setVelocity(arrow.getVelocity().multiply(baseVelocity));
 
         if (bow.containsEnchantment(Enchantment.MULTISHOT)) {
-            double multishotVelocity = SpecializationConfig.getCombatConfig().get("CROSSBOW_BASE_MULTISHOT_VELOCITY", Double.class);
+            double multishotVelocity = SpecializationConfig.getCombatConfig().getDouble("CROSSBOW_BASE_MULTISHOT_VELOCITY");
             arrow.setVelocity(arrow.getVelocity().multiply(multishotVelocity));
         } else if (bow.containsEnchantment(Enchantment.PIERCING)) {
-            double piercingVelocity = SpecializationConfig.getCombatConfig().get("CROSSBOW_BASE_PIERCING_VELOCITY", Double.class);
+            double piercingVelocity = SpecializationConfig.getCombatConfig().getDouble("CROSSBOW_BASE_PIERCING_VELOCITY");
             arrow.setVelocity(arrow.getVelocity().multiply(piercingVelocity));
         } else if (bow.containsEnchantment(Enchantment.QUICK_CHARGE)) {
-            double quickChargeVelocity = SpecializationConfig.getCombatConfig().get("CROSSBOW_BASE_QUICKCHARGE_VELOCITY", Double.class);
+            double quickChargeVelocity = SpecializationConfig.getCombatConfig().getDouble("CROSSBOW_BASE_QUICKCHARGE_VELOCITY");
             arrow.setVelocity(arrow.getVelocity().multiply(quickChargeVelocity));
         }
     }

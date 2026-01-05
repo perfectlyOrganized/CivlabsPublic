@@ -30,7 +30,7 @@ public class TargetPlayerMobGoal implements Goal<Monster> {
 
     @Override
     public void start() {
-        int targetRange = SpecializationConfig.getMobConfig().get("MOB_RULE_TARGET_RANGE", Integer.class);
+        int targetRange = SpecializationConfig.getMobConfig().getInteger("MOB_RULE_TARGET_RANGE");
         monster.getLocation().getNearbyPlayers(targetRange).stream()
                 .min((p1, p2) -> {
                     CustomPlayer player1 = CoreUtil.getPlayer(p1);

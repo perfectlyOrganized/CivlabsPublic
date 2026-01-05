@@ -60,7 +60,7 @@ public class RightClickListener implements Listener {
 
         if (player.getInventory().getItemInMainHand().getType() == Material.COPPER_INGOT) {
             CustomPlayer customPlayer = CoreUtil.getPlayer(player.getUniqueId());
-            if (customPlayer.getSkillLevel(SkillType.BUILDER) >= SpecializationConfig.getReinforcementConfig().get("LIGHT_REINFORCEMENT_LEVEL", Integer.class)) {
+            if (customPlayer.getSkillLevel(SkillType.BUILDER) >= SpecializationConfig.getReinforcementConfig().getInteger("LIGHT_REINFORCEMENT_LEVEL")) {
                 List<Block> blocks = getMultiBlocks(clicked);
                 boolean success = false;
                 for (Block block : blocks) {
@@ -77,7 +77,7 @@ public class RightClickListener implements Listener {
         } else if (player.getInventory().getItemInMainHand().getType() == Material.IRON_INGOT) {
             CustomPlayer customPlayer = CoreUtil.getPlayer(player.getUniqueId());
 
-            if (customPlayer.getSkillLevel(SkillType.BUILDER) >= SpecializationConfig.getReinforcementConfig().get("HEAVY_REINFORCEMENT_LEVEL", Integer.class)) {
+            if (customPlayer.getSkillLevel(SkillType.BUILDER) >= SpecializationConfig.getReinforcementConfig().getInteger("HEAVY_REINFORCEMENT_LEVEL")) {
                 List<Block> blocks = getMultiBlocks(clicked);
                 boolean success = false;
                 for (Block block : blocks) {

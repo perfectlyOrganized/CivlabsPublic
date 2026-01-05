@@ -6,6 +6,7 @@ import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.util.CoreUtil;
+import com.typesafe.config.Config;
 import lombok.NonNull;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
@@ -95,10 +96,10 @@ public class Berserk implements Listener {
         for (PotionEffectType potionEffectType : Registry.MOB_EFFECT) {
             try {
                 NamespacedKey effectKey = potionEffectType.getKey();
-                PotionEffectData effectData = SpecializationConfig.getBerserkConfig()
-                        .get(effectKey, new TypeToken<>() {});
+                Config rawEffectData = SpecializationConfig.getBerserkConfig().getObject(effectKey.toString());
+                PotionEffectData effectData = new PotionEffectData(rawEffectData.getInt("amplifier"), rawEffectData.getInt("duration"));
 
-                if (effectData != null && effectData.amplifier() > 0 && effectData.duration() > 0) {
+                if (effectData.amplifier() > 0 && effectData.duration() > 0) {
                     player.addPotionEffect(new PotionEffect(
                             potionEffectType,
                             effectData.duration(),
