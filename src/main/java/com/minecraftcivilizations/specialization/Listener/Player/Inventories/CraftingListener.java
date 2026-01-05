@@ -615,22 +615,42 @@ public class CraftingListener implements Listener {
     public static boolean shouldBlockRecipe(Player player, NamespacedKey recipeKey) {
         CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance()
                 .getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
-        if(customPlayer.getAdditionUnlockedRecipes() != null && customPlayer.getAdditionUnlockedRecipes().contains(recipeKey)) return false;
 
-        // Check if recipe is in any skill-specific unlocked recipes config
+        if(customPlayer.getAdditionUnlockedRecipes() != null &&
+                customPlayer.getAdditionUnlockedRecipes().contains(recipeKey)) {
+            return false;
+        }
+
+        List<Pair<SkillType, SkillLevel>> recipeRequirements = new ArrayList<>();
         for (SkillType skillType : SkillType.values()) {
             for (SkillLevel skillLevel : SkillLevel.values()) {
                 String configKey = skillType + "_" + skillLevel;
                 Set<NamespacedKey> skillRecipes = new HashSet<>(SpecializationConfig.getUnlockedRecipesConfig()
                         .getStringList(configKey).stream().map(NamespacedKey::fromString).toList());
 
-                if (skillRecipes != null && skillRecipes.contains(recipeKey)) {
-                    return customPlayer.getSkillLevel(skillType) < skillLevel.ordinal();
+                if (skillRecipes.contains(recipeKey)) {
+                    recipeRequirements.add(new Pair<>(skillType, skillLevel));
                 }
             }
         }
 
-        // Recipe is not in any skill config - allow it
-        return false;
+        // If recipe is not in any skill config - allow it (no restrictions)
+        if (recipeRequirements.isEmpty()) {
+            return false;
+        }
+
+        // Check if player meets ANY of the requirements
+        for (Pair<SkillType, SkillLevel> requirement : recipeRequirements) {
+            SkillType requiredSkill = requirement.key();
+            SkillLevel requiredLevel = requirement.value();
+
+            // If player's skill level meets or exceeds the requirement for this skill type
+            if (customPlayer.getSkillLevel(requiredSkill) >= requiredLevel.ordinal()) {
+                return false; // Player qualifies through at least one skill, don't block
+            }
+        }
+
+        // Player doesn't meet ANY of the requirements, block the recipe
+        return true;
     }
 }
