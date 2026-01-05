@@ -45,7 +45,6 @@ import java.util.Map;
  */
 public class DefineCustomItems implements Listener {
     NamespacedKey MACE_KEY = new NamespacedKey("specialization", "is_mace");
-    NamespacedKey MACE_KEY = new NamespacedKey("specialization", "is_mace");
 
     public Bandage bandage;
     public DefineCustomItems(Specialization plugin) {

@@ -13,10 +13,11 @@ import com.typesafe.config.ConfigException;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Item.ItemUtils;
 import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Options.Pair;
-import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.momirealms.craftengine.bukkit.api.CraftEngineItems;
+import net.momirealms.craftengine.core.util.Key;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -87,6 +88,7 @@ public class CraftingListener implements Listener {
     public CraftingListener(Plugin plugin) {
         this.plugin = plugin;
     }
+
     public void woolToStringTooCheck(CraftItemEvent event) {
         ItemStack[] matrix = event.getInventory().getMatrix();
 
@@ -95,7 +97,7 @@ public class CraftingListener implements Listener {
                 ItemStack shears = matrix[i].clone();
                 ItemMeta itemMeta = shears.getItemMeta();
                 if (itemMeta instanceof Damageable damage) {
-                    int durability = damage.getDamage()+1;
+                    int durability = damage.getDamage() + 1;
                     damage.setDamage(durability);
                     shears.setItemMeta(damage);
                     if (!damage.hasMaxDamage() || durability < damage.getMaxDamage()) {
@@ -119,29 +121,7 @@ public class CraftingListener implements Listener {
         }
         return "";
     }
-    public void woolToStringTooCheck(CraftItemEvent event) {
-        ItemStack[] matrix = event.getInventory().getMatrix();
 
-        for (int i = 0; i < matrix.length; i++) {
-            if (matrix[i] != null && matrix[i].getType() == Material.SHEARS) {
-                ItemStack shears = matrix[i].clone();
-                ItemMeta itemMeta = shears.getItemMeta();
-                if (itemMeta instanceof Damageable damage) {
-                    int durability = damage.getDamage()+1;
-                    damage.setDamage(durability);
-                    shears.setItemMeta(damage);
-                    if (!damage.hasMaxDamage() || durability < damage.getMaxDamage()) {
-                        int finalI = i;
-                        Bukkit.getScheduler().runTaskLater(Specialization.getInstance(), () -> {
-                            event.getInventory().setItem(finalI + 1, shears);
-                        }, 1L);
-                    }
-
-                }
-            }
-
-        }
-    }
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onCraft(CraftItemEvent event) {
         if (!(event.getWhoClicked() instanceof Player player) || event.getCurrentItem() == null) return;
@@ -174,8 +154,14 @@ public class CraftingListener implements Listener {
         Double xp = 0.0;
         SkillType skillType = SkillType.BLACKSMITH;
         for (SkillType skill : SkillType.values()) {
+            String itemName = "";
+            if (CraftEngineItems.isCustomItem(crafted)) {
+                itemName = CraftEngineItems.getCustomItemId(crafted).toString().toUpperCase(Locale.ROOT).replace(":","_");
+            } else {
+                itemName = crafted.getType().key().value().toUpperCase(Locale.ROOT);
+            }
             try {
-                xp = SpecializationConfig.getXpGainFromCraftingConfig().getDouble(skill.name() + "." + crafted.getType());
+                xp = SpecializationConfig.getXpGainFromCraftingConfig().getDouble(skill.name() + "." + itemName);
             } catch(ConfigException.Missing _) {}
             if (xp != 0) {
                 skillType = skill;
