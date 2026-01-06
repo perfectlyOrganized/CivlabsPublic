@@ -10,6 +10,9 @@ import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Item.CustomItem;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.momirealms.craftengine.bukkit.api.CraftEngineItems;
+import net.momirealms.craftengine.core.plugin.locale.TranslationManager;
+import net.momirealms.craftengine.core.util.Key;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -170,33 +173,40 @@ public class FoodInteractionListener implements Listener {
     }
 
     private void blessFood(ItemStack item, int healerLevel) {
-        String pretty = getItemName(item);
-        CustomItem customItem = new CustomItem(item.getType(),
-                Component.text("Blessed " + pretty).color(NamedTextColor.GOLD));
+        String itemname = getItemName(item);
+        CustomItem customItem = null;
 
-        String effectSummary;
-        if (healerLevel >= SkillLevel.GRANDMASTER.getLevel()) {
-            effectSummary = "Regeneration I 20s, Absorption I 20s";
-        } else if (healerLevel >= SkillLevel.MASTER.getLevel()) {
-            effectSummary = "Regeneration I 15s, Absorption I 15s";
-        } else if (healerLevel >= SkillLevel.EXPERT.getLevel()) {
-            effectSummary = "Regeneration I 10s, Absorption I 10s";
-        } else { // Journeyman
-            effectSummary = "Regeneration I 5s, Absorption I 5s";
+        if (CraftEngineItems.isCustomItem(item)) {
+            customItem = new CustomItem(item,
+                    Component.text("Blessed " + itemname).color(NamedTextColor.GOLD));
+        } else {
+
+            customItem = new CustomItem(item.getType(),
+                    Component.text("Blessed " + itemname).color(NamedTextColor.GOLD));
         }
 
-        customItem.addLore(Specialization.getInstance(), List.of(
-                Component.empty(),
-                Component.text("Blessed Food").color(NamedTextColor.YELLOW),
-                Component.text("Healer Level: " + healerLevel).color(NamedTextColor.GRAY),
-                Component.text(effectSummary).color(NamedTextColor.GRAY)
-        ));
-        ItemMeta meta = customItem.getItem().getItemMeta();
-        meta.setEnchantmentGlintOverride(true); //glowing food
-        meta.getPersistentDataContainer().set(BLESSED_FOOD_KEY, PersistentDataType.BOOLEAN, true);
-        item.setItemMeta(meta);
-    }
+            String effectSummary;
+            if (healerLevel >= SkillLevel.GRANDMASTER.getLevel()) {
+                effectSummary = "Regeneration I 20s, Absorption I 20s";
+            } else if (healerLevel >= SkillLevel.MASTER.getLevel()) {
+                effectSummary = "Regeneration I 15s, Absorption I 15s";
+            } else if (healerLevel >= SkillLevel.EXPERT.getLevel()) {
+                effectSummary = "Regeneration I 10s, Absorption I 10s";
+            } else { // Journeyman
+                effectSummary = "Regeneration I 5s, Absorption I 5s";
+            }
 
+            customItem.addLore(Specialization.getInstance(), List.of(
+                    Component.empty(),
+                    Component.text("Blessed Food").color(NamedTextColor.YELLOW),
+                    Component.text("Healer Level: " + healerLevel).color(NamedTextColor.GRAY),
+                    Component.text(effectSummary).color(NamedTextColor.GRAY)
+            ));
+            ItemMeta meta = customItem.getItem().getItemMeta();
+            meta.setEnchantmentGlintOverride(true); //glowing food
+            meta.getPersistentDataContainer().set(BLESSED_FOOD_KEY, PersistentDataType.BOOLEAN, true);
+            item.setItemMeta(meta);
+        }
 
 
 
@@ -305,6 +315,14 @@ public class FoodInteractionListener implements Listener {
         String materialName = item.getType().name();
         String[] words = materialName.toLowerCase().split("_");
         StringBuilder result = new StringBuilder();
+
+        if (CraftEngineItems.isCustomItem(item)) {
+            Key itemId = CraftEngineItems.getCustomItemId(item);
+            if (itemId != null) {
+                String translationKey = "item." + itemId.value();
+                return TranslationManager.instance().miniMessageTranslation(translationKey);
+            }
+        }
         for (String word : words) {
             if (result.length() > 0) result.append(" ");
             result.append(word.substring(0, 1).toUpperCase()).append(word.substring(1));
