@@ -1,5 +1,10 @@
 package com.minecraftcivilizations.specialization;
 
+import com.minecraftcivilizations.specialization.CraftEngine.MusketBehavior;
+import net.momirealms.craftengine.bukkit.item.behavior.BukkitItemBehaviors;
+import net.momirealms.craftengine.core.item.behavior.ItemBehaviors;
+import net.momirealms.craftengine.core.plugin.CraftEngine;
+import net.momirealms.craftengine.core.util.Key;
 import org.bukkit.Difficulty;
 import co.aikar.commands.PaperCommandManager;
 import com.comphenix.protocol.PacketType;
@@ -192,7 +197,7 @@ public final class Specialization extends JavaPlugin {
         getServer().getPluginManager().registerEvents(hammerListener, this);
         //town data does not need to wait anymore
         TownManager.scanAllPlayersForTownsAsync();
-
+        ItemBehaviors.register(Key.of("specialization:musket_behavior"), MusketBehavior.FACTORY);
 
         //overworld game rules
         World overworld = Bukkit.getWorlds().get(0);
@@ -269,7 +274,12 @@ public final class Specialization extends JavaPlugin {
 
         MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().setOnPlayerJoin(playerJoinEvent -> {
             CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(playerJoinEvent.getUniqueId());
-            applyCustomName(playerJoinEvent.getPlayer(), customPlayer.getName());
+            Player player = playerJoinEvent.getPlayer();
+            if (player == null || customPlayer == null) {
+                logger.severe(String.format("%s was not able to be processed??? (null shit! \uD83D\uDC80\uD83D\uDC80\uD83D\uDC80)", playerJoinEvent.getUniqueId()));
+                return;
+            }
+            applyCustomName(player, customPlayer.getName());
 
 
             // TODO PDC-xp-hotfix for later if we need it

@@ -126,7 +126,7 @@ public class HuntPlayerMobGoal implements Goal<Mob> {
                 .min((p1, p2) -> {
                     CustomPlayer player1 = CoreUtil.getPlayer(p1);
                     CustomPlayer player2 = CoreUtil.getPlayer(p2);
-
+                    if (player1 == null || player2 == null) return 0;
                     int lvl1 = player1.getSkillLevel(SkillType.GUARDSMAN);
                     int lvl2 = player2.getSkillLevel(SkillType.GUARDSMAN);
 
