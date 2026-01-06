@@ -49,6 +49,10 @@ repositories {
         url = "https://repo.momirealms.net/releases/"
         name = "craftengine"
     }
+    maven {
+        url = "https://repo.momirealms.net/snapshots/"
+        name = "craftengine-snapshot"
+    }
 }
 
 configurations {
@@ -58,7 +62,6 @@ configurations {
 dependencies {
     paperweight.paperDevBundle("1.21.8-R0.1-SNAPSHOT")
     implementation 'com.typesafe:config:1.4.3'
-    //implementation(files("libs/MinecraftCivilizationCore-0.5.1"))
     implementation("com.minecraftcivilizations:minecraftcivilizationscore:0.5.1")
     implementation "com.google.code.gson:gson:2.13.1"
     implementation "co.aikar:acf-paper:0.5.1-SNAPSHOT"
@@ -69,8 +72,10 @@ dependencies {
     compileOnly group: "com.comphenix.protocol", name: "ProtocolLib", version: "5.3.0"
     compileOnly("org.projectlombok:lombok:1.18.38")
     annotationProcessor("org.projectlombok:lombok:1.18.38")
-    compileOnly("net.momirealms:craft-engine-bukkit:0.0.66")
-    compileOnly("net.momirealms:craft-engine-core:0.0.66")
+    compileOnly("net.momirealms:craft-engine-bukkit:0.0.66.11-SNAPSHOT")
+    compileOnly("net.momirealms:craft-engine-core:0.0.66.7-SNAPSHOT")
+    compileOnly("net.momirealms:craft-engine-adventure:0.0.66.11-SNAPSHOT")
+    compileOnly("net.momirealms:craft-engine-nms-helper:1.0.155")
     testCompileOnly("org.projectlombok:lombok:1.18.38")
     testAnnotationProcessor("org.projectlombok:lombok:1.18.38")
 

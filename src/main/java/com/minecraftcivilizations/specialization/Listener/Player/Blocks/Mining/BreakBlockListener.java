@@ -76,7 +76,7 @@ public class BreakBlockListener implements Listener {
                 handleReinforcedDrop(event.getBlock(), event.getPlayer());
             }
 
-            if (pair != null && pair.key() != null && pair.value() != null) {
+            if (player != null && pair.key() != null && pair.value() != null) {
                 if (blockData instanceof Ageable age) {
                     if (age.getMaximumAge() == age.getAge()) {
                         player.addSkillXp(pair.key(), pair.value(), event.getBlock().getLocation());
