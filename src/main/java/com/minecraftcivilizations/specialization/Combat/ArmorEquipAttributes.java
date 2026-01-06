@@ -106,8 +106,9 @@ public class ArmorEquipAttributes implements Listener {
 //            item_type = Material.CHAIN;
         } else if (typeName.startsWith("TURTLE_")) {
             item_type = Material.TURTLE_SCUTE;
+        } else if (CraftEngineItems.isCustomItem(current) && CraftEngineItems.getCustomItemId(current).value().startsWith("EMERALD_")) {
+            item_type = Material.EMERALD;
         }
-
 
         material_weight = getMaterialWeight(mat);
         slot_weight = getSlotModifier(slot);
