@@ -1,14 +1,13 @@
 package com.minecraftcivilizations.specialization.Listener.Player.Inventories;
 
-import com.google.gson.reflect.TypeToken;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
-import com.minecraftcivilizations.specialization.Skill.Skill;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.typesafe.config.ConfigException;
+import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Options.Pair;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -32,8 +31,11 @@ public class StonecutterListener implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onStonecut(InventoryClickEvent event) {
+    /**
+     * Blocks taking woodcutting results for players below Builder level 2
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onStonecutResult(InventoryClickEvent event) {
         if (event.getView().getType() != InventoryType.STONECUTTER) return;
         if (event.getSlot() != 1) return; // only result slot
         if (!(event.getWhoClicked() instanceof Player player)) return;
@@ -44,10 +46,56 @@ public class StonecutterListener implements Listener {
         ItemStack result = event.getCurrentItem();
         if (result == null || result.getType() == Material.AIR) return;
 
-        InventoryView view = event.getView();
-        ItemStack inputBefore = cloneSafe(view.getItem(0)); // stonecutter input slot before craft
+        ItemStack input = event.getView().getItem(0);
+        if (input == null || input.getType() == Material.AIR) return;
 
-        int amount = getStonecutAmount(event);
+        // Check if it's a woodcutting recipe (log, wood, stripped log, stripped wood, or planks input)
+        if (isWoodcuttingInput(input.getType())) {
+            // Check builder level BEFORE allowing the craft
+            CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance()
+                    .getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
+
+            int lvl = (customPlayer != null) ? customPlayer.getSkillLevel(SkillType.BUILDER) : 0;
+            if (lvl < 2) {
+                // Block the craft
+                event.setCancelled(true);
+                PlayerUtil.message(player, ChatColor.RED + "You need to atleast be Level 2 in Builder to use woodcutting recipes!", 1);
+                return;
+            }
+
+            InventoryView view = event.getView();
+            ItemStack inputBefore = cloneSafe(view.getItem(0));
+            int amount = getStonecutAmount(event);
+            handleWoodcutting(player, view, inputBefore, result, amount);
+        } else {
+            InventoryView view = event.getView();
+            ItemStack inputBefore = cloneSafe(view.getItem(0));
+            int amount = getStonecutAmount(event);
+            handleStonecutting(player, view, inputBefore, result, amount);
+        }
+    }
+
+    private void handleWoodcutting(Player player, InventoryView view,
+                                    ItemStack inputBefore, ItemStack result, int amount) {
+
+        // Woodcutting gives no XP as per user request
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!player.isOnline()) return;
+
+            ItemStack inputAfter = cloneSafe(view.getItem(0));
+            boolean craftOccurred = didConsumeIngredient(inputBefore, inputAfter);
+
+            if (!craftOccurred) {
+                LOGGER.fine("Blocked woodcutting: no actual woodcutting detected for " + player.getName());
+                return;
+            }
+
+            LOGGER.fine(player.getName() + " woodcut " + amount + "x " + result.getType());
+        }, 1L);
+    }
+
+    private void handleStonecutting(Player player, InventoryView view,
+                                     ItemStack inputBefore, ItemStack result, int amount) {
         Pair<SkillType, Double> pair = SkillType.getSkillXpFromConfig(SpecializationConfig.getXpGainFromStonecuttingConfig(), result.getType().toString());
 
         double xpToGive = pair.value() * amount;
@@ -72,6 +120,58 @@ public class StonecutterListener implements Listener {
             LOGGER.fine("Gave " + xpToGive + " XP to " + player.getName()
                     + " for stonecutting " + amount + "x " + result.getType());
         }, 1L);
+    }
+
+    private boolean isWoodLog(Material material) {
+        return material == Material.OAK_LOG || material == Material.SPRUCE_LOG ||
+               material == Material.BIRCH_LOG || material == Material.JUNGLE_LOG ||
+               material == Material.ACACIA_LOG || material == Material.DARK_OAK_LOG ||
+               material == Material.MANGROVE_LOG || material == Material.CHERRY_LOG ||
+               material == Material.PALE_OAK_LOG ||
+               material == Material.CRIMSON_STEM || material == Material.WARPED_STEM ||
+               material == Material.BAMBOO_BLOCK;
+    }
+
+    private boolean isWood(Material material) {
+        return material == Material.OAK_WOOD || material == Material.SPRUCE_WOOD ||
+               material == Material.BIRCH_WOOD || material == Material.JUNGLE_WOOD ||
+               material == Material.ACACIA_WOOD || material == Material.DARK_OAK_WOOD ||
+               material == Material.MANGROVE_WOOD || material == Material.CHERRY_WOOD ||
+               material == Material.PALE_OAK_WOOD ||
+               material == Material.CRIMSON_HYPHAE || material == Material.WARPED_HYPHAE;
+    }
+
+    private boolean isStrippedLog(Material material) {
+        return material == Material.STRIPPED_OAK_LOG || material == Material.STRIPPED_SPRUCE_LOG ||
+               material == Material.STRIPPED_BIRCH_LOG || material == Material.STRIPPED_JUNGLE_LOG ||
+               material == Material.STRIPPED_ACACIA_LOG || material == Material.STRIPPED_DARK_OAK_LOG ||
+               material == Material.STRIPPED_MANGROVE_LOG || material == Material.STRIPPED_CHERRY_LOG ||
+               material == Material.STRIPPED_PALE_OAK_LOG ||
+               material == Material.STRIPPED_CRIMSON_STEM || material == Material.STRIPPED_WARPED_STEM ||
+               material == Material.STRIPPED_BAMBOO_BLOCK;
+    }
+
+    private boolean isStrippedWood(Material material) {
+        return material == Material.STRIPPED_OAK_WOOD || material == Material.STRIPPED_SPRUCE_WOOD ||
+               material == Material.STRIPPED_BIRCH_WOOD || material == Material.STRIPPED_JUNGLE_WOOD ||
+               material == Material.STRIPPED_ACACIA_WOOD || material == Material.STRIPPED_DARK_OAK_WOOD ||
+               material == Material.STRIPPED_MANGROVE_WOOD || material == Material.STRIPPED_CHERRY_WOOD ||
+               material == Material.STRIPPED_PALE_OAK_WOOD ||
+               material == Material.STRIPPED_CRIMSON_HYPHAE || material == Material.STRIPPED_WARPED_HYPHAE;
+    }
+
+    private boolean isPlanks(Material material) {
+        return material == Material.OAK_PLANKS || material == Material.SPRUCE_PLANKS ||
+               material == Material.BIRCH_PLANKS || material == Material.JUNGLE_PLANKS ||
+               material == Material.ACACIA_PLANKS || material == Material.DARK_OAK_PLANKS ||
+               material == Material.MANGROVE_PLANKS || material == Material.CHERRY_PLANKS ||
+               material == Material.PALE_OAK_PLANKS ||
+               material == Material.CRIMSON_PLANKS || material == Material.WARPED_PLANKS ||
+               material == Material.BAMBOO_PLANKS;
+    }
+
+    private boolean isWoodcuttingInput(Material material) {
+        return isWoodLog(material) || isWood(material) || isStrippedLog(material) || isStrippedWood(material) || isPlanks(material);
     }
 
     private boolean isValidAction(InventoryAction action) {
@@ -111,9 +211,9 @@ public class StonecutterListener implements Listener {
     }
 
     private boolean didConsumeIngredient(ItemStack before, ItemStack after) {
-        if (before == null || before.getType() == Material.AIR) return false; // nothing to consume
-        if (after == null || after.getType() == Material.AIR) return true; // input fully used
-        if (!before.isSimilar(after)) return true; // input replaced (new recipe/material)
-        return after.getAmount() < before.getAmount(); // input count went down
+        if (before == null || before.getType() == Material.AIR) return false;
+        if (after == null || after.getType() == Material.AIR) return true;
+        if (!before.isSimilar(after)) return true;
+        return after.getAmount() < before.getAmount();
     }
 }

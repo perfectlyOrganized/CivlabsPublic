@@ -23,7 +23,7 @@ public class PlayerUtil {
 
      public static Component buildLogo() {
         // Using a smooth gradient across the logo text
-        String logoGradient = "<#747ab6>[<gradient:#708EFA:#5E4F9F>CivLabs</gradient>]";
+        String logoGradient = "<#747ab6>[<gradient:#708EFA:#5E4F9F>OpenLabs</gradient>]";
         return MiniMessage.miniMessage().deserialize(logoGradient);
     }
 

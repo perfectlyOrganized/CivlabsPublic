@@ -90,6 +90,7 @@ public class Recipes {
         successCount += addNetherRecipes(failedExceptions, skippedDuplicateCount);
         addUnobtainableRecipes(failedExceptions, skippedDuplicateCount);
         addArmorTrims(failedExceptions, skippedDuplicateCount);
+        successCount += addWoodcuttingRecipes(failedExceptions, skippedDuplicateCount);
 
         // ----- FINAL LOG -----
         Bukkit.getLogger().info("[Recipes] Registration complete. Total successes: " + successCount);
@@ -353,5 +354,191 @@ public class Recipes {
             try { Bukkit.addRecipe(spire, true); }
             catch (Exception e) { failedExceptions.add("spire_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
+    }
+
+    /**
+     * Adds woodcutting recipes for the stonecutter.
+     * Allows converting logs into various wood products.
+     *
+     * LOG input results:
+     * - planks = 4
+     * - stripped log = 1
+     * - stripped wood = 1
+     * - stairs = 4
+     * - slabs = 8
+     * - fences = 2
+     * - fence gates = 2 (bamboo = 1)
+     *
+     * WOOD (bark on all sides) input results:
+     * - 4 planks
+     * - stripped log = 1
+     * - stripped wood = 1
+     * - 4 stairs
+     * - 8 slabs
+     * - 2 fences
+     * - 2 fence gates
+     *
+     * STRIPPED LOG input results (non-bamboo):
+     * - 4 planks
+     * - 1 stripped wood
+     * - 4 stairs
+     * - 8 slabs
+     *
+     * STRIPPED WOOD input results (non-bamboo):
+     * - 3 planks
+     * - 3 stairs
+     * - 6 slabs
+     *
+     * STRIPPED BAMBOO BLOCK input results:
+     * - 4 slabs
+     * - 2 stairs
+     * - 2 planks
+     * - 1 fence
+     *
+     * PLANKS input results:
+     * - 2 slabs
+     * - 1 stair
+     */
+    public static int addWoodcuttingRecipes(List<String> failedExceptions, int skippedDuplicateCount) {
+        int count = 0;
+
+        // Define all wood types with their corresponding materials
+        // Format: {name, log, planks, strippedLog, strippedWood, wood, stairs, slab, fence, fenceGate}
+        String[][] woodTypes = {
+            {"oak", "OAK_LOG", "OAK_PLANKS", "STRIPPED_OAK_LOG", "STRIPPED_OAK_WOOD", "OAK_WOOD", "OAK_STAIRS", "OAK_SLAB", "OAK_FENCE", "OAK_FENCE_GATE"},
+            {"spruce", "SPRUCE_LOG", "SPRUCE_PLANKS", "STRIPPED_SPRUCE_LOG", "STRIPPED_SPRUCE_WOOD", "SPRUCE_WOOD", "SPRUCE_STAIRS", "SPRUCE_SLAB", "SPRUCE_FENCE", "SPRUCE_FENCE_GATE"},
+            {"birch", "BIRCH_LOG", "BIRCH_PLANKS", "STRIPPED_BIRCH_LOG", "STRIPPED_BIRCH_WOOD", "BIRCH_WOOD", "BIRCH_STAIRS", "BIRCH_SLAB", "BIRCH_FENCE", "BIRCH_FENCE_GATE"},
+            {"jungle", "JUNGLE_LOG", "JUNGLE_PLANKS", "STRIPPED_JUNGLE_LOG", "STRIPPED_JUNGLE_WOOD", "JUNGLE_WOOD", "JUNGLE_STAIRS", "JUNGLE_SLAB", "JUNGLE_FENCE", "JUNGLE_FENCE_GATE"},
+            {"acacia", "ACACIA_LOG", "ACACIA_PLANKS", "STRIPPED_ACACIA_LOG", "STRIPPED_ACACIA_WOOD", "ACACIA_WOOD", "ACACIA_STAIRS", "ACACIA_SLAB", "ACACIA_FENCE", "ACACIA_FENCE_GATE"},
+            {"dark_oak", "DARK_OAK_LOG", "DARK_OAK_PLANKS", "STRIPPED_DARK_OAK_LOG", "STRIPPED_DARK_OAK_WOOD", "DARK_OAK_WOOD", "DARK_OAK_STAIRS", "DARK_OAK_SLAB", "DARK_OAK_FENCE", "DARK_OAK_FENCE_GATE"},
+            {"mangrove", "MANGROVE_LOG", "MANGROVE_PLANKS", "STRIPPED_MANGROVE_LOG", "STRIPPED_MANGROVE_WOOD", "MANGROVE_WOOD", "MANGROVE_STAIRS", "MANGROVE_SLAB", "MANGROVE_FENCE", "MANGROVE_FENCE_GATE"},
+            {"cherry", "CHERRY_LOG", "CHERRY_PLANKS", "STRIPPED_CHERRY_LOG", "STRIPPED_CHERRY_WOOD", "CHERRY_WOOD", "CHERRY_STAIRS", "CHERRY_SLAB", "CHERRY_FENCE", "CHERRY_FENCE_GATE"},
+            {"pale_oak", "PALE_OAK_LOG", "PALE_OAK_PLANKS", "STRIPPED_PALE_OAK_LOG", "STRIPPED_PALE_OAK_WOOD", "PALE_OAK_WOOD", "PALE_OAK_STAIRS", "PALE_OAK_SLAB", "PALE_OAK_FENCE", "PALE_OAK_FENCE_GATE"},
+            // Crimson and Warped (Nether woods) - use HYPHAE instead of WOOD
+            {"crimson", "CRIMSON_STEM", "CRIMSON_PLANKS", "STRIPPED_CRIMSON_STEM", "STRIPPED_CRIMSON_HYPHAE", "CRIMSON_HYPHAE", "CRIMSON_STAIRS", "CRIMSON_SLAB", "CRIMSON_FENCE", "CRIMSON_FENCE_GATE"},
+            {"warped", "WARPED_STEM", "WARPED_PLANKS", "STRIPPED_WARPED_STEM", "STRIPPED_WARPED_HYPHAE", "WARPED_HYPHAE", "WARPED_STAIRS", "WARPED_SLAB", "WARPED_FENCE", "WARPED_FENCE_GATE"},
+            // Bamboo - no wood block variant
+            {"bamboo", "BAMBOO_BLOCK", "BAMBOO_PLANKS", "STRIPPED_BAMBOO_BLOCK", "STRIPPED_BAMBOO_BLOCK", "BAMBOO_BLOCK", "BAMBOO_STAIRS", "BAMBOO_SLAB", "BAMBOO_FENCE", "BAMBOO_FENCE_GATE"}
+        };
+
+        for (String[] wood : woodTypes) {
+            String woodName = wood[0];
+            try {
+                Material log = Material.valueOf(wood[1]);
+                Material planks = Material.valueOf(wood[2]);
+                Material strippedLog = Material.valueOf(wood[3]);
+                Material strippedWood = Material.valueOf(wood[4]);
+                Material woodBlock = Material.valueOf(wood[5]);
+                Material stairs = Material.valueOf(wood[6]);
+                Material slab = Material.valueOf(wood[7]);
+                Material fence = Material.valueOf(wood[8]);
+                Material fenceGate = Material.valueOf(wood[9]);
+
+                // ==================== LOG INPUT RECIPES ====================
+                // Log -> Planks (4)
+                count += addStonecuttingRecipe("woodcut_log_" + woodName + "_planks", log, planks, 4, failedExceptions);
+                // Log -> Stripped Log (1)
+                count += addStonecuttingRecipe("woodcut_log_" + woodName + "_stripped_log", log, strippedLog, 1, failedExceptions);
+                // Log -> Stripped Wood (1) - only if different from stripped log (not bamboo)
+                if (strippedWood != strippedLog) {
+                    count += addStonecuttingRecipe("woodcut_log_" + woodName + "_stripped_wood", log, strippedWood, 1, failedExceptions);
+                }
+                // Log -> Stairs (4)
+                count += addStonecuttingRecipe("woodcut_log_" + woodName + "_stairs", log, stairs, 4, failedExceptions);
+                // Log -> Slabs (8)
+                count += addStonecuttingRecipe("woodcut_log_" + woodName + "_slabs", log, slab, 8, failedExceptions);
+                // Log -> Fences (2)
+                count += addStonecuttingRecipe("woodcut_log_" + woodName + "_fence", log, fence, 2, failedExceptions);
+                // Log -> Fence Gates (2) - bamboo gets 1
+                int fenceGateAmount = woodName.equals("bamboo") ? 1 : 2;
+                count += addStonecuttingRecipe("woodcut_log_" + woodName + "_fence_gate", log, fenceGate, fenceGateAmount, failedExceptions);
+
+                // ==================== WOOD (bark block) INPUT RECIPES ====================
+                // Only add if wood block is different from log (not bamboo)
+                if (woodBlock != log) {
+                    // Wood -> Planks (4)
+                    count += addStonecuttingRecipe("woodcut_wood_" + woodName + "_planks", woodBlock, planks, 4, failedExceptions);
+                    // Wood -> Stripped Log (1)
+                    count += addStonecuttingRecipe("woodcut_wood_" + woodName + "_stripped_log", woodBlock, strippedLog, 1, failedExceptions);
+                    // Wood -> Stripped Wood (1) - only if different from stripped log
+                    if (strippedWood != strippedLog) {
+                        count += addStonecuttingRecipe("woodcut_wood_" + woodName + "_stripped_wood", woodBlock, strippedWood, 1, failedExceptions);
+                    }
+                    // Wood -> Stairs (4)
+                    count += addStonecuttingRecipe("woodcut_wood_" + woodName + "_stairs", woodBlock, stairs, 4, failedExceptions);
+                    // Wood -> Slabs (8)
+                    count += addStonecuttingRecipe("woodcut_wood_" + woodName + "_slabs", woodBlock, slab, 8, failedExceptions);
+                    // Wood -> Fences (2)
+                    count += addStonecuttingRecipe("woodcut_wood_" + woodName + "_fence", woodBlock, fence, 2, failedExceptions);
+                    // Wood -> Fence Gates (2)
+                    count += addStonecuttingRecipe("woodcut_wood_" + woodName + "_fence_gate", woodBlock, fenceGate, 2, failedExceptions);
+                }
+
+                // ==================== STRIPPED LOG INPUT RECIPES ====================
+                // Special handling for bamboo (stripped bamboo block)
+                if (woodName.equals("bamboo")) {
+                    // Stripped Bamboo -> Slabs (4)
+                    count += addStonecuttingRecipe("woodcut_stripped_bamboo_slabs", strippedLog, slab, 4, failedExceptions);
+                    // Stripped Bamboo -> Stairs (2)
+                    count += addStonecuttingRecipe("woodcut_stripped_bamboo_stairs", strippedLog, stairs, 2, failedExceptions);
+                    // Stripped Bamboo -> Planks (2)
+                    count += addStonecuttingRecipe("woodcut_stripped_bamboo_planks", strippedLog, planks, 2, failedExceptions);
+                    // Stripped Bamboo -> Fence (1)
+                    count += addStonecuttingRecipe("woodcut_stripped_bamboo_fence", strippedLog, fence, 1, failedExceptions);
+                } else {
+                    // Regular stripped log recipes for other wood types
+                    // Stripped Log -> Planks (4)
+                    count += addStonecuttingRecipe("woodcut_stripped_" + woodName + "_planks", strippedLog, planks, 4, failedExceptions);
+                    // Stripped Log -> Stripped Wood (1) - only if different from stripped log
+                    if (strippedWood != strippedLog) {
+                        count += addStonecuttingRecipe("woodcut_stripped_" + woodName + "_stripped_wood", strippedLog, strippedWood, 1, failedExceptions);
+                    }
+                    // Stripped Log -> Stairs (4)
+                    count += addStonecuttingRecipe("woodcut_stripped_" + woodName + "_stairs", strippedLog, stairs, 4, failedExceptions);
+                    // Stripped Log -> Slabs (8)
+                    count += addStonecuttingRecipe("woodcut_stripped_" + woodName + "_slabs", strippedLog, slab, 8, failedExceptions);
+                }
+
+                // ==================== STRIPPED WOOD INPUT RECIPES ====================
+                // Only for non-bamboo (bamboo doesn't have a separate stripped wood type)
+                if (strippedWood != strippedLog) {
+                    // Stripped Wood -> Planks (3)
+                    count += addStonecuttingRecipe("woodcut_strippedwood_" + woodName + "_planks", strippedWood, planks, 3, failedExceptions);
+                    // Stripped Wood -> Stairs (3)
+                    count += addStonecuttingRecipe("woodcut_strippedwood_" + woodName + "_stairs", strippedWood, stairs, 3, failedExceptions);
+                    // Stripped Wood -> Slabs (6)
+                    count += addStonecuttingRecipe("woodcut_strippedwood_" + woodName + "_slabs", strippedWood, slab, 6, failedExceptions);
+                }
+
+                // ==================== PLANKS INPUT RECIPES ====================
+                // Planks -> Slabs (2)
+                count += addStonecuttingRecipe("woodcut_planks_" + woodName + "_slabs", planks, slab, 2, failedExceptions);
+                // Planks -> Stairs (1)
+                count += addStonecuttingRecipe("woodcut_planks_" + woodName + "_stairs", planks, stairs, 1, failedExceptions);
+
+            } catch (IllegalArgumentException e) {
+                // Material doesn't exist (e.g., PALE_OAK might not be in older versions)
+                Bukkit.getLogger().fine("[Recipes] Skipping woodcutting recipes for " + woodName + ": Material not found");
+            }
+        }
+
+        return count;
+    }
+
+    /**
+     * Helper method to add a stonecutting recipe
+     */
+    private static int addStonecuttingRecipe(String keyName, Material input, Material output, int amount, List<String> failedExceptions) {
+        NamespacedKey key = new NamespacedKey(Specialization.getInstance(), keyName);
+        StonecuttingRecipe recipe = new StonecuttingRecipe(key, new ItemStack(output, amount), input);
+        if (!recipeExists(key, recipe.getResult())) {
+            try {
+                Bukkit.addRecipe(recipe, true);
+                return 1;
+            } catch (Exception e) {
+                failedExceptions.add(keyName + " (" + e.getMessage() + ")");
+            }
+        }
+        return 0;
     }
 }
