@@ -3,7 +3,10 @@ package com.minecraftcivilizations.specialization.Combat.Mobs;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import lombok.Getter;
 import lombok.Setter;
+import org.bukkit.Material;
+import org.bukkit.block.Biome;
 import org.bukkit.entity.EntityType;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -28,6 +31,22 @@ public class MobOverrideRule {
 
     private int total_roll = -1;
 
+    @Getter
+    private HashSet<Biome> allowedBiomes;
+    @Getter
+    private HashSet<Biome> excludedBiomes;
+
+
+    public MobOverrideRule allowedBiomes(Biome... biomes) {
+        this.allowedBiomes = new HashSet<Biome>(Arrays.asList(biomes));
+        return this;
+    }
+
+    // NEW: Method to set excluded biomes
+    public MobOverrideRule excludedBiomes(Biome... biomes) {
+        this.excludedBiomes = new HashSet<>(Arrays.asList(biomes));
+        return this;
+    }
     /**
      * Establishes a base chance of no override taking place
      * Build upon this with override(entity_type, chance)
@@ -92,6 +111,7 @@ public class MobOverrideRule {
         return this;
     }
 
+    // Getters and setters
     public boolean doesSpawnInPacks() {
         return does_spawn_in_packs;
     }

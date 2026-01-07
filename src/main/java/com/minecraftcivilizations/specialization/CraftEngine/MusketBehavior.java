@@ -1,11 +1,16 @@
 package com.minecraftcivilizations.specialization.CraftEngine;
 
 import com.minecraftcivilizations.specialization.Specialization;
-import net.minecraft.world.item.context.UseOnContext;
+import net.momirealms.craftengine.bukkit.api.BukkitAdaptors;
 import net.momirealms.craftengine.bukkit.item.BukkitItemManager;
+import net.momirealms.craftengine.bukkit.plugin.reflection.minecraft.CoreReflections;
+import net.momirealms.craftengine.bukkit.plugin.user.BukkitServerPlayer;
 import net.momirealms.craftengine.bukkit.util.LocationUtils;
+import net.momirealms.craftengine.bukkit.world.BukkitWorld;
 import net.momirealms.craftengine.core.entity.player.InteractionHand;
 import net.momirealms.craftengine.core.item.CustomItem;
+import net.momirealms.craftengine.core.item.context.UseOnContext;
+import net.momirealms.craftengine.core.registry.BuiltInRegistries;
 import net.momirealms.craftengine.core.sound.SoundData;
 import net.momirealms.craftengine.core.sound.SoundSource;
 import net.momirealms.craftengine.core.world.Position;
@@ -20,8 +25,10 @@ import net.momirealms.craftengine.core.item.behavior.ItemBehaviorFactory;
 import net.momirealms.craftengine.core.pack.Pack;
 import net.momirealms.craftengine.core.util.Key;
 import org.bukkit.*;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.TNTPrimed;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.CrossbowMeta;
 import org.bukkit.inventory.meta.Damageable;
@@ -31,6 +38,7 @@ import org.bukkit.util.Vector;
 
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class MusketBehavior extends ItemBehavior {
     private final NamespacedKey RELOAD_KEY = new NamespacedKey(Specialization.getInstance(), "reloadCount");
@@ -87,7 +95,7 @@ public class MusketBehavior extends ItemBehavior {
         }
     }
 
-    private void spawnParticleBeam(Vec3d start, Vec3d end, org.bukkit.World world) {
+    static private void spawnParticleBeam(Vec3d start, Vec3d end, org.bukkit.World world) {
         double distanceSq = Vec3d.distanceToSqr(start, end);
         double distance = Math.sqrt(distanceSq);
         int particleCount = (int) (distance * 2); // 2 particles per block
@@ -105,17 +113,19 @@ public class MusketBehavior extends ItemBehavior {
             world.spawnParticle(Particle.CRIT, pos.x, pos.y, pos.z, 1, 0, 0, 0, 0);
         }
     }
-    private void shootParticleBeam(Player CEplayer) {
-        org.bukkit.entity.Player bukkitPlayer = (org.bukkit.entity.Player) CEplayer.platformPlayer();
-        Location eyeLocation = bukkitPlayer.getEyeLocation();
-        Vector direction = eyeLocation.getDirection().normalize();
-        org.bukkit.World world = bukkitPlayer.getWorld();
+    static public void shootParticleBeam(Entity shooter, Location eyeLocation, Vector direction, org.bukkit.World world) {
         double range = 50.0;
+
+        Vector velocity = shooter.getVelocity();
+        double speed = velocity.length();
+
+        double accuracy = calculateAccuracy(speed, shooter);
+        Vector adjustedDirection = adjustDirectionGaussian(direction, accuracy);
 
         // First, ray trace for BLOCKS
         RayTraceResult blockResult = world.rayTraceBlocks(
                 eyeLocation,
-                direction,
+                adjustedDirection,
                 range,
                 FluidCollisionMode.NEVER,
                 true // Ignore passable blocks
@@ -136,7 +146,7 @@ public class MusketBehavior extends ItemBehavior {
                 direction,
                 maxDistance,
                 1.0, // Larger hitbox expansion for better accuracy
-                entity -> entity != bukkitPlayer && entity instanceof LivingEntity
+                entity -> entity != shooter && entity instanceof LivingEntity
         );
 
         // Determine final end point
@@ -157,25 +167,110 @@ public class MusketBehavior extends ItemBehavior {
 
         // Spawn particles
         spawnParticleBeam(LocationUtils.toVec3d(eyeLocation), endPoint, world);
-        World CEworld = CEplayer.world();
-        CEworld.playSound(LocationUtils.toVec3d(bukkitPlayer.getLocation()), Key.of("specialization:rifle_shot"), 1f, 0.9f + (float) (Math.random() * 0.2),SoundSource.PLAYER);
-
+        World ceWorld = BukkitAdaptors.adapt(world);
+        ceWorld.playSound(LocationUtils.toVec3d(shooter.getLocation()), Key.of("specialization:rifle_shot"), 1f, 0.9f + (float) (Math.random() * 0.2),SoundSource.PLAYER);
+        if (blockResult != null && blockResult.getHitBlock() != null) {
+            Block hitBlock = blockResult.getHitBlock();
+            if (hitBlock.getType() == Material.TNT) {
+                hitBlock.setType(Material.AIR);
+                Location tntLocation = hitBlock.getLocation().add(0.5, 0, 0.5);
+                world.createExplosion(
+                        tntLocation,
+                        4.0f,
+                        false,
+                        true,
+                        shooter
+                );
+            }
+        }
         // Handle hit
         if (hitEntity instanceof LivingEntity livingEntity) {
-            double distance = bukkitPlayer.getLocation().distance(livingEntity.getLocation());
-            double damage = calculateDamage(distance);
-            livingEntity.damage(damage, bukkitPlayer);
+            world.spawnParticle(Particle.FLASH, livingEntity.getLocation(), 5);
 
+            if (livingEntity instanceof org.bukkit.entity.Player player && player.isBlocking()) {
+                org.bukkit.inventory.ItemStack item = player.getInventory().getItemInOffHand();
+                if (item.getType() == Material.SHIELD) {
+                    item.damage(20, (LivingEntity) shooter);
+                }
+                return;
+            }
+            double distance = shooter.getLocation().distance(livingEntity.getLocation());
+            double damage = calculateDamage(distance);
+            livingEntity.damage(damage, shooter);
             // Apply knockback
             Vector knockback = direction.multiply(2);
             livingEntity.setVelocity(knockback);
 
             // Visual hit effect
-            world.spawnParticle(Particle.FLASH, livingEntity.getLocation(), 5);
         }
     }
 
-    private double calculateDamage(Double distance) {
+    private static Vector rotateAroundYAxis(Vector vector, double angle) {
+        double cos = Math.cos(angle);
+        double sin = Math.sin(angle);
+        double x = vector.getX() * cos - vector.getZ() * sin;
+        double z = vector.getX() * sin + vector.getZ() * cos;
+        return new Vector(x, vector.getY(), z);
+    }
+
+    // Helper method to rotate vector around arbitrary axis
+    private static Vector rotateAroundAxis(Vector vector, Vector axis, double angle) {
+        axis = axis.clone().normalize();
+        double cos = Math.cos(angle);
+        double sin = Math.sin(angle);
+        double dot = vector.dot(axis);
+
+        Vector cross = axis.getCrossProduct(vector);
+
+        return vector.clone().multiply(cos)
+                .add(cross.multiply(sin))
+                .add(axis.multiply(dot * (1 - cos)));
+    }
+
+    private static Vector adjustDirectionGaussian(Vector originalDirection, double accuracy) {
+        // Higher spreadAmount = less accurate
+        double spreadAmount = (1.0 - accuracy) * 0.15;
+
+        double randomYaw = (ThreadLocalRandom.current().nextGaussian() * spreadAmount);
+        double randomPitch = (ThreadLocalRandom.current().nextGaussian() * spreadAmount);
+
+        Vector rotated = originalDirection.clone();
+
+        if (Math.abs(randomYaw) > 0.001) {
+            rotated = rotateAroundYAxis(rotated, randomYaw);
+        }
+
+        if (Math.abs(randomPitch) > 0.001) {
+            rotated = rotateAroundAxis(rotated,
+                    originalDirection.clone().crossProduct(new Vector(0, 1, 0)).normalize(),
+                    randomPitch
+            );
+        }
+
+        return rotated.normalize();
+    }
+    private static double calculateAccuracy(double speed, Entity shooter) {
+        double baseAccuracy = 0.95; // standing still
+
+        if (shooter instanceof  org.bukkit.entity.Player player) {
+            if (player.isSneaking()) {
+                baseAccuracy = 1;
+            }
+            if (!player.isOnGround()) {
+                baseAccuracy *= 0.8;
+            }
+
+            if (player.isSprinting()) {
+                baseAccuracy *= 0.7;
+            }
+        }
+
+        double speedPenalty = Math.min(0.9, speed * 10.0); // Max 90% penalty
+        double accuracy = baseAccuracy * (1.0 - speedPenalty);
+
+        return Math.max(0.01, accuracy);
+    }
+    private static double calculateDamage(Double distance) {
         double baseDamage = 5.0;
 
             // Using Horner's Method for better performance and precision:
@@ -187,6 +282,10 @@ public class MusketBehavior extends ItemBehavior {
                     + 5.884158215e-2) * distance
                     - 3.915702214e-3) * distance
                     + 0.9472591991;
+    }
+
+    public InteractionResult useOnBlock(UseOnContext context) {
+        return use(context.getWorld(), context.getPlayer(), context.getHand());
     }
 
     @Override
@@ -202,7 +301,9 @@ public class MusketBehavior extends ItemBehavior {
             if (bukkitPlayer.hasCooldown(itemStack)) return InteractionResult.PASS;
             if (itemStack.getPersistentDataContainer().has(IS_LOADED_KEY)) {
                 item.hurtAndBreak(1, null, null);
-                shootParticleBeam(CEplayer);
+                Location eyeLocation = bukkitPlayer.getEyeLocation();
+                Vector direction = eyeLocation.getDirection().normalize();
+                shootParticleBeam(bukkitPlayer, eyeLocation, direction, (org.bukkit.World) world.platformWorld());
                 bukkitPlayer.setCooldown(itemStack.getType(), 60);
                 itemStack.editPersistentDataContainer(pdc -> {
                     pdc.remove(IS_LOADED_KEY);

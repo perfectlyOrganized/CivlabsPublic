@@ -1,6 +1,7 @@
 package com.minecraftcivilizations.specialization.Combat.Mobs;
 
 import com.minecraftcivilizations.specialization.Combat.CombatManager;
+import com.minecraftcivilizations.specialization.MobGoals.ShootPlayerMobGoal;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.Specialization;
@@ -9,10 +10,14 @@ import com.minecraftcivilizations.specialization.util.CoreUtil;
 import com.minecraftcivilizations.specialization.util.WorldUtils;
 import lombok.extern.slf4j.Slf4j;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.momirealms.craftengine.bukkit.api.CraftEngineItems;
+import net.momirealms.craftengine.core.item.CustomItem;
+import net.momirealms.craftengine.core.util.Key;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
+import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.damage.DamageSource;
@@ -35,6 +40,7 @@ import org.bukkit.util.Vector;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.bukkit.event.entity.EntityDamageEvent.DamageModifier.*;
@@ -151,8 +157,13 @@ public class MobManager implements Listener {
     //This simply flags the entity to be a variation
     void convertEntityToVariation(Entity entity, MobVariation variation){
         entity.getPersistentDataContainer().set(SPAWN_VARIATION_ID_KEY, PersistentDataType.STRING, variation.getId());
-        if(entity instanceof LivingEntity le){
-            applyStatsToEntity(le, variation);
+        if(entity instanceof LivingEntity livingEntity){
+            applyStatsToEntity(livingEntity, variation);
+            ItemStack mainHand = variation.getMainHandItem();
+            if (mainHand != null && livingEntity.getEquipment() instanceof EntityEquipment equipment) {
+                equipment.setItemInMainHand(mainHand);
+                equipment.setItemInMainHandDropChance(0.05f); // 5% drop chance
+            }
         }
     }
 
@@ -195,6 +206,13 @@ public class MobManager implements Listener {
      * For example: setDefaultRuleSetChance(10, RABBIT);  // this sets the chance of unaffected rabbits to weight 10
      *
      */
+   // public ItemStack getMusket() {
+        //CustomItem<ItemStack> item = CraftEngineItems.byId(Key.of("specialization", "musket"));
+        //Specialization.logger.info(item.toString());
+       // Specialization.logger.info(135);
+       // if (item != null) return null;
+       // return item.buildItemStack();
+   // }
     public void populateEntityMappings(){
 //        MobOverrideRule.setGlobalChance(100); // This sets the BASE weight chance for ALL entity types, which will avoid rolling for a MobOverrideRule
         //THESE EXIST PRIMARILY FOR REFRESHING
@@ -236,12 +254,13 @@ public class MobManager implements Listener {
                 );
 
 
+
+
         new MobOverrideRule(100, WITCH)
                 .addVariation(new MobVariation("witch")
                         .health(1.0)
                         .damage(1.0)
                         .speed(1.0)
-                        .xpScale(0.25)
                         .hunts(24)
                         .breaks()
                 );
@@ -328,6 +347,29 @@ public class MobManager implements Listener {
                         .replaceOriginalMob()
                 , 3
                 );
+
+        new MobOverrideRule(100, SKELETON)
+                .addVariation(new MobVariation("musketeer_skeleton", SKELETON)
+                                .createMainHandItem(new Supplier<ItemStack>() {
+                                    @Override
+                                    public ItemStack get() {
+                                        CustomItem<ItemStack> item = CraftEngineItems.byId(Key.of("specialization:musket"));
+                                        if (item == null) return null;
+                                        return item.buildItemStack();
+                                    }
+                                })
+                                .health(1.0)
+                                .health(2)
+                                .damage(0.5, 0.8, 2.0)
+                                .speed(1.25, 1.5)
+                                .stepheight(0.5)
+                                .xpScale(0.25)
+                                .hunts(32)
+                                .xpScale(1.5)
+                                .spawnExtra(2),
+                        100
+                ).allowedBiomes(Biome.DESERT);
+
 
         /**
          * Example:
@@ -671,17 +713,15 @@ public class MobManager implements Listener {
 
     @EventHandler
     public void onCreatureSpawn(CreatureSpawnEvent event) {
-//        Debug.broadcast("mobspawn", "Attempting <green>"+event.getEntity().getType().name()+"</green> spawn at "+event.getLocation().getBlock().getBiome().toString());
         if(event.isCancelled())return;
 
         if (Debug.isAnyoneListening("mob", false) || Debug.isAnyoneListening("mobrule", false)) {
             populateEntityMappings();
-//                Debug.broadcast("mob", "repopulating mob stats!");
         }
         LivingEntity entity = event.getEntity();
         EntityType type = entity.getType();
-//        Debug.broadcast("mob","summoning "+event.getSpawnReason().name());
-
+        Location location = entity.getLocation();
+        Biome biome = location.getWorld().getBiome(location.getBlockX(), location.getBlockY(), location.getBlockZ());
 
         if (event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.CUSTOM) {
             //THIS IS A NATURAL GAME SPAWN
@@ -690,6 +730,10 @@ public class MobManager implements Listener {
             }
             MobOverrideRule rule = rollMobOverrideRule(type);
             if (rule != null) {
+                if (!canSpawnInBiome(rule, biome, type, entity)) {
+                    return;
+                }
+
                 MobVariation variation = rule.rollVariation();
                 if (variation != null) {
                     EntityType new_type = variation.rollType();
@@ -701,7 +745,6 @@ public class MobManager implements Listener {
                                     .append(Debug.formatLocationClickable(entity.getLocation(), true)));
                         }
                         convertEntityToVariation(entity, variation);
-//                        Debug.broadcast("mob", MiniMessage.miniMessage().deserialize("<DARK_GREEN>[CS_NULL]</DARK_GREEN> <yellow>[" + variation.getId() + "]</yellow> to <gray>" + entity.getName() + "</gray> at ").append(Debug.formatLocationClickable(entity.getLocation(), true)));
                     } else {
                         if (variation.doesReplaceOriginalMob()) {
                             event.setCancelled(true);
@@ -717,7 +760,6 @@ public class MobManager implements Listener {
                                 Debug.broadcast("mob", MiniMessage.miniMessage().deserialize("<green>📲</green> " + "<white>" + entity.getName() + " <gray>converted: <green>" + variation.getId() + " ")
                                         .append(Debug.formatLocationClickable(entity.getLocation(), true)));
                             }
-//                            Debug.broadcast("mob", MiniMessage.miniMessage().deserialize("<green>[CS_VALID]</green> <yellow>[" + variation.getId() + "]</yellow> <gray>" + entity.getName() + "</gray> to <gray>" + e.getName() + "</gray> at ").append(Debug.formatLocationClickable(entity.getLocation(), true)));
                             MobVariation mount_variation = variation.getMount();
                             if (mount_variation != null) {
                                 if (variation.getMountChance() > ThreadLocalRandom.current().nextDouble()) {
@@ -736,15 +778,21 @@ public class MobManager implements Listener {
                     }
                 }
             }
-        }else{
-
         }
     }
 
 
-        /**
-         * TESTING ZONE
-         */
+        private boolean canSpawnInBiome(MobOverrideRule rule, Biome biome, EntityType type, LivingEntity entity) {
+            if (rule.getAllowedBiomes() != null && !rule.getAllowedBiomes().isEmpty()) {
+                return rule.getAllowedBiomes().contains(biome);
+            }
+
+            if (rule.getExcludedBiomes() != null && !rule.getExcludedBiomes().isEmpty()) {
+                return !rule.getExcludedBiomes().contains(biome);
+            }
+
+            return true;
+        }
 
     /**
      * Explicitly adds the stats to an entity
@@ -840,7 +888,10 @@ public class MobManager implements Listener {
             applyBreedSettings(entity, stats);
         }
         stats.applyRandomArmor(entity);
-
+        ItemStack item = stats.getMainHandItem();
+        if (item != null) {
+            stats.applyMainHand(entity, item);
+        }
         if (stats.isDisableItemPickup()){
             entity.setCanPickupItems(false);
         }
@@ -934,8 +985,12 @@ public class MobManager implements Listener {
         if(stats.doesHunting()) {
             if (entity instanceof Mob mob) {
                 Bukkit.getMobGoals().addGoal(mob, 0, new HuntPlayerMobGoal(mob, stats.getFollowRange(), stats.doesBreaking(), stats.getBreakScalar()));
+              //  Bukkit.getMobGoals().removeGoal(mob, ShootPlayerMobGoal.KEY);
+                //Bukkit.getMobGoals().addGoal(mob, 0, new ShootPlayerMobGoal(mob));
             }
         }
+
+
 //        if(stats.doesBreaking()) {
 //            if (entity instanceof Monster monster) {
 //                Bukkit.getMobGoals().addGoal(monster, 3, new BreakBlockMobGoal(monster));

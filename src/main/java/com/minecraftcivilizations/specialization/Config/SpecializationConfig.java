@@ -78,6 +78,8 @@ public class SpecializationConfig {
     @Getter
     private static ConfigFile hungerConfig;
     @Getter
+    private static ConfigFile hungerCostConfig;
+    @Getter
     private static ConfigFile downedConfig;
     @Getter
     private static ConfigFile canMinerLvlBreakConfig;
@@ -212,6 +214,17 @@ public class SpecializationConfig {
             return data;
         };
         hungerConfig = new ConfigFile(Specialization.getInstance(), "hungerConfig", hungerDefaults);
+
+        Supplier<Map<String, Double>> hungerCostDefaults = () -> {
+            Map<String, Double> data = new HashMap<>();
+            for (Material inputMaterial : Material.values()) {
+                if (inputMaterial.isItem() && inputMaterial != Material.AIR) {
+                    data.put(inputMaterial.key().value().toUpperCase(Locale.ROOT), 1D);
+                }
+            }
+            return data;
+        };
+        hungerCostConfig = new ConfigFile(Specialization.getInstance(), "hungerCostConfig", hungerCostDefaults);
 
         Supplier<Map<String, Object>> mobDefaults = () -> {
             Map<String, Object> data = new HashMap<>();

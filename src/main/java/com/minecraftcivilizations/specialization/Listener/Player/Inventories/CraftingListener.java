@@ -183,7 +183,7 @@ public class CraftingListener implements Listener {
         int lvl = (int)Math.max((double)customPlayer.getSkillLevel(skillType), (double)customPlayer.getSkillLevel(SkillType.BLACKSMITH)*1.5);
         if(lvl>5)lvl = 5;
         double skill_benefit = (5-((double)lvl)/1.5);
-        double base_reduction = getFoodReduction(crafted.getType());
+        double base_reduction = getFoodReduction(crafted);
         // Reduction based on Skill Level and Amount Crafted
         double food_reduction_formula = base_reduction * (skill_benefit * craftedAmount);
 
@@ -286,118 +286,59 @@ public class CraftingListener implements Listener {
 
     }
 
-    private double getFoodReduction(Material type) {
-        switch (type) {
-            case FERMENTED_SPIDER_EYE:
-            case BEETROOT_SOUP:
-                return 1.75;
-            case STICK:
-            case PUMPKIN_PIE:
-            case MUSHROOM_STEW:
-                return 0.35;
-            case TORCH:
-            case REDSTONE_TORCH:
-            case SOUL_TORCH:
-            case REDSTONE_LAMP:
-            case BRICKS:
-            case BRICK_SLAB:
-            case BRICK_STAIRS:
-            case BRICK_WALL:
-            case BOOK:
-            case BOOKSHELF:
-            case DRIED_KELP_BLOCK:
-            case BREAD: //Bread is a bit more expensive to craft due to it being lo lvl
-            case CAKE:
+    private double getFoodReduction(ItemStack item) {
+        String itemName = "";
+        if (CraftEngineItems.isCustomItem(item)) {
+            itemName = CraftEngineItems.getCustomItemId(item).toString().toUpperCase(Locale.ROOT).replace(":","_");
+        } else {
+            itemName = item.getType().key().value().toUpperCase(Locale.ROOT);
+        }
+        double value = SpecializationConfig.getHungerCostConfig().getDouble(itemName);
+        if (value == 1.0) {
+            Material type = item.getType();
+            String name = type.name();
+            if(Tag.STAIRS.isTagged(type)
+                    || Tag.FENCES.isTagged(type)
+                    || Tag.FENCE_GATES.isTagged(type)
+                    || Tag.SLABS.isTagged(type)
+                    || Tag.WALLS.isTagged(type)
+                    || Tag.BUTTONS.isTagged(type)
+                    || Tag.ALL_SIGNS.isTagged(type)
+                    || Tag.ALL_HANGING_SIGNS.isTagged(type)
+                    || Tag.TERRACOTTA.isTagged(type)
+            ){
                 return 0.5;
-            case COOKIE:
-                return 0.125;
-            case CRAFTING_TABLE:
-                return 1.0;
-            case FURNACE:
-            case SMOKER:
-            case BLAST_FURNACE:
-            case CHEST:
-            case BARREL:
-            case ENCHANTING_TABLE:
-            case ANVIL:
-                return 1.25;
-            case WRITABLE_BOOK:
-            case FLINT_AND_STEEL:
-            case BUCKET:
-            case SHEARS:
-            case CLAY:
-            case BRICK:
-            case PACKED_MUD:
-            case SNOW_BLOCK:
-            case SUGAR:
+            }
+            if (Tag.PLANKS.isTagged(type)){
                 return 0.25;
-            case GLASS_PANE:
+            }
+            if(Tag.TRAPDOORS.isTagged(type)
+                    || Tag.PRESSURE_PLATES.isTagged(type)
+                    || name.contains("_GLASS")){
                 return 0.33;
-            case SANDSTONE:
-            case SANDSTONE_SLAB:
-            case SANDSTONE_STAIRS:
-            case SANDSTONE_WALL:
-            case RESIN_BLOCK:
-            case RESIN_BRICK:
-            case RESIN_BRICK_SLAB:
-            case RESIN_BRICK_STAIRS:
-            case RESIN_BRICK_WALL:
-            case RESIN_BRICKS:
-            case RESIN_CLUMP:
-            case CHISELED_RESIN_BRICKS:
-                return 0.3;
-            case TINTED_GLASS:
-            case GLASS_BOTTLE:
-                return 0.75;
-        }
-        String name = type.name();
+            }
 
-
-        if(Tag.STAIRS.isTagged(type)
-                || Tag.FENCES.isTagged(type)
-                || Tag.FENCE_GATES.isTagged(type)
-                || Tag.SLABS.isTagged(type)
-                || Tag.WALLS.isTagged(type)
-                || Tag.BUTTONS.isTagged(type)
-                || Tag.ALL_SIGNS.isTagged(type)
-                || Tag.ALL_HANGING_SIGNS.isTagged(type)
-                || Tag.TERRACOTTA.isTagged(type)
-        ){
-            return 0.5;
-        }
-        if (Tag.PLANKS.isTagged(type)){
-            return 0.25;
-        }
-        if(Tag.TRAPDOORS.isTagged(type)
-                || Tag.PRESSURE_PLATES.isTagged(type)
-                || name.contains("_GLASS")){
-            return 0.33;
-        }
-
-
-        /**
-         * Complex values for tools
-         */
-        double value = 1.0;
-        if(name.contains("_HELMET") || name.contains("_BOOTS")){
-            value += 0.5;
-        }else if(name.contains("_LEGGINGS") || name.contains("_CHESTPLATE")){
-            value += 1.5;
-        }else if(name.contains("_AXE") || name.contains("_SWORD")){
-            value += 1.0;
-        }else if(name.contains("_PICKAXE") || name.contains("_SHOVEL") || name.contains("_HOE")){
-            value += 1.0;
-        }
-        if(name.contains("WOODEN_")) {
-            value *= 0.35;
-        }else if(name.contains("LEATHER_")){
-            value *= 0.5;
-        }else if(name.contains("STONE_")){
-            value *= 0.75;
-        }else if(name.contains("IRON_")){
-            value *= 1.25;
-        }else if(name.contains("DIAMOND_")){
-            value *= 2.0;
+            if(name.contains("_HELMET") || name.contains("_BOOTS")){
+                value += 0.5;
+            }else if(name.contains("_LEGGINGS") || name.contains("_CHESTPLATE")){
+                value += 1.5;
+            }else if(name.contains("_AXE") || name.contains("_SWORD")){
+                value += 1.0;
+            }else if(name.contains("_PICKAXE") || name.contains("_SHOVEL") || name.contains("_HOE")){
+                value += 1.0;
+            }
+            if(name.contains("WOODEN_")) {
+                value *= 0.35;
+            }else if(name.contains("LEATHER_")){
+                value *= 0.5;
+            }else if(name.contains("STONE_")){
+                value *= 0.75;
+            }else if(name.contains("IRON_")){
+                value *= 1.25;
+            }else if(name.contains("DIAMOND_")){
+                value *= 2.0;
+            }
+            return value;
         }
         return value;
     }
