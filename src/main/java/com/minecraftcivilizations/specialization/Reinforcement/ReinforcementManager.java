@@ -140,8 +140,14 @@ public class ReinforcementManager {
                 new Vector(random_b, random_a, -offset)
         };
 
-        Particle.DustOptions dust = r.isHeavy() ? new Particle.DustOptions(Color.fromRGB(150,150, 150), 1.6f)
-                : new Particle.DustOptions(Color.fromRGB(250,150, 100), 1.0f);
+        Particle.DustOptions dust;
+        if (r.isHeavy()) {
+            dust = new Particle.DustOptions(Color.fromRGB(150, 150, 150), 1.6f);
+        } else if (r.isWooden()) {
+            dust = new Particle.DustOptions(Color.fromRGB(181, 137, 89), 1.0f); // light brown for wooden
+        } else {
+            dust = new Particle.DustOptions(Color.fromRGB(250, 150, 100), 1.0f); // copper/light
+        }
 
 
 
@@ -164,16 +170,30 @@ public class ReinforcementManager {
     // --------------------- ITEM CHECK ---------------------
     private static boolean isHoldingReinforcementItem(Player player) {
         if (player == null) return false;
-        player.getInventory().getItemInMainHand();
-        Material type = player.getInventory().getItemInMainHand().getType();
-        return type == Material.IRON_INGOT || type == Material.COPPER_INGOT;
+        Material mainHandType = player.getInventory().getItemInMainHand().getType();
+        Material offHandType = player.getInventory().getItemInOffHand().getType();
+        return mainHandType == Material.IRON_INGOT || mainHandType == Material.COPPER_INGOT ||
+               offHandType == Material.IRON_INGOT || offHandType == Material.COPPER_INGOT ||
+               isLog(mainHandType) || isLog(offHandType);
+    }
+
+    public static boolean isLog(Material material) {
+        if (material == null) return false;
+        String name = material.name();
+        // Include regular logs, stripped logs, wood, stripped wood, bamboo blocks, stems, hyphae
+        return name.endsWith("_LOG") || name.endsWith("_WOOD") ||
+               name.endsWith("_STEM") || name.endsWith("_HYPHAE") ||
+               material == Material.BAMBOO_BLOCK || material == Material.STRIPPED_BAMBOO_BLOCK;
     }
 
 
     // --------------------- REINFORCEMENT METHODS ---------------------
+
+    public static final long WOODEN_REINFORCEMENT_DURATION_TICKS = 48000L; // 2 minecraft nights
+    public static final double WOODEN_REINFORCEMENT_STRENGTH_MULTIPLIER = 0.6; // 0.6x as strong as light
+
     public static boolean addReinforcement(Player player, Block block, boolean isHeavy) {
-        if (isHeavy ? isHeavilyReinforced(block) : (isLightlyReinforced(block) || isHeavilyReinforced(block)))
-            return false;
+        if (isReinforced(block)) return false; // Block already has any type of reinforcement
 
         Chunk chunk = block.getChunk();
         Set<Reinforcement> blocks = getReinforcedBlocks(chunk);
@@ -189,6 +209,27 @@ public class ReinforcementManager {
         if (target != null) {
             CustomPlayer cp = CoreUtil.getPlayer(target.getUniqueId());
             if (cp != null) cp.addSkillXp(SkillType.BUILDER, isHeavy ? 15.0 : 5.0);
+        }
+        return true;
+    }
+
+    public static boolean addWoodenReinforcement(Player player, Block block, Material logMaterial) {
+        if (isReinforced(block)) return false; // Block already has any type of reinforcement
+
+        Chunk chunk = block.getChunk();
+        Set<Reinforcement> blocks = getReinforcedBlocks(chunk);
+        if (blocks == null) blocks = new HashSet<>();
+
+        long expirationTick = block.getWorld().getFullTime() + WOODEN_REINFORCEMENT_DURATION_TICKS;
+        if (!blocks.add(new Reinforcement(block.getLocation().toVector(), logMaterial, expirationTick))) return false;
+
+        chunk.getPersistentDataContainer().set(namespacedKey, PersistentDataType.STRING, new Gson().toJson(blocks));
+        cachedReinforcements.put(chunk, blocks);
+        cacheTime.put(chunk, System.currentTimeMillis());
+
+        if (player != null) {
+            CustomPlayer cp = CoreUtil.getPlayer(player.getUniqueId());
+            if (cp != null) cp.addSkillXp(SkillType.BUILDER, 1.0); // 1 builder xp for wooden
         }
         return true;
     }
@@ -213,8 +254,10 @@ public class ReinforcementManager {
         Chunk chunk = block.getChunk();
         Set<Reinforcement> reinforcedBlocks = getReinforcedBlocks(chunk);
         if (reinforcedBlocks == null) return;
-        reinforcedBlocks.remove(new Reinforcement(block.getLocation().toVector(), false));
-        reinforcedBlocks.remove(new Reinforcement(block.getLocation().toVector(), true));
+        // The equals method in Reinforcement only compares location, so this removes any reinforcement type at that position
+        reinforcedBlocks.removeIf(r -> r.location().getBlockX() == block.getX() &&
+                                       r.location().getBlockY() == block.getY() &&
+                                       r.location().getBlockZ() == block.getZ());
         chunk.getPersistentDataContainer().set(namespacedKey, PersistentDataType.STRING, new Gson().toJson(reinforcedBlocks));
         cachedReinforcements.put(chunk, reinforcedBlocks);
         cacheTime.put(chunk, System.currentTimeMillis());
@@ -231,7 +274,17 @@ public class ReinforcementManager {
 
     public static boolean isLightlyReinforced(Block block) {
         Reinforcement r = getReinforcement(block);
-        return r != null && !r.isHeavy();
+        return r != null && r.isLight();
+    }
+
+    public static boolean isWoodenReinforced(Block block) {
+        Reinforcement r = getReinforcement(block);
+        return r != null && r.isWooden();
+    }
+
+    public static Material getWoodenReinforcementLogMaterial(Block block) {
+        Reinforcement r = getReinforcement(block);
+        return (r != null && r.isWooden()) ? r.plankMaterial() : null;
     }
 
     private static Reinforcement getReinforcement(Block block) {

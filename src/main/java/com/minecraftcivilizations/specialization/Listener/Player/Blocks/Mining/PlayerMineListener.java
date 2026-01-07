@@ -90,6 +90,11 @@ public class PlayerMineListener implements Listener {
         double multiplier = SpecializationConfig.getBlockHardnessConfig().getDouble(block.getType().toString());
         
 
+        if (ReinforcementManager.isWoodenReinforced(block)) {
+            // Wooden reinforcement is 0.5x as strong as light reinforcement
+            double lightMultiplier = SpecializationConfig.getReinforcementConfig().getDouble("LIGHT_REINFORCEMENT_MULTIPLIER");
+            multiplier = lightMultiplier * 0.5;
+        }
         if (ReinforcementManager.isLightlyReinforced(block)) {
             multiplier = SpecializationConfig.getReinforcementConfig().getDouble("LIGHT_REINFORCEMENT_MULTIPLIER");
         }
