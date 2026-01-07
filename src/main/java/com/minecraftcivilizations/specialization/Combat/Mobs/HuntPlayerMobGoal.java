@@ -5,6 +5,7 @@ import com.destroystokyo.paper.entity.ai.GoalKey;
 import com.destroystokyo.paper.entity.ai.GoalType;
 import com.google.gson.reflect.TypeToken;
 import com.minecraftcivilizations.specialization.Combat.Instinct;
+import com.minecraftcivilizations.specialization.CraftEngine.MusketBehavior;
 import com.minecraftcivilizations.specialization.Reinforcement.ReinforcementManager;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
@@ -13,16 +14,16 @@ import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.minecraftcivilizations.specialization.util.CoreUtil;
 import com.minecraftcivilizations.specialization.util.MathUtils;
+import net.momirealms.craftengine.bukkit.api.CraftEngineItems;
+import net.momirealms.craftengine.core.util.Key;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.*;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -43,6 +44,7 @@ public class HuntPlayerMobGoal implements Goal<Mob> {
     private int tick = 0;
     private int reacquire_tick = 0;
     private float mobBreakScalar;
+    private boolean hasMusket;
 
     public HuntPlayerMobGoal(Mob mob, double follow_range, boolean breaks_blocks, double break_scalar) {
         this.mob = mob;
@@ -78,8 +80,10 @@ public class HuntPlayerMobGoal implements Goal<Mob> {
             block = null;
             nearbyPlayers = null;
         }
-        tick = 0;
+        tick = (int) (Math.random() * 120);
         reacquire_tick = 0;
+        ItemStack item = mob.getEquipment().getItemInMainHand();
+        hasMusket = CraftEngineItems.isCustomItem(item) && Objects.equals(CraftEngineItems.getCustomItemId(item), Key.of("specialization:musket"));
     }
 
     public void calculateRandomTarget(boolean detect_guardsman_level) {
@@ -185,10 +189,23 @@ public class HuntPlayerMobGoal implements Goal<Mob> {
                 calculateNewTarget(false);
                 return;
             }
-            tick = 0;
+
         }
 
+        if (hasMusket && tick % 50 == 0) {
+            LivingEntity target = mob.getTarget();
+            if (target == null) return;
+            Vector direction = target.getLocation()
+                    .subtract( mob.getEyeLocation())
+                    .toVector()
+                    .normalize();
 
+            MusketBehavior.shootParticleBeam(mob, mob.getEyeLocation(), direction, mob.getWorld());
+            return;
+        }
+        if (tick % 120 == 0) {
+            tick = 0;
+        }
         // We have a target. detect target changes and reset state
         Entity current_target = mob.getTarget();
         if(current_target==null) {
@@ -204,10 +221,12 @@ public class HuntPlayerMobGoal implements Goal<Mob> {
             reacquire_tick = 0;
         }
 
+
+        // Do not attempt breaking during daytime
+
         // If this mob doesn't break blocks, nothing more to do here (movement/pathing handled by other systems)
         if (!breaks_blocks) return;
 
-        // Do not attempt breaking during daytime
         if (mob.getWorld().isDayTime()) {
             block = null;
             breakAmount = 0f;

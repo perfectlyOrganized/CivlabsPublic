@@ -3,9 +3,12 @@ package com.minecraftcivilizations.specialization.Combat.Mobs;
 
 import com.minecraftcivilizations.specialization.util.MathUtils;
 import lombok.Getter;
+import net.momirealms.craftengine.core.util.Key;
 import org.bukkit.Material;
+import org.bukkit.block.Biome;
 import org.bukkit.damage.DamageType;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
@@ -14,6 +17,7 @@ import org.bukkit.potion.PotionEffect;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Allows for custom mob variations.
@@ -489,11 +493,53 @@ public class MobVariation {
         if (ThreadLocalRandom.current().nextDouble() > chance) return;
         setter.accept(new ItemStack(base));
     }
-
+    private void tryEquip(Consumer<ItemStack> setter, ItemStack base, double chance) {
+        if(base==null)return;
+        if (ThreadLocalRandom.current().nextDouble() > chance) return;
+        setter.accept(base);
+    }
+    public void applyMainHand(LivingEntity entity, ItemStack item) {
+        EntityEquipment eq = entity.getEquipment();
+        if (eq == null) return;
+        tryEquip(eq::setItemInMainHand, item, 1);
+    }
 
     public MobVariation disableItemPickup(){
         disableItemPickup = true;
         return this;
+    }
+
+    private List<Biome> allowedBiomes;
+    private List<Biome> excludedBiomes;
+    private Map<Biome, Double> biomeWeights; // Different weights per biome
+
+    public boolean canSpawnInBiome(Biome biome) {
+        if (allowedBiomes != null && !allowedBiomes.isEmpty()) {
+            return allowedBiomes.contains(biome);
+        }
+        if (excludedBiomes != null && excludedBiomes.contains(biome)) {
+            return false;
+        }
+        return true;
+    }
+
+    public double getBiomeWeight(Biome biome) {
+        if (biomeWeights != null && biomeWeights.containsKey(biome)) {
+            return biomeWeights.get(biome);
+        }
+        return 1; // Return default weight if no biome-specific weight
+    }
+
+    private Supplier<ItemStack> createMainHandItem;
+    public MobVariation createMainHandItem(Supplier<ItemStack> stackSupplier) {
+        this.createMainHandItem = stackSupplier;
+        return this;
+    }
+
+
+    public ItemStack getMainHandItem() {
+        if (createMainHandItem == null) return null;
+        return createMainHandItem.get();
     }
 
 }
