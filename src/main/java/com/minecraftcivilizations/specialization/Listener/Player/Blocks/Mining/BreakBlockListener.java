@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.minecraftcivilizations.specialization.Reinforcement.ReinforcementManager.*;
+import com.minecraftcivilizations.specialization.Reinforcement.ReinforcementManager;
 
 public class BreakBlockListener implements Listener {
 
@@ -93,18 +94,25 @@ public class BreakBlockListener implements Listener {
     private void handleReinforcedDrop(Block block, org.bukkit.entity.Player player) {
         Location dropLocation = block.getLocation().add(0.5, 0.5, 0.5);
 
-        // 50% chance to give the reward item
-            if (isHeavilyReinforced(block)) {
-                if (Math.random() < 0.5) {
-                    block.getWorld().dropItemNaturally(dropLocation, new ItemStack(Material.IRON_INGOT));
-                }
-                PlayerUtil.message(player, "Iron Reinforcement Broke");
-            }else if (isLightlyReinforced(block)) {
-                if (Math.random() < 0.5) {
-                    block.getWorld().dropItemNaturally(dropLocation, new ItemStack(Material.COPPER_INGOT));
-                }
-                PlayerUtil.message(player, "Copper Reinforcement Broke");
+        // 50% chance to give the reward item for iron/copper reinforcement
+        if (isHeavilyReinforced(block)) {
+            if (Math.random() < 0.5) {
+                block.getWorld().dropItemNaturally(dropLocation, new ItemStack(Material.IRON_INGOT));
             }
+            PlayerUtil.message(player, "Iron Reinforcement Broke");
+        } else if (isLightlyReinforced(block)) {
+            if (Math.random() < 0.5) {
+                block.getWorld().dropItemNaturally(dropLocation, new ItemStack(Material.COPPER_INGOT));
+            }
+            PlayerUtil.message(player, "Copper Reinforcement Broke");
+        } else if (isWoodenReinforced(block)) {
+            // Wooden reinforcement always drops the log type used
+            Material logMaterial = getWoodenReinforcementLogMaterial(block);
+            if (logMaterial != null) {
+                block.getWorld().dropItemNaturally(dropLocation, new ItemStack(logMaterial));
+            }
+            PlayerUtil.message(player, "Wooden Reinforcement Broke");
+        }
 
 
         // Always remove reinforcement
@@ -179,10 +187,22 @@ public class BreakBlockListener implements Listener {
             Location dropLocation = block.getLocation().add(0.5, 0.5, 0.5);
 
             boolean heavy = isHeavilyReinforced(block);
+            boolean wooden = isWoodenReinforced(block);
+
+            // Wooden reinforcement provides NO explosion protection - block gets destroyed and drops logs
+            if (wooden) {
+                Material logMaterial = getWoodenReinforcementLogMaterial(block);
+                if (logMaterial != null) {
+                    block.getWorld().dropItemNaturally(dropLocation, new ItemStack(logMaterial));
+                }
+                for (Block b : getMultiBlocks(block)) removeReinforcement(b);
+                return; // Let the explosion destroy this block normally
+            }
+
             double factor;
             if(heavy){
                 factor = SpecializationConfig.getReinforcementConfig().getDouble("HEAVY_EXPLOSION_RESISTANCE");
-            }else{
+            } else{
                 factor = SpecializationConfig.getReinforcementConfig().getDouble("LIGHT_EXPLOSION_RESISTANCE");
             }
             if(Math.random() < factor){
