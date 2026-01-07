@@ -250,7 +250,7 @@ public class ArmorEquipAttributes implements Listener {
                     ItemStackUtils.setLoreLine(
                             meta,
                             2,
-                            ChatColor.DARK_GRAY + "Crafted by " + hex_string + player.getName()
+                            ChatColor.DARK_GRAY + "Crafted by " + hex_string + ChatColor.GRAY + player.getName()
                     );
                     meta.addItemFlags(ItemFlag.HIDE_ARMOR_TRIM);
                     current.setItemMeta(meta);

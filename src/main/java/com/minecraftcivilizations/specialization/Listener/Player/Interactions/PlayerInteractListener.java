@@ -160,8 +160,9 @@ public class PlayerInteractListener implements Listener {
         meta.addEnchant(enchant, finalLevel, false);
 
         List<Component> lore = meta.hasLore() ? new ArrayList<>(Objects.requireNonNull(meta.lore())) : new ArrayList<>();
-        String enchantDisplay = enchant.getKey().getKey().replace("_", " ");
-        lore.add(Component.text(ChatColor.GOLD + "Blessed with " + enchantDisplay + " " + finalLevel + " by " + e.getPlayer().getName()));
+        String enchantDisplay = capitalizeWords(enchant.getKey().getKey().replace("_", " "));
+        String levelRoman = toRoman(finalLevel);
+        lore.add(Component.text(ChatColor.GOLD + "Blessed with " + ChatColor.YELLOW + enchantDisplay + " " + levelRoman + ChatColor.GOLD + " by " + ChatColor.AQUA + e.getPlayer().getName()));
         meta.lore(lore);
         e.getItem().setItemMeta(meta);
 
@@ -169,7 +170,7 @@ public class PlayerInteractListener implements Listener {
         e.getPlayer().getInventory().getItemInOffHand()
                 .setAmount(e.getPlayer().getInventory().getItemInOffHand().getAmount() - 1);
 
-        PlayerUtil.message(e.getPlayer(), ChatColor.GOLD + "✨ Your " + typeName.replace("_", " ") + " has been blessed with " + enchantDisplay + " " + finalLevel + "!");
+        PlayerUtil.message(e.getPlayer(), ChatColor.GOLD + "✨ Your " + capitalizeWords(typeName.replace("_", " ")) + " has been blessed with " + enchantDisplay + " " + levelRoman + "!");
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
@@ -345,5 +346,29 @@ public class PlayerInteractListener implements Listener {
             CustomPlayer player = CoreUtil.getPlayer(e);
             if (player.getSkillLevel(SkillType.BLACKSMITH) < SkillLevel.EXPERT.getLevel()) e.setCancelled(true);
         }
+    }
+
+    private String capitalizeWords(String str) {
+        if (str == null || str.isEmpty()) return str;
+        String[] words = str.split(" ");
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < words.length; i++) {
+            if (!words[i].isEmpty()) {
+                result.append(Character.toUpperCase(words[i].charAt(0)));
+                if (words[i].length() > 1) {
+                    result.append(words[i].substring(1).toLowerCase());
+                }
+            }
+            if (i < words.length - 1) {
+                result.append(" ");
+            }
+        }
+        return result.toString();
+    }
+
+    private String toRoman(int num) {
+        if (num <= 0 || num > 10) return String.valueOf(num);
+        String[] romanNumerals = {"I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"};
+        return romanNumerals[num - 1];
     }
 }

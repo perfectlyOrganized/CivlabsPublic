@@ -5,6 +5,7 @@ import com.minecraftcivilizations.specialization.Listener.Player.LocalChat;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Reinforcement.ReinforcementManager;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
+import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.util.CoreUtil;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import net.kyori.adventure.text.Component;
@@ -12,6 +13,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.minecraft.world.level.block.SweetBerryBushBlock;
 import net.minecraft.world.level.block.SweetBerryBushBlock;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -34,12 +36,13 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.components.FoodComponent;
+import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class RightClickListener implements Listener {
+
     @EventHandler
     public void onRightClick(PlayerInteractEvent event) {
         if (!(event.getAction() == Action.RIGHT_CLICK_BLOCK)) return;
@@ -50,9 +53,33 @@ public class RightClickListener implements Listener {
             event.setCancelled(true);
         }
 
+        Player player = event.getPlayer();
+
+        // Handle wooden reinforcement first - prevent placing logs when sneaking with logs in off-hand
+        if (ReinforcementManager.isLog(player.getInventory().getItemInOffHand().getType()) && player.isSneaking()) {
+            event.setCancelled(true); // Always prevent placing when sneaking with logs in off-hand
+
+            if (!ReinforcementManager.isReinforced(clicked)) {
+                // Wooden reinforcement - works at any class level (even classless)
+                Material logType = player.getInventory().getItemInOffHand().getType();
+                List<Block> blocks = getMultiBlocks(clicked);
+                boolean success = false;
+                for (Block block : blocks) {
+                    if (ReinforcementManager.addWoodenReinforcement(player, block, logType)) {
+                        success = true;
+                    }
+                }
+                if (success) {
+                    player.swingHand(EquipmentSlot.OFF_HAND);
+                    player.getInventory().getItemInOffHand().setAmount(player.getInventory().getItemInOffHand().getAmount() - 1);
+                    PlayerUtil.message(player, Component.text("§6Wooden Reinforcement").color(NamedTextColor.GOLD).decorations(Set.of(TextDecoration.BOLD, TextDecoration.ITALIC), false));
+                }
+            }
+            return;
+        }
+
         if (ReinforcementManager.isReinforced(clicked)) return;
 
-        Player player = event.getPlayer();
         CustomPlayer cPlayer = CoreUtil.getPlayer(player);
         if(clicked.getBlockData() instanceof Ageable bush && cPlayer.getSkillLevel(SkillType.FARMER) < 2){
             if(bush.getAge() >= 3 && Math.random() < 0.2){
@@ -60,7 +87,12 @@ public class RightClickListener implements Listener {
             }
         }
 
-        if (player.getInventory().getItemInMainHand().getType() == Material.COPPER_INGOT) {
+        Material mainHand = player.getInventory().getItemInMainHand().getType();
+        Material offHand = player.getInventory().getItemInOffHand().getType();
+
+        // Light reinforcement (copper ingot) - check main hand first, then off-hand
+        if (mainHand == Material.COPPER_INGOT || offHand == Material.COPPER_INGOT) {
+            boolean useOffHand = mainHand != Material.COPPER_INGOT;
             CustomPlayer customPlayer = CoreUtil.getPlayer(player.getUniqueId());
             if (customPlayer.getSkillLevel(SkillType.BUILDER) >= SpecializationConfig.getReinforcementConfig().getInteger("LIGHT_REINFORCEMENT_LEVEL")) {
                 List<Block> blocks = getMultiBlocks(clicked);
@@ -71,12 +103,20 @@ public class RightClickListener implements Listener {
                     }
                 }
                 if (success) {
-                    player.swingHand(EquipmentSlot.HAND);
-                    player.getInventory().getItemInMainHand().setAmount(player.getInventory().getItemInMainHand().getAmount() - 1);
+                    if (useOffHand) {
+                        player.swingHand(EquipmentSlot.OFF_HAND);
+                        player.getInventory().getItemInOffHand().setAmount(player.getInventory().getItemInOffHand().getAmount() - 1);
+                    } else {
+                        player.swingHand(EquipmentSlot.HAND);
+                        player.getInventory().getItemInMainHand().setAmount(player.getInventory().getItemInMainHand().getAmount() - 1);
+                    }
                     PlayerUtil.message(player, Component.text("§7Lightly Reinforced").color(NamedTextColor.WHITE).decorations(Set.of(TextDecoration.BOLD, TextDecoration.ITALIC), false));
                 }
             }
-        } else if (player.getInventory().getItemInMainHand().getType() == Material.IRON_INGOT) {
+        }
+        // Heavy reinforcement (iron ingot) - check main hand first, then off-hand
+        else if (mainHand == Material.IRON_INGOT || offHand == Material.IRON_INGOT) {
+            boolean useOffHand = mainHand != Material.IRON_INGOT;
             CustomPlayer customPlayer = CoreUtil.getPlayer(player.getUniqueId());
 
             if (customPlayer.getSkillLevel(SkillType.BUILDER) >= SpecializationConfig.getReinforcementConfig().getInteger("HEAVY_REINFORCEMENT_LEVEL")) {
@@ -88,8 +128,13 @@ public class RightClickListener implements Listener {
                     }
                 }
                 if (success) {
-                    player.swingHand(EquipmentSlot.HAND);
-                    player.getInventory().getItemInMainHand().setAmount(player.getInventory().getItemInMainHand().getAmount() - 1);
+                    if (useOffHand) {
+                        player.swingHand(EquipmentSlot.OFF_HAND);
+                        player.getInventory().getItemInOffHand().setAmount(player.getInventory().getItemInOffHand().getAmount() - 1);
+                    } else {
+                        player.swingHand(EquipmentSlot.HAND);
+                        player.getInventory().getItemInMainHand().setAmount(player.getInventory().getItemInMainHand().getAmount() - 1);
+                    }
                     PlayerUtil.message(player, Component.text("§7Heavily Reinforced").color(NamedTextColor.WHITE).decorations(Set.of(TextDecoration.BOLD, TextDecoration.ITALIC), false));
                 }
             }
