@@ -45,21 +45,25 @@ public class MusketBehavior extends ItemBehavior {
     private final Key requiredAmmo;
     private final NamespacedKey IS_LOADED_KEY = new NamespacedKey(Specialization.getInstance(), "isReloaded");
     private final int reloadTime;
+    private final int cooldownTime;
     public static final Factory FACTORY = new Factory();
     public static class Factory implements ItemBehaviorFactory {
         @Override
         public ItemBehavior create(Pack pack, Path path, String node, Key key, Map<String, Object> arguments) {
             String ammoId = (String) arguments.get("ammo");
             int reloadTime = (Integer) arguments.getOrDefault("reload-time", 10);
+            int cooldownTime = (int) arguments.getOrDefault("cooldown-time", 60);
+
             if (ammoId == null) {
                 throw new IllegalArgumentException("Missing required parameter 'ammo'");
             }
-            return new MusketBehavior(Key.of(ammoId), reloadTime);
+            return new MusketBehavior(Key.of(ammoId), reloadTime, cooldownTime);
         }
     }
-    public MusketBehavior(Key requiredAmmo, int reloadTime) {
+    public MusketBehavior(Key requiredAmmo, int reloadTime, int cooldownTime) {
         this.requiredAmmo = requiredAmmo;
         this.reloadTime = reloadTime;
+        this.cooldownTime = cooldownTime;
     }
 
     private boolean hasAmmunition(Player player) {
@@ -116,10 +120,9 @@ public class MusketBehavior extends ItemBehavior {
     static public void shootParticleBeam(Entity shooter, Location eyeLocation, Vector direction, org.bukkit.World world) {
         double range = 50.0;
 
-        Vector velocity = shooter.getVelocity();
-        double speed = velocity.length();
 
-        double accuracy = calculateAccuracy(speed, shooter);
+
+        double accuracy = calculateAccuracy(shooter);
         Vector adjustedDirection = adjustDirectionGaussian(direction, accuracy);
 
         // First, ray trace for BLOCKS
@@ -228,36 +231,37 @@ public class MusketBehavior extends ItemBehavior {
     }
 
     private static Vector adjustDirectionGaussian(Vector originalDirection, double accuracy) {
-        // Higher spreadAmount = less accurate
-        double spreadAmount = (1.0 - accuracy) * 0.15;
+        // 1. Calculate the spread radius (standard deviation)
+        // Adjust this multiplier (0.1) to tune how 'shitty' the aim is
+        double stdDev = (3.0 - accuracy) * 0.1;
 
-        double randomYaw = (ThreadLocalRandom.current().nextGaussian() * spreadAmount);
-        double randomPitch = (ThreadLocalRandom.current().nextGaussian() * spreadAmount);
+        // 2. Get random offsets using Gaussian distribution
+        double xOffset = ThreadLocalRandom.current().nextGaussian() * stdDev;
+        double yOffset = ThreadLocalRandom.current().nextGaussian() * stdDev;
 
-        Vector rotated = originalDirection.clone();
+        // 3. Create a basis (local coordinate system) around the direction
+        Vector dir = originalDirection.clone().normalize();
 
-        if (Math.abs(randomYaw) > 0.001) {
-            rotated = rotateAroundYAxis(rotated, randomYaw);
-        }
+        // Find an arbitrary orthogonal vector to use as "Right"
+        Vector helper = Math.abs(dir.getY()) < 0.9 ? new Vector(0, 1, 0) : new Vector(1, 0, 0);
+        Vector right = dir.getCrossProduct(helper).normalize();
+        Vector up = right.getCrossProduct(dir).normalize();
 
-        if (Math.abs(randomPitch) > 0.001) {
-            rotated = rotateAroundAxis(rotated,
-                    originalDirection.clone().crossProduct(new Vector(0, 1, 0)).normalize(),
-                    randomPitch
-            );
-        }
+        // 4. Combine: Original + (Right * x) + (Up * y)
+        Vector spreadVec = dir.add(right.multiply(xOffset)).add(up.multiply(yOffset));
 
-        return rotated.normalize();
+        return spreadVec.normalize();
     }
-    private static double calculateAccuracy(double speed, Entity shooter) {
-        double baseAccuracy = 0.95; // standing still
+
+    private static double calculateAccuracy(Entity shooter) {
+        double baseAccuracy = 0.3; // standing still
 
         if (shooter instanceof  org.bukkit.entity.Player player) {
             if (player.isSneaking()) {
-                baseAccuracy = 1;
+                baseAccuracy *= 2;
             }
             if (!player.isOnGround()) {
-                baseAccuracy *= 0.8;
+                baseAccuracy /= 2;
             }
 
             if (player.isSprinting()) {
@@ -265,23 +269,19 @@ public class MusketBehavior extends ItemBehavior {
             }
         }
 
-        double speedPenalty = Math.min(0.9, speed * 10.0); // Max 90% penalty
-        double accuracy = baseAccuracy * (1.0 - speedPenalty);
+        double accuracy = baseAccuracy;
 
         return Math.max(0.01, accuracy);
     }
     private static double calculateDamage(Double distance) {
-        double baseDamage = 5.0;
-
-            // Using Horner's Method for better performance and precision:
-            // f(x) = ((((a*x + b)*x + c)*x + d)*x + e)*x + f
-
-        return ((((-1.235168665e-7 * distance
-                    + 2.836276548e-5) * distance
-                    - 2.213318231e-3) * distance
-                    + 5.884158215e-2) * distance
-                    - 3.915702214e-3) * distance
-                    + 0.9472591991;
+        double baseDamage = 8.0;
+        if (distance < 5) {
+            return baseDamage/4;
+        }
+        if (distance > 40) {
+            return baseDamage/1.5;
+        }
+        return baseDamage;
     }
 
     public InteractionResult useOnBlock(UseOnContext context) {
@@ -299,12 +299,12 @@ public class MusketBehavior extends ItemBehavior {
         Item<?> item = CEplayer.getItemInHand(hand);
         if (item.getItem() instanceof ItemStack itemStack) {
             if (bukkitPlayer.hasCooldown(itemStack)) return InteractionResult.PASS;
-            if (itemStack.getPersistentDataContainer().has(IS_LOADED_KEY)) {
+            if (itemStack.getPersistentDataContainer().has(IS_LOADED_KEY) || reloadTime == 0) {
                 item.hurtAndBreak(1, null, null);
                 Location eyeLocation = bukkitPlayer.getEyeLocation();
                 Vector direction = eyeLocation.getDirection().normalize();
                 shootParticleBeam(bukkitPlayer, eyeLocation, direction, (org.bukkit.World) world.platformWorld());
-                bukkitPlayer.setCooldown(itemStack.getType(), 60);
+                bukkitPlayer.setCooldown(itemStack.getType(), this.cooldownTime);
                 itemStack.editPersistentDataContainer(pdc -> {
                     pdc.remove(IS_LOADED_KEY);
                 });
@@ -327,7 +327,7 @@ public class MusketBehavior extends ItemBehavior {
                     world.playSound(LocationUtils.toVec3d(bukkitPlayer.getLocation()), Key.of("specialization:rifle_reload"), 1f, 1.2f + (float) (Math.random() * 0.1),SoundSource.PLAYER);
                 } else {
                     world.playSound(LocationUtils.toVec3d(bukkitPlayer.getLocation()), Key.of("specialization:rifle_reload"), 1f, 0.9f + (float) (Math.random() * 0.1),SoundSource.PLAYER);
-                    bukkitPlayer.setCooldown(itemStack.getType(), 20);
+                    bukkitPlayer.setCooldown(itemStack.getType(), (int) cooldownTime/3);
                     CEplayer.sendActionBar(Component.text(reload));
                 }
                 reload += 1;

@@ -307,12 +307,10 @@ public class SpecializationConfig {
         };
         canMinerLvlBreakConfig = new ConfigFile(Specialization.getInstance(), "canMinerLvlBreakConfig", canMinerLvlBreakDefaults);
 
-        Supplier<Map<String, Object>> berserkDefaults = () -> {
-            Map<String, Object> data = new HashMap<>();
-            for (PotionEffectType potionEffectType : Registry.MOB_EFFECT) {
-                data.put(potionEffectType.key().value().toUpperCase(Locale.ROOT), new PotionEffectData(0, 0).toMap());
-            }
-            return data;
+        Supplier<Map<String,Object>> berserkDefaults = () -> {
+            List<Map<String,Object>> list = new ArrayList<>();
+            list.add(Map.of(PotionEffectType.ABSORPTION.key().value().toUpperCase(Locale.ROOT), new PotionEffectData(0, 0).toMap()));
+            return Map.of("berserk_effect",list);
         };
         berserkConfig = new ConfigFile(Specialization.getInstance(), "berserkConfig", berserkDefaults);
 

@@ -2,22 +2,18 @@ package com.minecraftcivilizations.specialization.Listener.Player.Inventories;
 
 import com.google.gson.reflect.TypeToken;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
-import com.minecraftcivilizations.specialization.CustomItem.CustomItemManager;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.Specialization;
-import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.typesafe.config.ConfigException;
+import minecraftcivilizations.com.minecraftCivilizationsCore.Item.CustomItem;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Item.ItemUtils;
 import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Options.Pair;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.momirealms.craftengine.bukkit.api.CraftEngineItems;
-import net.momirealms.craftengine.core.util.Key;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -31,10 +27,7 @@ import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.ShapelessRecipe;
-import org.bukkit.inventory.meta.Damageable;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.Plugin;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -153,13 +146,8 @@ public class CraftingListener implements Listener {
 
         Double xp = 0.0;
         SkillType skillType = SkillType.BLACKSMITH;
+        String itemName = getCraftId(event);
         for (SkillType skill : SkillType.values()) {
-            String itemName = "";
-            if (CraftEngineItems.isCustomItem(crafted)) {
-                itemName = CraftEngineItems.getCustomItemId(crafted).toString().toUpperCase(Locale.ROOT).replace(":","_");
-            } else {
-                itemName = crafted.getType().key().value().toUpperCase(Locale.ROOT);
-            }
             try {
                 xp = SpecializationConfig.getXpGainFromCraftingConfig().getDouble(skill.name() + "." + itemName);
             } catch(ConfigException.Missing _) {}
@@ -171,19 +159,13 @@ public class CraftingListener implements Listener {
 
         int craftedAmount = getCraftedAmount(event);
 
-        String amtstring = craftedAmount+"x ";
-        if(craftedAmount==1)amtstring = "";
-
-
-
-
         CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
 
 
-        int lvl = (int)Math.max((double)customPlayer.getSkillLevel(skillType), (double)customPlayer.getSkillLevel(SkillType.BLACKSMITH)*1.5);
+        int lvl = (int) Math.max(customPlayer.getSkillLevel(skillType), customPlayer.getSkillLevel(SkillType.BLACKSMITH)*1.5);
         if(lvl>5)lvl = 5;
         double skill_benefit = (5-((double)lvl)/1.5);
-        double base_reduction = getFoodReduction(crafted);
+        double base_reduction = getFoodReduction(event);
         // Reduction based on Skill Level and Amount Crafted
         double food_reduction_formula = base_reduction * (skill_benefit * craftedAmount);
 
@@ -241,32 +223,6 @@ public class CraftingListener implements Listener {
             }
         }
 
-        Material mat = event.getCurrentItem().getType();
-        String color = getItemNameFormat(mat);
-        boolean rare = true;
-        if(color==null){
-            color = "gray";
-            rare = false;
-        }
-        String colortag = "<"+color+">"+amtstring+mat.name()+"</"+color+">";
-
-        Component debug_isolated = MiniMessage.miniMessage().deserialize("<gray>crafted</gray> "+colortag+" <red>🍖"+totalReduction+"</red>");
-        Component debug_global = Component.text(player.getName()+" ").color(NamedTextColor.WHITE).append(debug_isolated);
-        Component hover = MiniMessage.miniMessage().deserialize("<gray>🎬:"+event.getAction().name()+"\n"
-                +"<green>Current Item: </green>"+event.getCurrentItem().getType().name()+"\n"
-                +"<blue>Cursor Item: </blue>"+event.getCursor().getType().name()+"\n"
-                +"<red>🍖 Type Base Reduction: </red>"+base_reduction+"\n"
-                +"<red>🍖 Skill Benefit: </red>"+skill_benefit+"\n"
-                +"<red>🍖 Food Level: </red>"+foodLevel+" <gold>🍖 Reduction:</gold> "+totalReduction);
-        Debug.broadcast("craft", debug_global, hover);
-        if(rare){
-            Debug.broadcast("craftrare", debug_global, hover);
-        }
-        String isolated_debug_channel = "craft_"+player.getName().toLowerCase();
-        if(Debug.isAnyoneListening(isolated_debug_channel, false)) {
-            Debug.broadcast(isolated_debug_channel, debug_isolated
-                    .append(Debug.formatLocationClickable(player.getLocation(), true)), hover);
-        }
         SpecializationCraftItemEvent new_event = new SpecializationCraftItemEvent(event, player, craftedAmount, totalReduction, skillType, lvl);
         Bukkit.getPluginManager().callEvent(new_event);
         if (xp != 0) {
@@ -286,13 +242,21 @@ public class CraftingListener implements Listener {
 
     }
 
-    private double getFoodReduction(ItemStack item) {
-        String itemName = "";
-        if (CraftEngineItems.isCustomItem(item)) {
-            itemName = CraftEngineItems.getCustomItemId(item).toString().toUpperCase(Locale.ROOT).replace(":","_");
+    private String getCraftId(CraftItemEvent event) {
+        ItemStack item = event.getCurrentItem();
+        if (CustomItem.isCustomItem(item)) {
+            return event.getRecipe().toString().toUpperCase(Locale.ROOT);
+        } else if (CraftEngineItems.isCustomItem(item)) {
+            return CraftEngineItems.getCustomItemId(item).toString().toUpperCase(Locale.ROOT).replace(":","_");
         } else {
-            itemName = item.getType().key().value().toUpperCase(Locale.ROOT);
+            return item.getType().key().value().toUpperCase(Locale.ROOT);
         }
+    }
+
+    private double getFoodReduction(CraftItemEvent event) {
+        String itemName = getCraftId(event);
+        ItemStack item = event.getCurrentItem();
+
         double value = SpecializationConfig.getHungerCostConfig().getDouble(itemName);
         if (value == 1.0) {
             Material type = item.getType();

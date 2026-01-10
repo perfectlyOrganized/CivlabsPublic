@@ -31,11 +31,18 @@ import java.util.*;
  */
 public abstract class CustomItem {
 
+    // === Accessors ===
+    @Getter
     protected final String id;
+    @Getter
     protected String displayName;
+    @Getter
     protected Material material;
+    @Getter
     protected String customModelData; // null = not used
+    @Getter
     protected int maxStackSize;
+    @Getter
     protected boolean enabled;
 
     @Setter
@@ -116,31 +123,6 @@ public abstract class CustomItem {
      */
     public CustomItem(String id) {
         this(id, null, null, id, 0, true, true);
-    }
-
-    // === Accessors ===
-    public String getId() {
-        return id;
-    }
-
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    public Material getMaterial() {
-        return material;
-    }
-
-    public String getCustomModelData() {
-        return customModelData;
-    }
-
-    public int getMaxStackSize() {
-        return maxStackSize;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
     }
 
     public boolean usesCooldownComponent() { return usesCooldownComponent; }
