@@ -96,7 +96,6 @@ public class PlayerDownedListener implements Listener {
         Debug.broadcast("down", "<gray>[DOWNED-DEBUG] setDowned(" + player.getName() + ") = " + new_downed);
 
         PersistentDataContainer pdc = player.getPersistentDataContainer();
-
         if(pdc.has(downedKey)){
             boolean previous_downed = pdc.get(downedKey, PersistentDataType.BYTE)==1;
             if(previous_downed == new_downed){

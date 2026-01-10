@@ -286,7 +286,6 @@ public class PVPManager implements Listener, CommandExecutor {
 
                 zombieMap.remove(playerId);
                 zombieTimers.remove(playerId);
-                System.out.println("<grey>[ZombieTimer] Timer cleaned up for player " + playerId);
             }
         };
 
@@ -328,7 +327,6 @@ public class PVPManager implements Listener, CommandExecutor {
 
         if (deadFlag == 1) {
             //Death
-            Debug.broadcast("combatlog", "<grey>[Login] Player " + player.getName() + " died while logged out in combat!");
             player.getInventory().clear();
             if (invBytes != null)
                 for (ItemStack item : ItemSerialization.fromBytes(invBytes))
@@ -336,8 +334,7 @@ public class PVPManager implements Listener, CommandExecutor {
             if (armorBytes != null)
                 for (ItemStack item : ItemSerialization.fromBytes(armorBytes))
                     if (item != null) player.getWorld().dropItemNaturally(player.getLocation(), item);
-
-            player.setHealth(0);
+            playerDownedListener.setDowned(player, true,player.getHealth());
             PlayerUtil.message(player, "You §ccombat logged§7, and your §cmannequin§7 was §ckilled§7 before it could safely logout");
         } else {
             //Life

@@ -13,6 +13,8 @@ import com.minecraftcivilizations.specialization.util.CoreUtil;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Options.Pair;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Boat;
 import org.bukkit.entity.Interaction;
@@ -30,6 +32,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -50,23 +53,25 @@ public class PlayerInteractEntityListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerTame(EntityTameEvent e){
-        if(e.getOwner() instanceof Player player) {
-            CustomPlayer cPlayer = CoreUtil.getPlayer(player);
-            boolean canTame = false;
-            for (SkillType skill : SkillType.values()) {
-                Config tames = SpecializationConfig.getTameableConfig().getObject(skill.toString());
-                int requirement = -1;
-                try {
-                    requirement = tames.getInt("TAME_" + e.getEntity().getType());
-                } catch(ConfigException.Missing _) {}
-                if (requirement != -1 && cPlayer.getSkillLevel(skill) > requirement) {
-                    canTame = true;
-                    break;
-                }
+        if (!(e.getOwner() instanceof Player player)) return;
+
+        CustomPlayer cPlayer = CoreUtil.getPlayer(player);
+        String entityKey = "TAME_" + e.getEntity().getType();
+        boolean canTame = false;
+        for (SkillType skill : SkillType.values()) {
+            Config tames = SpecializationConfig.getTameableConfig().getObject(skill.name());
+            if (!tames.hasPath(entityKey)) continue;
+            int requirement = tames.getInt(entityKey);
+
+            if (cPlayer.getSkillLevel(skill) >= requirement) {
+                canTame = true;
+                break;
             }
-            if(canTame){
-                e.setCancelled(true);
-            }
+        }
+
+        if (!canTame) {
+            e.setCancelled(true);
+            player.sendMessage(Component.text("You don't have the required skill level to tame this!", NamedTextColor.RED));
         }
     }
 

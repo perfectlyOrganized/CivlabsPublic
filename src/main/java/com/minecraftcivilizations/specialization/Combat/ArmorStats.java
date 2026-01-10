@@ -14,6 +14,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
@@ -390,17 +391,25 @@ public final class ArmorStats {
             ItemMeta meta = item.getItemMeta();
 
             if((meta != null) && meta.hasAttributeModifiers()) {
-                for (AttributeModifier mod : Objects.requireNonNull(meta.getAttributeModifiers(Attribute.ARMOR))) {
-                    total_armor += mod.getAmount();
+                Collection<AttributeModifier> armorMods = meta.getAttributeModifiers(Attribute.ARMOR);
+                Collection<AttributeModifier> toughnessMods = meta.getAttributeModifiers(Attribute.ARMOR_TOUGHNESS);
+
+                if (armorMods != null) {
+                    for (AttributeModifier mod : armorMods) {
+                        total_armor += mod.getAmount();
+                    }
                 }
-                for (AttributeModifier mod : Objects.requireNonNull(meta.getAttributeModifiers(Attribute.ARMOR_TOUGHNESS))) {
-                    total_toughness += mod.getAmount();
+
+                if (toughnessMods != null) {
+                    for (AttributeModifier mod : toughnessMods) {
+                        total_toughness += mod.getAmount();
+                    }
                 }
-            }else{
-                ArmorStats stats = getVanillaStats(item.getType());
-                total_armor += stats.getArmor();
-                total_toughness += stats.getToughness();
+                continue;
             }
+            ArmorStats stats = getVanillaStats(item.getType());
+            total_armor += stats.getArmor();
+            total_toughness += stats.getToughness();
         }
         return new ArmorStats(total_armor, total_toughness);
     }
