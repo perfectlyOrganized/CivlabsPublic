@@ -80,6 +80,8 @@ public class SpecializationConfig {
     @Getter
     private static ConfigFile hungerCostConfig;
     @Getter
+    private static ConfigFile foodExpirationConfig;
+    @Getter
     private static ConfigFile downedConfig;
     @Getter
     private static ConfigFile canMinerLvlBreakConfig;
@@ -226,6 +228,16 @@ public class SpecializationConfig {
         };
         hungerCostConfig = new ConfigFile(Specialization.getInstance(), "hungerCostConfig", hungerCostDefaults);
 
+        Supplier< Map<String, Integer>> foodExpirationDefaults = () -> {
+            Map<String, Integer> data = new HashMap<>();
+            for (Material inputMaterial : Material.values()) {
+                if (inputMaterial.isEdible() && inputMaterial != Material.AIR) {
+                    data.put(inputMaterial.key().value().toUpperCase(Locale.ROOT), 24);
+                }
+            }
+            return data;
+        };
+        foodExpirationConfig = new ConfigFile(Specialization.getInstance(), "foodExpirationConfig", foodExpirationDefaults);
         Supplier<Map<String, Object>> mobDefaults = () -> {
             Map<String, Object> data = new HashMap<>();
             data.put("DAYTIME_MOB_DAMAGE_MULTIPLIER", 4.0);
@@ -334,6 +346,8 @@ public class SpecializationConfig {
             return data;
         };
         xpGainFromBlastingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromBlasting", xpGainFromBlastingDefaults);
+
+
 
         Supplier<Map<String, Map<String, Object>>> xpGainFromSmeltingDefaults = () -> {
             Map<String, Map<String, Object>> data = new HashMap<>();

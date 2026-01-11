@@ -8,7 +8,6 @@ import org.bukkit.event.player.PlayerRecipeDiscoverEvent;
 public class DiscoverRecipeListener implements Listener {
     @EventHandler
     public void onDiscoverRecipe(PlayerRecipeDiscoverEvent event){
-
         if(CraftingListener.shouldBlockRecipe(event.getPlayer(), event.getRecipe())){
             event.setCancelled(true);
         }

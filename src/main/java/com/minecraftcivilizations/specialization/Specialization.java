@@ -105,6 +105,8 @@ public final class Specialization extends JavaPlugin {
     @Getter
     private HammerListener hammerListener;
     @Getter
+    private FoodDurationTicker foodDurationTicker;
+    @Getter
     private PlayerDownedListener playerDownedListener;
     private RecipeBlocker recipeBlocker;
     private EmoteManager emoteManager;
@@ -154,6 +156,7 @@ public final class Specialization extends JavaPlugin {
         recipeBlocker = new RecipeBlocker();
         armorTrimSystem = new BlacksmithArmorTrim();
         hammerListener = new HammerListener();
+        foodDurationTicker = new FoodDurationTicker();
 //      emoteListener = new EmoteListener(this);
 
         getServer().getMessenger().registerIncomingPluginChannel(this, "civlabs:weathersync", new TimeSyncListener());
@@ -195,6 +198,8 @@ public final class Specialization extends JavaPlugin {
         getServer().getPluginManager().registerEvents(reviveListener, this);
         getServer().getPluginManager().registerEvents(recipeBlocker, this);
         getServer().getPluginManager().registerEvents(hammerListener, this);
+        getServer().getPluginManager().registerEvents(foodDurationTicker, this);
+        foodDurationTicker.registerPacketListener();
         //town data does not need to wait anymore
         TownManager.scanAllPlayersForTownsAsync();
         ItemBehaviors.register(Key.of("specialization:musket_behavior"), MusketBehavior.FACTORY);
