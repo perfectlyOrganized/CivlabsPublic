@@ -1,6 +1,7 @@
 package com.minecraftcivilizations.specialization;
 
 import com.minecraftcivilizations.specialization.CraftEngine.MusketBehavior;
+import com.minecraftcivilizations.specialization.CraftEngine.HammerBehavior;
 import net.momirealms.craftengine.bukkit.item.behavior.BukkitItemBehaviors;
 import net.momirealms.craftengine.core.item.behavior.ItemBehaviors;
 import net.momirealms.craftengine.core.plugin.CraftEngine;
@@ -105,6 +106,8 @@ public final class Specialization extends JavaPlugin {
     @Getter
     private HammerListener hammerListener;
     @Getter
+    private HammerBehavior hammerBehavior;
+    @Getter
     private FoodDurationTicker foodDurationTicker;
     @Getter
     private PlayerDownedListener playerDownedListener;
@@ -156,6 +159,7 @@ public final class Specialization extends JavaPlugin {
         recipeBlocker = new RecipeBlocker();
         armorTrimSystem = new BlacksmithArmorTrim();
         hammerListener = new HammerListener();
+        hammerBehavior = new HammerBehavior();
         foodDurationTicker = new FoodDurationTicker();
 //      emoteListener = new EmoteListener(this);
 
@@ -198,11 +202,14 @@ public final class Specialization extends JavaPlugin {
         getServer().getPluginManager().registerEvents(reviveListener, this);
         getServer().getPluginManager().registerEvents(recipeBlocker, this);
         getServer().getPluginManager().registerEvents(hammerListener, this);
+        getServer().getPluginManager().registerEvents(hammerBehavior, this);
         getServer().getPluginManager().registerEvents(foodDurationTicker, this);
         foodDurationTicker.registerPacketListener();
         //town data does not need to wait anymore
         TownManager.scanAllPlayersForTownsAsync();
         ItemBehaviors.register(Key.of("specialization:musket_behavior"), MusketBehavior.FACTORY);
+        ItemBehaviors.register(Key.of("specialization:hammer_behavior"), HammerBehavior.FACTORY);
+
 
         //overworld game rules
         World overworld = Bukkit.getWorlds().get(0);
