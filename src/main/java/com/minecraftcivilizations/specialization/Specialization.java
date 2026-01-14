@@ -199,7 +199,6 @@ public final class Specialization extends JavaPlugin {
         getServer().getPluginManager().registerEvents(recipeBlocker, this);
         getServer().getPluginManager().registerEvents(hammerListener, this);
         getServer().getPluginManager().registerEvents(foodDurationTicker, this);
-        foodDurationTicker.registerPacketListener();
         //town data does not need to wait anymore
         TownManager.scanAllPlayersForTownsAsync();
         ItemBehaviors.register(Key.of("specialization:musket_behavior"), MusketBehavior.FACTORY);

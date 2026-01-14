@@ -498,48 +498,9 @@ public class MobVariation {
         if (ThreadLocalRandom.current().nextDouble() > chance) return;
         setter.accept(base);
     }
-    public void applyMainHand(LivingEntity entity, ItemStack item) {
-        EntityEquipment eq = entity.getEquipment();
-        if (eq == null) return;
-        tryEquip(eq::setItemInMainHand, item, 1);
-    }
 
     public MobVariation disableItemPickup(){
         disableItemPickup = true;
         return this;
     }
-
-    private List<Biome> allowedBiomes;
-    private List<Biome> excludedBiomes;
-    private Map<Biome, Double> biomeWeights; // Different weights per biome
-
-    public boolean canSpawnInBiome(Biome biome) {
-        if (allowedBiomes != null && !allowedBiomes.isEmpty()) {
-            return allowedBiomes.contains(biome);
-        }
-        if (excludedBiomes != null && excludedBiomes.contains(biome)) {
-            return false;
-        }
-        return true;
-    }
-
-    public double getBiomeWeight(Biome biome) {
-        if (biomeWeights != null && biomeWeights.containsKey(biome)) {
-            return biomeWeights.get(biome);
-        }
-        return 1; // Return default weight if no biome-specific weight
-    }
-
-    private Supplier<ItemStack> createMainHandItem;
-    public MobVariation createMainHandItem(Supplier<ItemStack> stackSupplier) {
-        this.createMainHandItem = stackSupplier;
-        return this;
-    }
-
-
-    public ItemStack getMainHandItem() {
-        if (createMainHandItem == null) return null;
-        return createMainHandItem.get();
-    }
-
 }
