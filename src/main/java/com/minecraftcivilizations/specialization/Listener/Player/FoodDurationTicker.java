@@ -33,15 +33,17 @@ import java.util.Locale;
 import java.util.Objects;
 
 public class FoodDurationTicker implements Listener {
+    private final boolean enabled = false;;
+
     private String getItemId(ItemStack item) {
         //if (CustomItem.isCustomItem(item)) {
             //return event.getRecipe().toString().toUpperCase(Locale.ROOT);
         //} else
         if (CraftEngineItems.isCustomItem(item)) {
-            return CraftEngineItems.getCustomItemId(item).toString().toUpperCase(Locale.ROOT).replace(":","_");
-        } else {
-            return item.getType().key().value().toUpperCase(Locale.ROOT);
+            var ceItem = CraftEngineItems.getCustomItemId(item);
+            if (ceItem != null) return ceItem.toString().toUpperCase(Locale.ROOT).replace(":","_");
         }
+        return item.getType().key().value().toUpperCase(Locale.ROOT);
     }
     public FoodDurationTicker() {
         Bukkit.getScheduler().scheduleSyncRepeatingTask(Specialization.getInstance(), () -> {
@@ -50,12 +52,25 @@ public class FoodDurationTicker implements Listener {
                 ItemStack[] contents = player.getInventory().getContents();
                 for (int index = 0; index < contents.length; index++) {
                     if (contents[index] == null || FoodInteractionListener.isBlessedFood(contents[index])) continue;
+                    unregisterItem(contents[index]);
+                    if (!enabled) return;
                     player.getInventory().setItem(index, updateExpirationLore(contents[index]));
                 }
             }
         }, 0L, 10L);
     }
-
+    private void unregisterItem(ItemStack item) {
+        if (!item.getPersistentDataContainer().has(CREATED_AT_KEY)) return;
+        item.editPersistentDataContainer(pdc -> {
+            pdc.remove(CREATED_AT_KEY);
+        });
+        ItemMeta meta = item.getItemMeta();
+        if (meta instanceof Damageable damageable) {
+            damageable.setDamage(0);
+        }
+        item.setItemMeta(meta);
+        item.lore(null);
+    }
     private int getCurrentTime() {
         World world = Bukkit.getWorlds().getFirst();
         return (int) (world.getFullTime());
@@ -88,6 +103,8 @@ public class FoodDurationTicker implements Listener {
             for (int i = 0; i < inventory.getSize(); i++) {
                 ItemStack item = inventory.getItem(i);
                 if (item != null && isValid(item)) {
+                    unregisterItem(item);
+                    if (!enabled) return;
                     ItemStack updatedItem = updateExpirationLore(item.clone());
                     inventory.setItem(i, updatedItem);
                 }
@@ -97,6 +114,7 @@ public class FoodDurationTicker implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent event) {
+        if (!enabled) return;
         if (!(event.getWhoClicked() instanceof Player player)) return;
 
         ItemStack cursor = event.getCursor();
