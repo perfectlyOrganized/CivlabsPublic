@@ -155,7 +155,7 @@ public class PlayerInteractListener implements Listener {
         Enchantment enchant = validEnchants.get(new Random().nextInt(validEnchants.size()));
         int level = new Random().nextInt(1 + player.getSkillLevel(SkillType.LIBRARIAN) - skillMin);
         if (level <= 0) level = 1;
-        int finalLevel = Math.min(enchant.getMaxLevel(), level);
+        int finalLevel = level; //Math.min(enchant.getMaxLevel(), level);
 
         meta.addEnchant(enchant, finalLevel, false);
 

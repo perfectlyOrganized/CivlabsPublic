@@ -159,11 +159,6 @@ public class MobManager implements Listener {
         entity.getPersistentDataContainer().set(SPAWN_VARIATION_ID_KEY, PersistentDataType.STRING, variation.getId());
         if(entity instanceof LivingEntity livingEntity){
             applyStatsToEntity(livingEntity, variation);
-            ItemStack mainHand = variation.getMainHandItem();
-            if (mainHand != null && livingEntity.getEquipment() instanceof EntityEquipment equipment) {
-                equipment.setItemInMainHand(mainHand);
-                equipment.setItemInMainHandDropChance(0.05f); // 5% drop chance
-            }
         }
     }
 
@@ -347,29 +342,6 @@ public class MobManager implements Listener {
                         .replaceOriginalMob()
                 , 3
                 );
-
-        new MobOverrideRule(100, SKELETON)
-                .addVariation(new MobVariation("musketeer_skeleton", SKELETON)
-                                .createMainHandItem(new Supplier<ItemStack>() {
-                                    @Override
-                                    public ItemStack get() {
-                                        CustomItem<ItemStack> item = CraftEngineItems.byId(Key.of("specialization:musket"));
-                                        if (item == null) return null;
-                                        return item.buildItemStack();
-                                    }
-                                })
-                                .health(1.0)
-                                .health(2)
-                                .damage(0.5, 0.8, 2.0)
-                                .speed(1.25, 1.5)
-                                .stepheight(0.5)
-                                .xpScale(0.25)
-                                .hunts(32)
-                                .xpScale(1.5)
-                                .spawnExtra(2),
-                        100
-                ).allowedBiomes(Biome.DESERT);
-
 
         /**
          * Example:
@@ -888,10 +860,6 @@ public class MobManager implements Listener {
             applyBreedSettings(entity, stats);
         }
         stats.applyRandomArmor(entity);
-        ItemStack item = stats.getMainHandItem();
-        if (item != null) {
-            stats.applyMainHand(entity, item);
-        }
         if (stats.isDisableItemPickup()){
             entity.setCanPickupItems(false);
         }

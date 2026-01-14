@@ -149,6 +149,10 @@ public class CustomPlayer extends minecraftcivilizations.com.minecraftCivilizati
 
         if (skillType == null || xp == 0) return;
         int previousLevel = this.getSkillLevel(skillType);
+        double xpMultiplier = SpecializationConfig.getSkillsConfig().getDouble("XP_MULTIPLIER");
+        double xpClassMultiplier = SpecializationConfig.getSkillsConfig().getDouble(skillType+"_XP_MULTIPLIER");
+        double totalXpMultiplier = xpMultiplier * xpClassMultiplier;
+        xp *= totalXpMultiplier;
         Skill skill = getSkill(skillType);
         skill.applyXp(player, xp, allowNegative);
 

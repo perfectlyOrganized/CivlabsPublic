@@ -36,12 +36,11 @@ public class FoodInteractionListener implements Listener {
 
     Specialization plugin;
 
-    NamespacedKey BLESSED_FOOD_KEY;
+    static NamespacedKey BLESSED_FOOD_KEY = new NamespacedKey(Specialization.getInstance(), "BLESSED_FOOD");
 
     public FoodInteractionListener(Specialization plugin) {
         this.plugin = plugin;
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
-        BLESSED_FOOD_KEY = new NamespacedKey(plugin, "BLESSED_FOOD");
     }
 
     @EventHandler
@@ -297,7 +296,7 @@ public class FoodInteractionListener implements Listener {
 
 
 
-    private boolean isBlessedFood(ItemStack item) {
+    public static boolean isBlessedFood(ItemStack item) {
         if (item == null || item.getItemMeta() == null) return false;
         return item.getItemMeta().getPersistentDataContainer().has(BLESSED_FOOD_KEY, PersistentDataType.BOOLEAN);
 //        List<Component> lore = item.getItemMeta().lore();

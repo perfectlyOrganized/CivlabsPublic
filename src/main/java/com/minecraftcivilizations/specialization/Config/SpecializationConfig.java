@@ -558,7 +558,10 @@ public class SpecializationConfig {
             for (SkillType skillType : SkillType.values()) {
                 data.put(skillType + "_WORKSTATION", Material.COMPOSTER.key().value().toUpperCase(Locale.ROOT));
                 data.put(skillType + "_DESCRIPTION", "Description");
+                data.put(skillType + "_XP_MULTIPLIER", 1.0);
             }
+            data.put("XP_MULTIPLIER", 1.0);
+            data.put("XP_LOSS", 1.0);
             return data;
         };
         skillsConfig = new ConfigFile(
