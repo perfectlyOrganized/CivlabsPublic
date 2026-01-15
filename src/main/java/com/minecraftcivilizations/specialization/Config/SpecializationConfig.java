@@ -99,13 +99,13 @@ public class SpecializationConfig {
     private static ConfigFile instinctConfig;
     @Getter
     private static ConfigFile locatorBarConfig;
-
+    @Getter
+    private static ConfigFile grindConfig;
     private static final List<EntityType> BREEDABLE =  List.of(EntityType.AXOLOTL, EntityType.CAMEL, EntityType.CAT, EntityType.CHICKEN, EntityType.COD, EntityType.COW, EntityType.DONKEY, EntityType.FOX, EntityType.FROG, EntityType.GOAT, EntityType.HOGLIN, EntityType.HORSE, EntityType.LLAMA, EntityType.MOOSHROOM, EntityType.OCELOT, EntityType.PANDA, EntityType.PARROT, EntityType.PIG, EntityType.RABBIT, EntityType.SHEEP, EntityType.STRIDER, EntityType.TADPOLE, EntityType.TURTLE, EntityType.WOLF);
     public static final List<EntityType> TAMEABLE = List.of(EntityType.WOLF, EntityType.OCELOT, EntityType.CAT, EntityType.PARROT, EntityType.HORSE, EntityType.DONKEY, EntityType.MULE, EntityType.LLAMA, EntityType.TRADER_LLAMA);
 
 
     public static void initialize() {
-        Specialization.getInstance().getLogger().severe("LOADING 1");
         Supplier<Map<String, Object>> playerDefaults = () -> {
             Map<String, Object> data = new HashMap<>();
             data.put("SPECIALIZATION_BONUS", 0.3);
@@ -164,6 +164,25 @@ public class SpecializationConfig {
             return data;
         };
         xpGainFromCraftingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromCrafting", xpGainFromCraftingDefaults);
+
+        Supplier<Map<String, Map<String, Object>>> grindDefaults = () -> {
+            Map<String, Map<String, Object>> data = new HashMap<>();
+            for (SkillType skillType : SkillType.values()) {
+                data.put(skillType.name(), new HashMap<>());
+            }
+            Map<String, Object> skillType = data.get(SkillType.MINER.name());
+            Map<String, Object> conversion = new HashMap<>();
+
+            conversion.put("level", 1);
+            conversion.put("foodCost", 1);
+            conversion.put("amount", 1);
+            conversion.put("xp", 1);
+            conversion.put("item", "STONE");
+            skillType.put("SAND",conversion);
+            return data;
+        };
+
+        grindConfig = new ConfigFile(Specialization.getInstance(), "grind", grindDefaults);
 
         Supplier<Map<String, Map<String, Object>>> xpGainFromStonecuttingDefaults = () -> {
             Map<String, Map<String, Object>> data = new HashMap<>();

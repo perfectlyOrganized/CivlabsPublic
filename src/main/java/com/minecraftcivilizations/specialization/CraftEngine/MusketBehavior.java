@@ -208,46 +208,18 @@ public class MusketBehavior extends ItemBehavior {
         }
     }
 
-    private static Vector rotateAroundYAxis(Vector vector, double angle) {
-        double cos = Math.cos(angle);
-        double sin = Math.sin(angle);
-        double x = vector.getX() * cos - vector.getZ() * sin;
-        double z = vector.getX() * sin + vector.getZ() * cos;
-        return new Vector(x, vector.getY(), z);
-    }
-
-    // Helper method to rotate vector around arbitrary axis
-    private static Vector rotateAroundAxis(Vector vector, Vector axis, double angle) {
-        axis = axis.clone().normalize();
-        double cos = Math.cos(angle);
-        double sin = Math.sin(angle);
-        double dot = vector.dot(axis);
-
-        Vector cross = axis.getCrossProduct(vector);
-
-        return vector.clone().multiply(cos)
-                .add(cross.multiply(sin))
-                .add(axis.multiply(dot * (1 - cos)));
-    }
-
     private static Vector adjustDirectionGaussian(Vector originalDirection, double accuracy) {
-        // 1. Calculate the spread radius (standard deviation)
-        // Adjust this multiplier (0.1) to tune how 'shitty' the aim is
         double stdDev = (3.0 - accuracy) * 0.1;
 
-        // 2. Get random offsets using Gaussian distribution
         double xOffset = ThreadLocalRandom.current().nextGaussian() * stdDev;
         double yOffset = ThreadLocalRandom.current().nextGaussian() * stdDev;
 
-        // 3. Create a basis (local coordinate system) around the direction
         Vector dir = originalDirection.clone().normalize();
 
-        // Find an arbitrary orthogonal vector to use as "Right"
         Vector helper = Math.abs(dir.getY()) < 0.9 ? new Vector(0, 1, 0) : new Vector(1, 0, 0);
         Vector right = dir.getCrossProduct(helper).normalize();
         Vector up = right.getCrossProduct(dir).normalize();
 
-        // 4. Combine: Original + (Right * x) + (Up * y)
         Vector spreadVec = dir.add(right.multiply(xOffset)).add(up.multiply(yOffset));
 
         return spreadVec.normalize();

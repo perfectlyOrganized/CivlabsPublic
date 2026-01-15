@@ -1,10 +1,13 @@
 package com.minecraftcivilizations.specialization;
 
+import com.minecraftcivilizations.specialization.CraftEngine.MortarAndPestleBehavior;
 import com.minecraftcivilizations.specialization.CraftEngine.MusketBehavior;
 import com.minecraftcivilizations.specialization.CraftEngine.HammerBehavior;
-import net.momirealms.craftengine.bukkit.item.behavior.BukkitItemBehaviors;
+import net.momirealms.craftengine.core.block.BlockBehavior;
+import net.momirealms.craftengine.core.block.CustomBlock;
+import net.momirealms.craftengine.core.block.behavior.BlockBehaviorFactory;
+import net.momirealms.craftengine.core.block.behavior.BlockBehaviors;
 import net.momirealms.craftengine.core.item.behavior.ItemBehaviors;
-import net.momirealms.craftengine.core.plugin.CraftEngine;
 import net.momirealms.craftengine.core.util.Key;
 import org.bukkit.Difficulty;
 import co.aikar.commands.PaperCommandManager;
@@ -16,7 +19,6 @@ import com.comphenix.protocol.wrappers.PlayerInfoData;
 import com.comphenix.protocol.wrappers.WrappedChatComponent;
 import com.comphenix.protocol.wrappers.WrappedGameProfile;
 import com.destroystokyo.paper.profile.CraftPlayerProfile;
-import com.minecraftcivilizations.specialization.Combat.*;
 import com.minecraftcivilizations.specialization.Combat.*;
 import com.minecraftcivilizations.specialization.Command.*;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
@@ -134,16 +136,13 @@ public final class Specialization extends JavaPlugin {
     @Override
     public void onEnable() {
         logger = getLogger();
-        logger.severe("THIS IS IMPORTANT");
         Skill.InitCacheXPLevelFormula();
         debug = new Debug(this);
         saveResource("first_names.txt", true);
         saveResource("last_names.txt", true);
-        logger.severe("THIS IS IMPORTANT 2");
         SpecializationConfig.initialize();
         // TODO PDC-xp-hotfix
         //  Skill.InitializeSkillKeys(this);
-        logger.severe("THIS IS IMPORTANT 3");
 
 
         localChat = new LocalChat();
@@ -190,7 +189,7 @@ public final class Specialization extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new FurnaceListener(), this);
         getServer().getPluginManager().registerEvents(new AutoCrafterListener(), this);
 
-        new TownManager();
+        //new TownManager();
         getServer().getPluginManager().registerEvents(new MoveListener(), this);
         getServer().getPluginManager().registerEvents(new CrossBowListener(), this);
         getServer().getPluginManager().registerEvents(new LocalChat(), this);
@@ -205,10 +204,10 @@ public final class Specialization extends JavaPlugin {
         getServer().getPluginManager().registerEvents(hammerBehavior, this);
         getServer().getPluginManager().registerEvents(foodDurationTicker, this);
         //town data does not need to wait anymore
-        TownManager.scanAllPlayersForTownsAsync();
+        //TownManager.scanAllPlayersForTownsAsync();
         ItemBehaviors.register(Key.of("specialization:musket_behavior"), MusketBehavior.FACTORY);
         ItemBehaviors.register(Key.of("specialization:hammer_behavior"), HammerBehavior.FACTORY);
-
+        ItemBehaviors.register(Key.of("specialization:mortar_and_pestle_behavior"), MortarAndPestleBehavior.FACTORY);
 
         //overworld game rules
         World overworld = Bukkit.getWorlds().get(0);

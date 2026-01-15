@@ -225,20 +225,18 @@ public class CraftingListener implements Listener {
 
         SpecializationCraftItemEvent new_event = new SpecializationCraftItemEvent(event, player, craftedAmount, totalReduction, skillType, lvl);
         Bukkit.getPluginManager().callEvent(new_event);
-        if (xp != 0) {
-            double xpToGive = xp * craftedAmount;
+        double xpToGive = xp * craftedAmount;
 
-            int finalReduction = Math.max(totalReduction, 1);
-            SkillType finalSkillType = skillType;
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                if (player.isOnline()) {
-                    player.setFoodLevel(player.getFoodLevel() - finalReduction);
-                    if(!new_event.isXpCancelled()) {
-                        customPlayer.addSkillXp(finalSkillType, xpToGive);
-                    }
+        int finalReduction = Math.max(totalReduction, 1);
+        SkillType finalSkillType = skillType;
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (player.isOnline()) {
+                player.setFoodLevel(player.getFoodLevel() - finalReduction);
+                if(!new_event.isXpCancelled()) {
+                    customPlayer.addSkillXp(finalSkillType, xpToGive);
                 }
-            }, 1L);
-        }
+            }
+        }, 1L);
 
     }
 
