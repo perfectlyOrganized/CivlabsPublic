@@ -1,5 +1,6 @@
 package com.minecraftcivilizations.specialization;
 
+import com.minecraftcivilizations.specialization.CraftEngine.MetalDetectorBehavior;
 import com.minecraftcivilizations.specialization.CraftEngine.MortarAndPestleBehavior;
 import com.minecraftcivilizations.specialization.CraftEngine.MusketBehavior;
 import com.minecraftcivilizations.specialization.CraftEngine.HammerBehavior;
@@ -208,6 +209,8 @@ public final class Specialization extends JavaPlugin {
         ItemBehaviors.register(Key.of("specialization:musket_behavior"), MusketBehavior.FACTORY);
         ItemBehaviors.register(Key.of("specialization:hammer_behavior"), HammerBehavior.FACTORY);
         ItemBehaviors.register(Key.of("specialization:mortar_and_pestle_behavior"), MortarAndPestleBehavior.FACTORY);
+        ItemBehaviors.register(Key.of("specialization:metal_detector_behavior"), MetalDetectorBehavior.FACTORY);
+
 
         //overworld game rules
         World overworld = Bukkit.getWorlds().get(0);
