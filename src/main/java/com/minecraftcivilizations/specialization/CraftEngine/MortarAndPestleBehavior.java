@@ -46,11 +46,16 @@ import java.util.*;
 
 public class MortarAndPestleBehavior extends ItemBehavior  {
     public static final Factory FACTORY = new Factory();
+    private final int cooldownTime;
     public static class Factory implements ItemBehaviorFactory {
         @Override
         public ItemBehavior create(Pack pack, Path path, String node, Key key, Map<String, Object> arguments) {
-            return new MortarAndPestleBehavior();
+            int cooldownTime = (int) arguments.getOrDefault("cooldown-time", 20);
+            return new MortarAndPestleBehavior(cooldownTime);
         }
+    }
+    public MortarAndPestleBehavior(int cooldownTime) {
+        this.cooldownTime = cooldownTime;
     }
     private Optional<ItemStack> getItem(Key itemId) {
         if (Objects.equals(itemId.namespace(), "minecraft")) {
@@ -73,12 +78,14 @@ public class MortarAndPestleBehavior extends ItemBehavior  {
                 context.getLevel().serverWorld(),
                 LocationUtils.toBlockPos(context.getClickedPos())
         );
+
         // Check if it's a custom block
         Optional<ImmutableBlockState> optionalCustomState = BlockStateUtils.getOptionalCustomBlockState(blockState);
         if (optionalCustomState.isEmpty()) {
             return InteractionResult.PASS; // Not a custom block
         }
-
+        Item<?> pestle = context.getItem();
+        if (!(pestle.getItem() instanceof ItemStack pestleStack)) return InteractionResult.PASS;
         // Check if it's specifically a mortar block
         ImmutableBlockState customState = optionalCustomState.get();
         if (customState.owner().value().id().equals(Key.of("specialization:mortar"))) {
@@ -96,6 +103,9 @@ public class MortarAndPestleBehavior extends ItemBehavior  {
             }
             CustomPlayer customPlayer = CoreUtil.getPlayer(context.getPlayer().uuid());
             Player player = (Player) context.getPlayer().platformPlayer();
+            if (player.hasCooldown(pestleStack)) return InteractionResult.PASS;
+            pestle.hurtAndBreak(1, null, null);
+            player.setCooldown(pestleStack.getType(), cooldownTime);
             // Check all 9 slots for transformable items
             for (int slot = 0; slot < inventory.getSize(); slot++) {
                 ItemStack item = inventory.getItem(slot);
