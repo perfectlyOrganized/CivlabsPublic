@@ -123,9 +123,15 @@ public class HuntPlayerMobGoal implements Goal<Mob> {
         Predicate<Player> validGamemode = p ->
                 p.getGameMode() == GameMode.SURVIVAL ||
                         p.getGameMode() == GameMode.ADVENTURE;
+        double maxVertical = SpecializationConfig.getMobConfig().getDouble("MOB_RULE_VERTICAL_FOLLOW_RANGE");
 
         mob.getLocation().getNearbyPlayers(follow_range).stream()
                 .filter(validGamemode)
+                .filter(player -> {
+                    if (mob.getType() == EntityType.SPIDER || mob.getType() == EntityType.CAVE_SPIDER) return true;
+                    double verticalDistance = Math.abs(player.getLocation().getY() - mob.getLocation().getY());
+                    return verticalDistance <= maxVertical;
+                })
                 .filter(p -> p.getLocation().distance(mob.getLocation()) < follow_range)
                 .min((p1, p2) -> {
                     CustomPlayer player1 = CoreUtil.getPlayer(p1);

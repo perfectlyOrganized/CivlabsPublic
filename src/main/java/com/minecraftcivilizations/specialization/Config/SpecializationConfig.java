@@ -171,14 +171,16 @@ public class SpecializationConfig {
                 data.put(skillType.name(), new HashMap<>());
             }
             Map<String, Object> skillType = data.get(SkillType.MINER.name());
+            List<Map<String, Object>> conversions = new ArrayList<>();
             Map<String, Object> conversion = new HashMap<>();
-
             conversion.put("level", 1);
             conversion.put("foodCost", 1);
             conversion.put("amount", 1);
+            conversion.put("chance", 0.5);
             conversion.put("xp", 1);
-            conversion.put("item", "STONE");
-            skillType.put("SAND",conversion);
+            conversion.put("item", "SAND");
+            conversions.add(conversion);
+            skillType.put("STONE", conversions);
             return data;
         };
 
