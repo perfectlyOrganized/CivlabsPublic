@@ -24,10 +24,13 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.FileNotFoundException;
 import java.util.*;
@@ -39,6 +42,7 @@ import static com.minecraftcivilizations.specialization.Skill.SkillType.getDispl
 
 @Getter
 public class CustomPlayer extends minecraftcivilizations.com.minecraftCivilizationsCore.Player.CustomPlayer {
+    private static final @NotNull NamespacedKey MAX_HEALTH_KEY = new NamespacedKey(Specialization.getInstance(), "CLASS_HEALTH_BOOST");
     @Getter
     @Setter
     private SkillType preferredSkill = SkillType.values()[ThreadLocalRandom.current().nextInt(SkillType.values().length)];
@@ -200,7 +204,8 @@ public class CustomPlayer extends minecraftcivilizations.com.minecraftCivilizati
         if (previousLevel != currentLevel) {
             SkillLevelChangeEvent level_change_event = new SkillLevelChangeEvent(this, player, skillType, previousLevel, currentLevel, xp);
             Bukkit.getPluginManager().callEvent(level_change_event);
-            applyEffects(); //disabled for testing new combat
+            applyEffects(player); //disabled for testing new combat
+            //applyMaxHealth(player);
             String skill_name = getDisplayName(skillType);
             if (previousLevel < currentLevel) {
                 player.playSound(player, Sound.ENTITY_PLAYER_LEVELUP, 100, 1);
@@ -222,12 +227,30 @@ public class CustomPlayer extends minecraftcivilizations.com.minecraftCivilizati
         }
     }
 
+    private void applyMaxHealth(Player player) {
+        AttributeInstance attribute = player.getAttribute(Attribute.MAX_HEALTH);
+        if (attribute == null) return;
+        AttributeModifier modifier = attribute.getModifier(MAX_HEALTH_KEY);
+        if(modifier != null){
+            attribute.removeModifier(modifier);
+        }
+        CustomPlayer customPlayer = getCustomPlayer(player);
+        double bonus = 0.0;
+        for (SkillType skill : SkillType.values()) {
+            String key = skill.name() + "_MAX_HEALTH_PER_LEVEL";
+            bonus += SpecializationConfig.getSkillsConfig().getDouble(key) * customPlayer.getSkillLevel(skill);
+        }
 
-    public void applyEffects(){
-        Player player = Bukkit.getPlayer(getUuid());
-        Arrays.stream(SkillType.values()).forEach(skill -> {
+        modifier = new AttributeModifier(MAX_HEALTH_KEY,
+                bonus, // add +1 health per level
+                AttributeModifier.Operation.ADD_NUMBER
+        );
+        attribute.addModifier(modifier);
+    }
+
+    public void applyEffects(Player player){
+        for (SkillType skill : SkillType.values()) {
             List<? extends Config> potionList = SpecializationConfig.getClassSkillEffectsConfig().getList(skill.name() + "_" + getSkillLevelEnum(skill).name());
-            assert player != null;
             for (Config potionConfig : potionList) {
                 int amplifier = potionConfig.getInt("amplifier");
                 NamespacedKey effectKey = NamespacedKey.fromString(potionConfig.getString("effect"));
@@ -244,7 +267,7 @@ public class CustomPlayer extends minecraftcivilizations.com.minecraftCivilizati
                     player.addPotionEffect(new PotionEffect(potionEffectType,-1, amplifier, false, false, true));
                 }
             }
-        });
+        }
     }
 
     public SkillLevel getSkillLevelEnumByXpOnly(SkillType skillType) {
