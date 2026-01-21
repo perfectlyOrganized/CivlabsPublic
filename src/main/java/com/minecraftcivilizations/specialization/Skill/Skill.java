@@ -64,7 +64,7 @@ public class Skill {
                 }
             }
         }
-
+        this.xp = Math.round(this.xp * 10.0) / 10.0;
         boolean positive = appliedXp>0;
         TextComponent valuecomp;
         if(appliedXp>0){

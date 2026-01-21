@@ -1,5 +1,6 @@
 package com.minecraftcivilizations.specialization.Listener.Player;
 
+import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.Specialization;
@@ -169,7 +170,7 @@ public class PlayerDownedListener implements Listener {
         // Reset all skills to 0
         for (SkillType type : SkillType.values()) {
             double currentXp = customPlayer.getSkill(type).getXp();
-            customPlayer.addSkillXp(type, -currentXp, null, true, false); // subtract current XP to zero it
+            customPlayer.addSkillXp(type, Math.round(-currentXp* SpecializationConfig.getSkillsConfig().getDouble("XP_LOSS")), null, true, false); // subtract current XP to zero it
         }
 
         if (isDowned(player)) {

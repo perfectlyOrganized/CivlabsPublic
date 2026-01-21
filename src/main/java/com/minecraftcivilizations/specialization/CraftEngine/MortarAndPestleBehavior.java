@@ -112,7 +112,7 @@ public class MortarAndPestleBehavior extends ItemBehavior  {
                     int xp = conversion.hasPath("xp") ? conversion.getInt("xp") : 0;
                     int level = conversion.hasPath("level") ? conversion.getInt("level") : 0;
 
-                    if (customPlayer.getSkillLevel(skill) < level) continue;
+                    if (customPlayer.getSkillLevel(skill)-1 < level) continue;
                     boolean isSuccess = Math.random() < chance;
                     player.setCooldown(pestleStack.getType(), (int) (cooldownTime * Math.min(2.0 / customPlayer.getSkillLevel(skill), 1.0)));
 
@@ -152,6 +152,7 @@ public class MortarAndPestleBehavior extends ItemBehavior  {
                             customPlayer.addSkillXp(skill, xp);
                         }
                     }, 1L);
+                    return InteractionResult.SUCCESS;
                 }
 
             }
