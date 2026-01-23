@@ -56,6 +56,8 @@ public class SpecializationConfig {
     @Getter
     private static ConfigFile farmerConfig;
     @Getter
+    private static ConfigFile cookingConfig;
+    @Getter
     private static ConfigFile tameableConfig;
     @Getter
     private static ConfigFile canUseBlockConfig;
@@ -149,6 +151,42 @@ public class SpecializationConfig {
             return data;
         };
         unlockedRecipesConfig = new ConfigFile(Specialization.getInstance(), "unlockedRecipesConfig", unlockedRecipesDefaults);
+
+        Supplier<Map<String, List<Object>>> cookingConfigDefaults = () -> {
+            Map<String, List<Object>> data = new HashMap<>();
+            data.put("possible_recipients", List.of("minecraft:bread"));
+            data.put("possible_ingredients", List.of("minecraft:apple", "minecraft:golden_apple", "minecraft:enchanted_golden_apple",
+                    "minecraft:melon_slice", "minecraft:glistering_melon_slice", "minecraft:sweet_berries",
+                    "minecraft:glow_berries", "minecraft:sea_pickle", "minecraft:carrot", "minecraft:golden_carrot",
+                    "minecraft:potato", "minecraft:baked_potato", "minecraft:beetroot", "minecraft:nether_wart",
+                    "minecraft:pitcher_pod", "minecraft:brown_mushroom", "minecraft:red_mushroom",
+                    "minecraft:warped_fungus", "minecraft:crimson_fungus", "minecraft:wheat", "minecraft:egg",
+                    "minecraft:turtle_egg", "minecraft:sniffer_egg", "minecraft:milk_bucket", "minecraft:chicken",
+                    "minecraft:cooked_chicken", "minecraft:rabbit", "minecraft:cooked_rabbit", "minecraft:mutton",
+                    "minecraft:cooked_mutton", "minecraft:beef", "minecraft:cooked_beef", "minecraft:cod",
+                    "minecraft:cooked_cod", "minecraft:salmon", "minecraft:cooked_salmon", "minecraft:tropical_fish",
+                    "minecraft:pufferfish", "minecraft:dried_kelp"));
+            data.put("possible_seasonings", List.of("specialization:salt", "minecraft:sugar", "minecraft:cocoa_beans", "minecraft:honey_bottle",
+                    "minecraft:glow_lichen", "minecraft:blaze_powder"));
+            data.put("possible_sauces", List.of("minecraft:glow_ink_sac", "minecraft:ink_sac", "minecraft:ghast_tear"));
+            // Default sound id to play when cooking finishes (can be overridden in cookingConfig.json)
+            data.put("finish_sound", Collections.singletonList("specialization:cooking_success"));
+            for (SkillType skillType : SkillType.values()) {
+                for (SkillLevel skillLevel : SkillLevel.values()) {
+                    data.put(skillType + "_" + skillLevel, new ArrayList<>());
+                }
+            }
+            List<Object> farmer = data.get(SkillType.FARMER.name() + "_" + SkillLevel.JOURNEYMAN.name());
+            Map<String, Object> recipeData = new HashMap<>();
+            recipeData.put("exp", 25);
+            recipeData.put("cooking_time", 25);
+            recipeData.put("ingredients", List.of("minecraft:apple"));
+            recipeData.put("recipient", "minecraft:bread");
+            recipeData.put("result", "specialization:apple_bread");
+            farmer.add(recipeData);
+            return data;
+        };
+        cookingConfig = new ConfigFile(Specialization.getInstance(), "cookingConfig", cookingConfigDefaults);
 
         Supplier<Map<String, Map<String, Object>>> xpGainFromCraftingDefaults = () -> {
             Map<String, Map<String, Object>> data = new HashMap<>();
