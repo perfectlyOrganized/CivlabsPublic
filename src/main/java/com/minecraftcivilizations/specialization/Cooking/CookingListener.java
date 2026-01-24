@@ -78,10 +78,6 @@ public class CookingListener implements Listener {
                     ItemStack slotItem = cfSneak.getItem(slotToTake);
                     ItemStack taken = slotItem == null ? null : slotItem.clone();
                     cfSneak.setItem(slotToTake, null);
-                    try {
-                        cfSneak.update(true);
-                    } catch (Throwable ignored) {
-                    }
                     if (taken != null) {
                         giveOrDrop(player, taken);
                         PlayerUtil.message(player, "<green>Returned item from campfire slot.");
@@ -99,7 +95,7 @@ public class CookingListener implements Listener {
                             ItemStack seas = sit.next();
                             if (seas != null && taken != null && seas.isSimilar(taken)) { sit.remove(); break; }
                         }
-                        try { checkCombination(session, player); } catch (Throwable ignored) {}
+                        checkCombination(session, player);
                     }
                     event.setCancelled(true);
                     return;
@@ -113,13 +109,11 @@ public class CookingListener implements Listener {
                             if (it != null && !it.getType().isAir()) { cfEmpty = false; break; }
                         }
                         if (!isActiveCooking(session) && cfEmpty && session.ingredients.isEmpty() && session.seasonings.isEmpty()) {
-                            try {
-                                if (session.recipient != null) giveOrDrop(player, session.recipient.clone());
-                            } catch (Throwable ignored) {}
+                            if (session.recipient != null) giveOrDrop(player, session.recipient.clone());
                             PlayerUtil.message(player, "<green>Returned recipient item from cooking station.");
-                            try { CookingVisuals.cleanupVisuals(session); } catch (Throwable ignored) {}
+                            CookingVisuals.cleanupVisuals(session);
                             // remove any armor stand visually tied to this campfire (defensive)
-                            try { removeCookingStandAt(block.getLocation()); } catch (Throwable ignored) {}
+                            removeCookingStandAt(block.getLocation());
                             cleanUp(session, block.getLocation());
                             event.setCancelled(true);
                             return;
@@ -130,8 +124,10 @@ public class CookingListener implements Listener {
                     }
                 }
             }
-        } catch (Throwable ex) {
-            // logging removed
+        } catch (Exception ex) {
+            // If unexpected exceptions occur, log them for debugging
+            Specialization.getInstance().getLogger().warning("[Cooking] Exception during sneak-interact: " + ex.getMessage());
+            throw ex;
         }
 
         PlayerUtil.message(player, PlayerUtil.buildLogo() + " Interacting with campfire at " + block.getLocation());
@@ -142,26 +138,27 @@ public class CookingListener implements Listener {
             if (handItem.getType() == Material.AIR) {
                 if (data.cooked) {
                     // remove only this session's recipient ItemDisplay so other campfires remain untouched
-                    try {
-                        if (data.recipientDisplay != null) {
-                            try { data.recipientDisplay.remove(); } catch (Throwable ignored) {}
-                            data.recipientDisplay = null;
-                        }
-                    } catch (Throwable ignored) {}
+                    if (data.recipientDisplay != null) {
+                        data.recipientDisplay.remove();
+                        data.recipientDisplay = null;
+                    }
+                    // Drop the cooked item at the campfire center so it behaves like a normal drop (no inventory teleporting)
                     try {
                         // Drop the cooked item at the campfire center so it behaves like a normal drop (no inventory teleporting)
                         if (data.campfireLocation != null && data.food != null) {
                             Location dropLoc = data.campfireLocation.clone().add(0.5, 0.5, 0.5);
                             data.campfireLocation.getWorld().dropItemNaturally(dropLoc, data.food.clone());
                             // Play pickup/finish sound only for the collector
-                            try { CookingVisuals.playItemGet(player); } catch (Throwable ignored) {}
+                            CookingVisuals.playItemGet(player);
                         } else if (data.food != null) {
                             // fallback: give to player if drop point missing
-                            try { giveOrDrop(player, data.food.clone()); } catch (Throwable ignored) {}
+                            giveOrDrop(player, data.food.clone());
                         }
-                    } catch (Exception ignored) {
+                    } catch (Exception e) {
+                        Specialization.getInstance().getLogger().warning("[Cooking] Exception while collecting cooked item: " + e.getMessage());
+                        throw e;
                     }
-                    PlayerUtil.message(player, "<green>Collected cooked item.");
+
                     // Use the campfire block location (we're inside onPlayerInteract, 'stand' isn't available here)
                     cleanUp(data, block.getLocation());
                 }
@@ -214,34 +211,13 @@ public class CookingListener implements Listener {
         loc.setYaw(faceYaw);
 
         ArmorStand stand = block.getWorld().spawn(loc, ArmorStand.class, s -> {
-            try {
-                s.setVisible(false);
-            } catch (Throwable ignored) {
-            }
-            try {
-                s.setInvisible(true);
-            } catch (Throwable ignored) {
-            }
-            try {
-                s.setGravity(false);
-            } catch (Throwable ignored) {
-            }
-            try {
-                s.setBasePlate(false);
-            } catch (Throwable ignored) {
-            }
-            try {
-                s.setArms(false);
-            } catch (Throwable ignored) {
-            }
-            try {
-                s.setSmall(true);
-            } catch (Throwable ignored) {
-            }
-            try {
-                s.getPersistentDataContainer().set(STAND_KEY, PersistentDataType.BOOLEAN, true);
-            } catch (Throwable ignored) {
-            }
+            s.setVisible(false);
+            s.setInvisible(true);
+            s.setGravity(false);
+            s.setBasePlate(false);
+            s.setArms(false);
+            s.setSmall(true);
+            s.getPersistentDataContainer().set(STAND_KEY, PersistentDataType.BOOLEAN, true);
         });
 
         CookingItemData data = new CookingItemData(stand, place.clone(), itemId);
@@ -249,14 +225,12 @@ public class CookingListener implements Listener {
         data.campfireLocation = block.getLocation();
         cookingSessions.put(block.getLocation(), data);
         // Spawn a visual ItemDisplay for the recipient (separate from the armor stand)
-        try { CookingVisuals.spawnRecipientDisplay(data); } catch (Throwable ignored) {}
+        CookingVisuals.spawnRecipientDisplay(data);
         // consume one recipient from the player's hand and prevent vanilla placement
-        try {
-            decrementPlayerHandBySlot(player, event.getHand());
-            player.updateInventory();
-        } catch (Throwable ignored) {}
-        try { event.setUseInteractedBlock(Event.Result.DENY); } catch (Throwable ignored) {}
-        try { event.setUseItemInHand(Event.Result.DENY); } catch (Throwable ignored) {}
+        decrementPlayerHandBySlot(player, event.getHand());
+        player.updateInventory();
+        event.setUseInteractedBlock(Event.Result.DENY);
+        event.setUseItemInHand(Event.Result.DENY);
         event.setCancelled(true);
     }
 
@@ -277,21 +251,14 @@ public class CookingListener implements Listener {
                     // Cancel the default interact (which would equip the item on the stand) but keep processing the event so our ingredient placement still works.
                     event.setCancelled(true);
                     // Also ensure the stand has no equipment applied (defensive) so any client/server race won't show the item.
-                    try {
-                        stand.getEquipment().setHelmet(null);
-                    } catch (Throwable ignored) {
-                    }
-                    try {
-                        stand.getEquipment().setItemInMainHand(null);
-                    } catch (Throwable ignored) {
-                    }
-                    try {
-                        stand.getEquipment().setItemInOffHand(null);
-                    } catch (Throwable ignored) {
-                    }
+                    stand.getEquipment().setHelmet(null);
+                    stand.getEquipment().setItemInMainHand(null);
+                    stand.getEquipment().setItemInOffHand(null);
                 }
             }
-        } catch (Throwable ignored) {
+        } catch (Exception e) {
+            Specialization.getInstance().getLogger().warning("[Cooking] Error during stand-interact: " + e.getMessage());
+            throw e;
         }
 
         CookingItemData data = getSessionForStand(stand);
@@ -309,26 +276,27 @@ public class CookingListener implements Listener {
             // If already cooked -> collect the cooked item
             if (data.cooked) {
                 // remove only this session's recipient ItemDisplay so other campfires remain untouched
-                try {
-                    if (data.recipientDisplay != null) {
-                        try { data.recipientDisplay.remove(); } catch (Throwable ignored) {}
-                        data.recipientDisplay = null;
-                    }
-                } catch (Throwable ignored) {}
+                if (data.recipientDisplay != null) {
+                    data.recipientDisplay.remove();
+                    data.recipientDisplay = null;
+                }
+                // Drop the cooked item at the campfire center so it behaves like a normal drop (no inventory teleporting)
                 try {
                     // Drop the cooked item at the campfire center so it behaves like a normal drop (no inventory teleporting)
                     if (data.campfireLocation != null && data.food != null) {
                         Location dropLoc = data.campfireLocation.clone().add(0.5, 0.5, 0.5);
                         data.campfireLocation.getWorld().dropItemNaturally(dropLoc, data.food.clone());
                         // Play pickup/finish sound only for the collector
-                        try { CookingVisuals.playItemGet(player); } catch (Throwable ignored) {}
+                        CookingVisuals.playItemGet(player);
                     } else if (data.food != null) {
                         // fallback: give to player if drop point missing
-                        try { giveOrDrop(player, data.food.clone()); } catch (Throwable ignored) {}
+                        giveOrDrop(player, data.food.clone());
                     }
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    Specialization.getInstance().getLogger().warning("[Cooking] Error while collecting cooked item (right-click): " + e.getMessage());
+                    throw e;
                 }
-                PlayerUtil.message(player, "<green>Collected cooked item.");
+
                 cleanUp(data, stand.getLocation().subtract(0.5, 1, 0.5));
                 event.setCancelled(true);
                 return;
@@ -336,32 +304,22 @@ public class CookingListener implements Listener {
             // If no ingredients have been placed yet, allow the owner to pick up the recipient preview
             if (data.ingredients.isEmpty()) {
                 // No ownership: allow anyone to pick up the recipient before cooking
-                try {
-                    giveOrDrop(player, data.recipient.clone());
-                } catch (Exception ignored) {
-                }
+                giveOrDrop(player, data.recipient.clone());
                 PlayerUtil.message(player, "<green>Picked up recipient item.");
-                try { removeCookingStandAt(stand.getLocation().subtract(0.5, 1, 0.5)); } catch (Throwable ignored) {}
+                removeCookingStandAt(stand.getLocation().subtract(0.5, 1, 0.5));
                 cleanUp(data, stand.getLocation().subtract(0.5, 1, 0.5));
                 event.setCancelled(true);
                 return;
             }
             // If there is no floating display entity yet, spawn it now (player explicit action)
             if (data.displayEntity == null) {
-                try {
-                    // Spawn handled by CookingVisuals (will set data.displayEntity and viewer)
-                    data.viewer = player.getUniqueId();
-                    CookingVisuals.spawnOrUpdateDisplay(data);
-                    try {
-                        savePreviewToDisk(data);
-                    } catch (Throwable ignored) {}
-                    PlayerUtil.message(player, "<green>Preview spawned above campfire.");
-                } catch (Throwable ex) {
-                    // logging removed
-                }
+                // Spawn handled by CookingVisuals (will set data.displayEntity and viewer)
+                data.viewer = player.getUniqueId();
+                CookingVisuals.spawnOrUpdateDisplay(data);
+                savePreviewToDisk(data);
+                PlayerUtil.message(player, "<green>Preview spawned above campfire.");
                 // do not return here — continue so a valid recipe can be started with a single hit
-            }
-            if (data.food == null) {
+
                 PlayerUtil.message(player, "<yellow>No valid recipe preview available — add ingredients first.");
                 event.setCancelled(true);
                 return;
@@ -373,13 +331,6 @@ public class CookingListener implements Listener {
                 return;
             }
             // Otherwise start cooking (single-hit start)
-            // logging removed
-            try {
-                // logging removed
-                stopCookingProcesses(data);
-                // logging removed
-            } catch (Throwable ignored) {}
-            // logging removed
             startCooking(data, player);
             event.setCancelled(true);
             return;
@@ -400,7 +351,7 @@ public class CookingListener implements Listener {
             if (isActiveCooking(sessionData)) { PlayerUtil.message(player, "<red>Cannot modify campfire slots while cooking is in progress."); return; }
                 if (tryPlaceItemOnCampfire(block2, hand, sessionData, player, false, handSlot)) {
                     // cancel the entity interaction so the server doesn't try to equip the item
-                    try { event.setCancelled(true); } catch (Throwable ignored) {}
+                    event.setCancelled(true);
                     checkCombination(sessionData, player);
                     if (sessionData.food != null) PlayerUtil.message(player, "<aqua>Recipe matched — result shown on campfire stand");
                 }
@@ -411,7 +362,7 @@ public class CookingListener implements Listener {
             if (cPlayer.getSkillLevel(SkillType.FARMER) < 2) { PlayerUtil.message(player, "<red>You need to be Farmer level 2 or higher to use this additive!"); return; }
             if (isActiveCooking(sessionData)) { PlayerUtil.message(player, "<red>Cannot modify campfire slots while cooking is in progress."); return; }
                 if (tryPlaceItemOnCampfire(block2, hand, sessionData, player, true, handSlot)) {
-                    try { event.setCancelled(true); } catch (Throwable ignored) {}
+                    event.setCancelled(true);
                 }
         }
         event.setCancelled(true);
@@ -427,17 +378,13 @@ public class CookingListener implements Listener {
         CookingItemData data = getSessionForStand(stand);
         if (data == null) data = cookingSessions.get(campLoc.getBlock().getLocation());
         // Resync authoritative campfire slot contents into session lists to avoid stale state after removals/adds
-        try {
-            resyncSessionFromCampfire(data);
-        } catch (Throwable ignored) {}
+        resyncSessionFromCampfire(data);
         if (data == null) return;
 
         // if cooking in progress -> cancel cooking but DO NOT return items (player can remove them manually).
         if (isActiveCooking(data)) {
             stopCookingProcesses(data);
-            try {
-                CookingVisuals.playCancelEffects(data);
-            } catch (Exception ignored) {}
+            CookingVisuals.playCancelEffects(data);
             PlayerUtil.message(player, "<yellow>Cooking cancelled.");
             event.setCancelled(true);
             return;
@@ -445,41 +392,39 @@ public class CookingListener implements Listener {
 
         // Recompute recipe matching from authoritative campfire slots so a cancel + re-add cycle is recognized
         try {
-            // ensure the checker knows who the viewer is (so spawn messages/preview target the hitter)
             data.viewer = player.getUniqueId();
-            // logging removed
+            // ensure the checker knows who the viewer is (so spawn messages/preview target the hitter)
             checkCombination(data, player);
-        } catch (Throwable ignored) {}
+        } catch (Exception e) {
+            Specialization.getInstance().getLogger().warning("[Cooking] Error while recomputing recipe on hit: " + e.getMessage());
+            throw e;
+        }
 
         // Defensive re-check: if no resolved food, try once more after forcing viewer to this hitter
-        try {
-            if (data.food == null) {
-                data.viewer = player.getUniqueId();
-                checkCombination(data, player);
-                // logging removed
-            }
-        } catch (Throwable ignored) {}
-
-        // If a preview display is missing but we have a resolved result item, spawn it so the hit action reflects the visible preview.
-        try {
-            if (data.displayEntity == null && data.food != null) {
-                try { data.viewer = player.getUniqueId(); CookingVisuals.spawnOrUpdateDisplay(data); savePreviewToDisk(data); } catch (Throwable ex) {
-                    // logging removed
+        if (data.food == null) {
+            try {
+                if (data.food == null) {
+                    data.viewer = player.getUniqueId();
+                    checkCombination(data, player);
                 }
+            } catch (Exception e) {
+                Specialization.getInstance().getLogger().warning("[Cooking] Error during defensive re-check: " + e.getMessage());
+                throw e;
             }
-        } catch (Throwable ignored) {}
+        }
+        // If a preview display is missing but we have a resolved result item, spawn it so the hit action reflects the visible preview.
+        if (data.displayEntity == null && data.food != null) {
+            try { data.viewer = player.getUniqueId(); CookingVisuals.spawnOrUpdateDisplay(data); savePreviewToDisk(data); } catch (Exception ex) {
+                Specialization.getInstance().getLogger().warning("[Cooking] Failed ensuring preview on hit: " + ex.getMessage());
+                throw ex;
+            }
+        }
         // single hit start: if there's a preview result, start cooking; otherwise notify
         if (data.food == null) {
             PlayerUtil.message(player, PlayerUtil.buildLogo() + " <yellow>No valid recipe to cook yet. Add ingredients first.");
             return;
         }
         PlayerUtil.message(player, "<green>Starting cooking process...");
-        // logging removed
-        try {
-            stopCookingProcesses(data);
-            // logging removed
-        } catch (Throwable ignored) {}
-        // logging removed
         startCooking(data, player);
         event.setCancelled(true);
     }
@@ -487,15 +432,16 @@ public class CookingListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onBlockBreak(BlockBreakEvent event) {
         Block block = event.getBlock(); if (block.getType() != Material.CAMPFIRE) return;
-        // Prevent vanilla block-item drops (campfire slot items) from also dropping — we handle drops explicitly below.
         try { event.setDropItems(false); } catch (NoSuchMethodError ignored) {}
+        // Prevent vanilla block-item drops (campfire slot items) from also dropping — we handle drops explicitly below.
         CookingItemData data = cookingSessions.get(block.getLocation());
         if (data == null) return;
         // Mark session destroyed first and cancel running processes to prevent finalization
-        try { data.destroyed = true; } catch (Throwable ignored) {}
-        try { data.cookExp = 0; } catch (Throwable ignored) {}
-        try { data.viewer = null; } catch (Throwable ignored) {}
-        try { stopCookingProcesses(data); } catch (Throwable ignored) {}
+        data.destroyed = true;
+        data.cookExp = 0;
+        data.viewer = null;
+        stopCookingProcesses(data);
+
         Player breaker = event.getPlayer();
         try {
             Campfire cf = (Campfire) block.getState();
@@ -511,67 +457,63 @@ public class CookingListener implements Listener {
             // campfire slot contents are authoritative; do NOT add data.ingredients/data.seasonings here
             // as they are mirrors of the slot contents and would cause duplicate drops.
             // include the recipient item (the item placed on the station)
-            try { if (data.recipient != null && data.recipient.getType() != Material.AIR) toDrop.add(data.recipient.clone()); } catch (Throwable ignored) {}
+            if (data.recipient != null && data.recipient.getType() != Material.AIR) toDrop.add(data.recipient.clone());
             // add 2 charcoal as vanilla campfire breaking reward
-            try { toDrop.add(new ItemStack(Material.CHARCOAL, 2)); } catch (Throwable ignored) {}
+            toDrop.add(new ItemStack(Material.CHARCOAL, 2));
             // Remove the session mapping first so our drops don't get cancelled by onItemSpawn
-            try { cookingSessions.remove(block.getLocation()); } catch (Throwable ignored) {}
+            cookingSessions.remove(block.getLocation());
             // Drop each collected stack as-is to preserve custom item data
             for (ItemStack stack : toDrop) {
-                try {
-                    Location loc = dropLoc.clone().add((rnd.nextDouble()-0.5)*0.4, 0, (rnd.nextDouble()-0.5)*0.4);
-                    org.bukkit.entity.Item dropped = block.getWorld().dropItemNaturally(loc, stack);
-                    // ensure dropped items are immediately pickable after break
-                    try { dropped.setPickupDelay(10); } catch (Throwable ignored) {}
-                } catch (Throwable ignored) {}
+                Location loc = dropLoc.clone().add((rnd.nextDouble()-0.5)*0.4, 0, (rnd.nextDouble()-0.5)*0.4);
+                org.bukkit.entity.Item dropped = block.getWorld().dropItemNaturally(loc, stack);
+                // ensure dropped items are immediately pickable after break
+                dropped.setPickupDelay(10);
             }
             // remove any preview dropped entity (floating dropped item preview)
             if (data.displayEntity != null) {
-                try { data.displayEntity.remove(); } catch (Throwable ignored) {}
+                data.displayEntity.remove();
             }
             // ensure any ItemDisplay preview (recipient) near the campfire is removed as well
-            try {
-                // direct field removal if present
-                try { if (data.recipientDisplay != null) { data.recipientDisplay.remove(); data.recipientDisplay = null; } } catch (Throwable ignored) {}
-                // remove entities by persistent data keys (set in CookingVisuals)
-                NamespacedKey recipKey = new NamespacedKey(Specialization.getInstance(), "cooking_recipient");
-                NamespacedKey prevKey = new NamespacedKey(Specialization.getInstance(), "cooking_preview");
-                for (org.bukkit.entity.Entity ne : block.getWorld().getNearbyEntities(dropLoc, 0.4, 0.4, 0.4)) {
+            NamespacedKey recipKey = new NamespacedKey(Specialization.getInstance(), "cooking_recipient");
+            NamespacedKey prevKey = new NamespacedKey(Specialization.getInstance(), "cooking_preview");
+            for (org.bukkit.entity.Entity ne : block.getWorld().getNearbyEntities(dropLoc, 0.4, 0.4, 0.4)) {
+                if (ne instanceof org.bukkit.entity.ItemDisplay idisp) {
                     try {
-                        if (ne instanceof org.bukkit.entity.ItemDisplay idisp) {
-                            try {
-                                if (idisp.getPersistentDataContainer().has(recipKey, PersistentDataType.STRING)) {
-                                    idisp.remove();
-                                }
-                            } catch (Throwable ignored) {}
+                        if (idisp.getPersistentDataContainer().has(recipKey, PersistentDataType.STRING)) {
+                            idisp.remove();
                         }
-                        if (ne instanceof org.bukkit.entity.Item itemEnt) {
-                            try {
-                                if (itemEnt.getPersistentDataContainer().has(prevKey, PersistentDataType.BOOLEAN)) {
-                                    itemEnt.remove();
-                                }
-                            } catch (Throwable ignored) {}
-                        }
-                    } catch (Throwable ignored) {}
+                    } catch (Exception e) {
+                        Specialization.getInstance().getLogger().warning("[Cooking] Error while removing nearby ItemDisplay: " + e.getMessage());
+                        throw e;
+                    }
                 }
-            } catch (Throwable ignored) {}
-        } catch (Exception ignored) {
+                if (ne instanceof org.bukkit.entity.Item itemEnt) {
+                    try {
+                        if (itemEnt.getPersistentDataContainer().has(prevKey, PersistentDataType.BOOLEAN)) {
+                            itemEnt.remove();
+                        }
+                    } catch (Exception e) {
+                        Specialization.getInstance().getLogger().warning("[Cooking] Error while removing nearby Item preview: " + e.getMessage());
+                        throw e;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Specialization.getInstance().getLogger().warning("[Cooking] Error during block-break handling: " + e.getMessage());
+            throw e;
         }
+
         try {
             if (data.stand != null) {
                 try {
                     data.stand.getEquipment().setItemInMainHand(null);
                     data.stand.getEquipment().setItemInOffHand(null);
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    Specialization.getInstance().getLogger().warning("[Cooking] Error while clearing stand equipment: " + e.getMessage());
+                    throw e;
                 }
-                try {
-                    CookingVisuals.playBreakEffects(data);
-                } catch (Exception ignored) {
-                }
-                try {
-                    data.stand.remove();
-                } catch (Exception ignored) {
-                }
+                CookingVisuals.playBreakEffects(data);
+                data.stand.remove();
             }
             // Only remove the special cooking armor stands nearby; do NOT remove Item entities (we want drops to remain).
             Location center = block.getLocation().add(0.5, 0.5, 0.5);
@@ -581,71 +523,66 @@ public class CookingListener implements Listener {
                         try {
                             as.getEquipment().setItemInMainHand(null);
                             as.remove();
-                        } catch (Exception ignored) {
+                        } catch (Exception ex) {
+                            Specialization.getInstance().getLogger().warning("[Cooking] Error while removing nearby stand: " + ex.getMessage());
+                            throw ex;
                         }
                     }
                 }
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            Specialization.getInstance().getLogger().warning("[Cooking] Error during block-break cleanup: " + e.getMessage());
+            throw e;
         }
+
         try {
             event.setDropItems(false);
-        } catch (NoSuchMethodError ignored) {
+        } catch (NoSuchMethodError e) {
+            Specialization.getInstance().getLogger().warning("[Cooking] setDropItems not available on this server API build: " + e.getMessage());
         }
-        // Clean up session without removing the items we just dropped from the world
         cleanUpKeepDrops(data, block.getLocation());
     }
 
     private void cleanUp(CookingItemData data, Location loc) {
         if (data == null) return;
         // remove display item if present
-        try {
-            if (data.displayEntity != null) {
-                try {
-                    removePreviewFromDisk(data);
-                } catch (Throwable ignored) {
-                }
-                data.displayEntity.remove();
-                data.displayEntity = null;
-            }
-        } catch (Throwable ignored) {
+        if (data.displayEntity != null) {
+            removePreviewFromDisk(data);
+            data.displayEntity.remove();
+            data.displayEntity = null;
         }
-        // remove recipient ItemDisplay if present
-        try {
-            if (data.recipientDisplay != null) {
-                try { data.recipientDisplay.remove(); } catch (Throwable ignored) {}
-                data.recipientDisplay = null;
-            }
-        } catch (Throwable ignored) {}
-        // remove boss bar if any
-        try {
-            if (data.bossBar != null) {
-                data.bossBar.removeAll();
-                data.bossBar.setVisible(false);
-                data.bossBar = null;
-            }
-        } catch (Throwable ignored) {
+
+        if (data.recipientDisplay != null) {
+            data.recipientDisplay.remove();
+            data.recipientDisplay = null;
         }
-        // ensure any running cooking tasks are stopped
+
+        if (data.bossBar != null) {
+            data.bossBar.removeAll();
+            data.bossBar.setVisible(false);
+            data.bossBar = null;
+        }
+
         stopCookingProcesses(data);
-        // remove session from registry using provided loc (may be null in some callers)
+
         if (loc != null) cookingSessions.remove(loc);
-        // Restore campfire lit state (if block still exists) and clear server-side slot state
+
         try {
             Block block = loc == null ? null : loc.getBlock();
             if (block != null && block.getType() == Material.CAMPFIRE) {
-                try {
-                    org.bukkit.block.data.type.Campfire campfireData = (org.bukkit.block.data.type.Campfire) block.getBlockData();
-                    if (data.wasLit != campfireData.isLit()) {
-                        campfireData.setLit(data.wasLit);
-                        block.setBlockData(campfireData);
-                    }
-                    Campfire campfire = (Campfire) block.getState();
-                    for (int i = 0; i < 4; i++) campfire.setItem(i, null);
-                    campfire.update(true);
-                } catch (Throwable ignored) {}
+                org.bukkit.block.data.type.Campfire campfireData = (org.bukkit.block.data.type.Campfire) block.getBlockData();
+                if (data.wasLit != campfireData.isLit()) {
+                    campfireData.setLit(data.wasLit);
+                    block.setBlockData(campfireData);
+                }
+                Campfire campfire = (Campfire) block.getState();
+                for (int i = 0; i < 4; i++) campfire.setItem(i, null);
+                campfire.update(true);
             }
-        } catch (Throwable ignored) {}
+        } catch (Exception e) {
+            Specialization.getInstance().getLogger().warning("[Cooking] Error during cleanUp: " + e.getMessage());
+            throw e;
+        }
     }
 
     /**
@@ -655,38 +592,29 @@ public class CookingListener implements Listener {
     private void cleanUpKeepDrops(CookingItemData data, Location loc) {
         if (data == null) return;
         // remove preview dropped item if present (the preview for the recipe)
-        try {
-            if (data.displayEntity != null) {
-                try { removePreviewFromDisk(data); } catch (Throwable ignored) {}
-                try { data.displayEntity.remove(); } catch (Throwable ignored) {}
-                data.displayEntity = null;
-            }
-        } catch (Throwable ignored) {}
-        // remove recipient ItemDisplay if present
-        try {
-            if (data.recipientDisplay != null) {
-                try { data.recipientDisplay.remove(); } catch (Throwable ignored) {}
-                data.recipientDisplay = null;
-            }
-        } catch (Throwable ignored) {}
-        // remove boss bar if any
-        try {
-            if (data.bossBar != null) {
-                data.bossBar.removeAll();
-                data.bossBar.setVisible(false);
-                data.bossBar = null;
-            }
-        } catch (Throwable ignored) {
+        if (data.displayEntity != null) {
+            removePreviewFromDisk(data);
+            data.displayEntity.remove();
+            data.displayEntity = null;
         }
-        // remove armor stand
+
+        if (data.recipientDisplay != null) {
+            data.recipientDisplay.remove();
+            data.recipientDisplay = null;
+        }
+
+        if (data.bossBar != null) {
+            data.bossBar.removeAll();
+            data.bossBar.setVisible(false);
+            data.bossBar = null;
+        }
+
         if (data.stand != null) {
-            try {
-                if (data.stand.isValid()) {
-                    try { data.stand.getEquipment().setHelmet(null); } catch (Throwable ignored) {}
-                    try { data.stand.getEquipment().setItemInMainHand(null); } catch (Throwable ignored) {}
-                }
-            } catch (Throwable ignored) {}
-            try { data.stand.remove(); } catch (Throwable ignored) {}
+            if (data.stand.isValid()) {
+                try { data.stand.getEquipment().setHelmet(null); } catch (Exception e) { Specialization.getInstance().getLogger().warning("[Cooking] Error clearing stand helmet: " + e.getMessage()); throw e; }
+                try { data.stand.getEquipment().setItemInMainHand(null); } catch (Exception e) { Specialization.getInstance().getLogger().warning("[Cooking] Error clearing stand mainhand: " + e.getMessage()); throw e; }
+            }
+            data.stand.remove();
         }
         // Do not remove Item entities — we want the dropped items to remain for the player.
         // remove session from registry using provided loc (may be null in some callers)
@@ -702,8 +630,7 @@ public class CookingListener implements Listener {
                 Campfire campfire = (Campfire) block.getState();
                 for (int i = 0; i < 4; i++) campfire.setItem(i, null);
                 campfire.update(true);
-            } catch (Exception ignored) {
-            }
+            } catch (Exception e) { Specialization.getInstance().getLogger().warning("[Cooking] Error during cleanUpKeepDrops: " + e.getMessage()); throw e; }
         }
     }
 
@@ -731,7 +658,8 @@ public class CookingListener implements Listener {
         try {
             previewsConfig.save(previewsFile);
         } catch (IOException e) {
-            // logging removed
+            Specialization.getInstance().getLogger().warning("[Cooking] Failed to save preview config: " + e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 
@@ -742,7 +670,8 @@ public class CookingListener implements Listener {
         try {
             previewsConfig.save(previewsFile);
         } catch (IOException e) {
-            // logging removed
+            Specialization.getInstance().getLogger().warning("[Cooking] Failed to remove preview from disk: " + e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 
@@ -750,26 +679,24 @@ public class CookingListener implements Listener {
     private void stopCookingProcesses(CookingItemData data) {
         if (data == null) return;
         // Stop visuals first (boss bar) to ensure players don't keep a stuck bar
-        try { CookingVisuals.stopProgressBar(data); } catch (Throwable ignored) {}
+        CookingVisuals.stopProgressBar(data);
         // Cancel scheduled tasks
-        try { if (data.progressTask != null) { data.progressTask.cancel(); } } catch (Throwable ignored) {}
-        try { data.progressTask = null; } catch (Throwable ignored) {}
-        try { if (data.cookTask != null) { data.cookTask.cancel(); } } catch (Throwable ignored) {}
-        try { data.cookTask = null; } catch (Throwable ignored) {}
-        try { if (data.maintenanceTask != null) { data.maintenanceTask.cancel(); } } catch (Throwable ignored) {}
-        try { data.maintenanceTask = null; } catch (Throwable ignored) {}
+        if (data.progressTask != null) { data.progressTask.cancel(); }
+        data.progressTask = null;
+        if (data.cookTask != null) { data.cookTask.cancel(); }
+        data.cookTask = null;
+        if (data.maintenanceTask != null) { data.maintenanceTask.cancel(); }
+        data.maintenanceTask = null;
         // Reset state flags so interactions are allowed again
-        try { data.cookingInProgress = false; } catch (Throwable ignored) {}
-        try { data.cooked = false; } catch (Throwable ignored) {}
-        try { data.viewer = null; } catch (Throwable ignored) {}
+        data.cookingInProgress = false;
+        data.cooked = false;
+        data.viewer = null;
         // Force-remove any boss bar reference (defensive)
-        try {
-            if (data.bossBar != null) {
-                try { data.bossBar.removeAll(); } catch (Throwable ignored) {}
-                try { data.bossBar.setVisible(false); } catch (Throwable ignored) {}
-                data.bossBar = null;
-            }
-        } catch (Throwable ignored) {}
+        if (data.bossBar != null) {
+            data.bossBar.removeAll();
+            data.bossBar.setVisible(false);
+            data.bossBar = null;
+        }
         // Do NOT remove preview/display entities here; keep visuals intact so the player can continue editing
     }
 
@@ -796,30 +723,12 @@ public class CookingListener implements Listener {
                 // spawn a stand placeholder to associate session
                 Location standLoc = loc.clone().add(0.5, 0.0, 0.5);
                 ArmorStand stand = loc.getWorld().spawn(standLoc, ArmorStand.class, s -> {
-                    try {
-                        s.setVisible(false);
-                    } catch (Throwable ignored) {
-                    }
-                    try {
-                        s.setInvisible(true);
-                    } catch (Throwable ignored) {
-                    }
-                    try {
-                        s.setGravity(false);
-                    } catch (Throwable ignored) {
-                    }
-                    try {
-                        s.setBasePlate(false);
-                    } catch (Throwable ignored) {
-                    }
-                    try {
-                        s.setSmall(true);
-                    } catch (Throwable ignored) {
-                    }
-                    try {
-                        s.getPersistentDataContainer().set(STAND_KEY, PersistentDataType.BOOLEAN, true);
-                    } catch (Throwable ignored) {
-                    }
+                    s.setVisible(false);
+                    s.setInvisible(true);
+                    s.setGravity(false);
+                    s.setBasePlate(false);
+                    s.setSmall(true);
+                    s.getPersistentDataContainer().set(STAND_KEY, PersistentDataType.BOOLEAN, true);
                 });
                 CookingItemData data = new CookingItemData(stand, stack == null ? null : stack.clone(), recipientId);
                 data.campfireLocation = loc;
@@ -828,8 +737,9 @@ public class CookingListener implements Listener {
                 cookingSessions.put(loc, data);
                 // spawn preview dropped item
                 if (stack != null) CookingVisuals.spawnOrUpdateDisplay(data);
-            } catch (Throwable ex) {
-                // logging removed
+            } catch (Exception ex) {
+                Specialization.getInstance().getLogger().warning("[Cooking] Failed to load persisted preview: " + ex.getMessage());
+                throw ex;
             }
         }
     }
@@ -858,9 +768,9 @@ public class CookingListener implements Listener {
             } else {
                 for (ItemStack is : data.ingredients) if (is != null) currentIds.add(getItemId(is));
             }
-        } catch (Throwable ignored) {
-            // fallback
-            for (ItemStack is : data.ingredients) if (is != null) currentIds.add(getItemId(is));
+        } catch (Exception e) {
+            Specialization.getInstance().getLogger().warning("[Cooking] Error while reading campfire slots: " + e.getMessage());
+            throw e;
         }
 
         Config cookingConfig = SpecializationConfig.getCookingConfig().getConfig();
@@ -877,9 +787,9 @@ public class CookingListener implements Listener {
                 CustomPlayer coreCP = CoreUtil.getPlayer(player);
                 if (coreCP != null) playerLevelInt = coreCP.getSkillLevel(SkillType.FARMER);
             }
-        } catch (Throwable t) {
-            try { Specialization.getInstance().getLogger().warning("[Cooking] Could not resolve CustomPlayer for " + player.getName() + ", defaulting farmer level to 0"); } catch (Throwable ignored) {}
-            playerLevelInt = 0;
+        } catch (Exception t) {
+            Specialization.getInstance().getLogger().warning("[Cooking] Could not resolve CustomPlayer for " + player.getName() + ", defaulting farmer level to 0");
+            throw t;
         }
         SkillLevel playerSkill = SkillLevel.getSkillLevelFromInt(playerLevelInt);
 
@@ -890,7 +800,7 @@ public class CookingListener implements Listener {
                 List<ConfigObject> allTiers = new ArrayList<>();
                 for (SkillLevel t : SkillLevel.values()) {
                     String tk = "FARMER_" + t.name();
-                    try { allTiers.addAll(cookingConfig.getObjectList(tk)); } catch (Exception ignored) {}
+                    try { allTiers.addAll(cookingConfig.getObjectList(tk)); } catch (Exception e) { Specialization.getInstance().getLogger().warning("[Cooking] Error reading recipes for tier " + tk + ": " + e.getMessage()); throw e; }
                 }
                 boolean wouldMatch = false;
                 for (ConfigObject obj : allTiers) {
@@ -903,18 +813,18 @@ public class CookingListener implements Listener {
                         List<String> curSorted = new ArrayList<>(currentIds);
                         Collections.sort(curSorted);
                         if (req.equals(curSorted)) { wouldMatch = true; break; }
-                    } catch (Throwable ignored) {}
+                    } catch (Exception e) { Specialization.getInstance().getLogger().warning("[Cooking] Error parsing recipe object: " + e.getMessage()); throw e; }
                 }
                 if (wouldMatch) {
                     try {
                         PlayerUtil.message(player, "<red>You need to be Farmer level 2 or higher to cook this dish!", 1);
-                    } catch (Throwable ignored) {
-                        try { player.sendMessage("§cYou need to be Farmer level 2 or higher to cook this dish!"); } catch (Throwable ignored2) {}
+                    } catch (Exception e) {
+                        try { player.sendMessage("§cYou need to be Farmer level 2 or higher to cook this dish!"); } catch (Exception ex) { Specialization.getInstance().getLogger().warning("[Cooking] Failed to send fallback message: " + ex.getMessage()); throw ex; }
                     }
                     return;
                 }
             }
-        } catch (Throwable ignored) {}
+        } catch (Exception e) { Specialization.getInstance().getLogger().warning("[Cooking] Error during level-check: " + e.getMessage()); throw e; }
 
         boolean matchedAny = false;
         // Check tiers from highest to lowest so higher-tier recipes take precedence
@@ -948,12 +858,12 @@ public class CookingListener implements Listener {
                      data.cookTimeSeconds = cookSeconds;
                  }
                  if (made && data.food != null) {
-                     try { CookingVisuals.spawnOrUpdateDisplay(data); } catch (Throwable ignored) {}
+                     CookingVisuals.spawnOrUpdateDisplay(data);
                      if (player.isOnline()) {
                         try {
                             // Play a player-local composter "empty" sound at pitch 0.5 so only the player hears it
                             player.playSound(player.getLocation(), Sound.BLOCK_COMPOSTER_EMPTY, SoundCategory.BLOCKS, 1.0f, 0.5f);
-                        } catch (Throwable ignored) {}
+                        } catch (Exception e) { Specialization.getInstance().getLogger().warning("[Cooking] Failed to play composter sound: " + e.getMessage()); throw e; }
                      }
                  }
                  break; // stop after first match in this tier
@@ -967,20 +877,14 @@ public class CookingListener implements Listener {
                  data.food = null;
                  // reset configured exp when clearing preview
                  data.cookExp = 0;
-                 try {
-                     if (data.displayEntity != null) {
-                         data.displayEntity.remove();
-                         data.displayEntity = null;
-                     }
-                 } catch (Throwable ignored) {
+                 if (data.displayEntity != null) {
+                     data.displayEntity.remove();
+                     data.displayEntity = null;
                  }
-                 try {
-                     if (data.bossBar != null) {
-                         data.bossBar.removeAll();
-                         data.bossBar.setVisible(false);
-                         data.bossBar = null;
-                     }
-                 } catch (Throwable ignored) {
+                 if (data.bossBar != null) {
+                     data.bossBar.removeAll();
+                     data.bossBar.setVisible(false);
+                     data.bossBar = null;
                  }
                  if (player.isOnline())
                      PlayerUtil.message(player, "<yellow>Recipe invalid or incomplete for this recipient.");
@@ -998,8 +902,9 @@ public class CookingListener implements Listener {
                  data.food = ce.get().buildItemStack(1);
                  made = true;
              }
-         } catch (Throwable e) {
-             // logging removed
+         } catch (Exception e) {
+             Specialization.getInstance().getLogger().warning("[Cooking] Error resolving CraftEngine custom item: " + e.getMessage());
+             throw e;
          }
          if (!made) {
              try {
@@ -1008,68 +913,69 @@ public class CookingListener implements Listener {
                      data.food = ci.createItemStack(1);
                      made = true;
                  }
-             } catch (Throwable e) {
-                 // logging removed
+             } catch (Exception e) {
+                 Specialization.getInstance().getLogger().warning("[Cooking] Error resolving legacy custom item: " + e.getMessage());
+                 throw e;
              }
          }
          return made;
      }
 
 
-     private boolean tryPlaceItemOnCampfire(Block block, ItemStack hand, CookingItemData data, Player player, boolean isSeasoning, EquipmentSlot handSlot) {
-         if (block == null || block.getType() != Material.CAMPFIRE) return false;
-         org.bukkit.block.data.type.Campfire blockData = (org.bukkit.block.data.type.Campfire) block.getBlockData();
-         if (blockData.isLit()) {
-             PlayerUtil.message(player, "<red>You must extinguish the campfire (right-click with a shovel) to enter cooking mode.");
-             return false;
-         }
-         // If the session already started cooking, do not allow modification of slots
-         if (isActiveCooking(data)) {
-             // logging removed
-             PlayerUtil.message(player, "<red>Cannot add or remove items while cooking is in progress.");
-             return false;
-         }
-         try {
-             Campfire cf = (Campfire) block.getState();
-             int slot = -1;
-             for (int i = 0; i < 4; i++) {
-                 ItemStack cur = cf.getItem(i);
-                 if (cur == null || cur.getType().isAir()) {
-                     slot = i;
-                     break;
-                 }
-             }
-             if (slot == -1) {
-                 PlayerUtil.message(player, isSeasoning ? "<red>No empty seasoning slots available." : "<red>No empty ingredient slots available.");
-                 return false;
-             }
-             if (isSeasoning) {
-                 // allow at most 2 seasonings per session
-                 if (data.seasonings.size() >= 2) {
-                     PlayerUtil.message(player, "<red>Only 2 seasonings/sauces are allowed per cooking session.");
-                     return false;
-                 }
-             }
-             ItemStack toPlace = hand.clone();
-             toPlace.setAmount(1);
-             cf.setItem(slot, toPlace);
-             cf.update(true);
-             // logging removed
-             if (isSeasoning) {
-                 data.seasonings.add(toPlace);
-                 // spawn a simple particle effect to visualise seasoning
-                 try { CookingVisuals.playSeasoningEffect(block, toPlace); } catch (Throwable ignored) {}
-             } else {
-                 data.ingredients.add(toPlace);
-             }
-             decrementPlayerHandBySlot(player, handSlot);
-             player.updateInventory();
-             return true;
-         } catch (Exception ex) {
-             // logging removed
-             return false;
-         }
-     }
+    private boolean tryPlaceItemOnCampfire(Block block, ItemStack hand, CookingItemData data, Player player, boolean isSeasoning, EquipmentSlot handSlot) {
+        if (block == null || block.getType() != Material.CAMPFIRE) return false;
+        org.bukkit.block.data.type.Campfire blockData = (org.bukkit.block.data.type.Campfire) block.getBlockData();
+        if (blockData.isLit()) {
+            PlayerUtil.message(player, "<red>You must extinguish the campfire (right-click with a shovel) to enter cooking mode.");
+            return false;
+        }
+        // If the session already started cooking, do not allow modification of slots
+        if (isActiveCooking(data)) {
+            Specialization.getInstance().getLogger().info("[Cooking] refuse place: activeCooking=" + isActiveCooking(data) + " cooked=" + data.cooked);
+            PlayerUtil.message(player, "<red>Cannot add or remove items while cooking is in progress.");
+            return false;
+        }
+        try {
+            Campfire cf = (Campfire) block.getState();
+            int slot = -1;
+            for (int i = 0; i < 4; i++) {
+                ItemStack cur = cf.getItem(i);
+                if (cur == null || cur.getType().isAir()) {
+                    slot = i;
+                    break;
+                }
+            }
+            if (slot == -1) {
+                PlayerUtil.message(player, isSeasoning ? "<red>No empty seasoning slots available." : "<red>No empty ingredient slots available.");
+                return false;
+            }
+            if (isSeasoning) {
+                // allow at most 2 seasonings per session
+                if (data.seasonings.size() >= 2) {
+                    PlayerUtil.message(player, "<red>Only 2 seasonings/sauces are allowed per cooking session.");
+                    return false;
+                }
+            }
+            ItemStack toPlace = hand.clone();
+            toPlace.setAmount(1);
+            cf.setItem(slot, toPlace);
+            cf.update(true);
+            Specialization.getInstance().getLogger().info("[Cooking] Placed ingredient " + hand.getType() + " into campfire slot " + slot + " at " + block.getLocation());
+            if (isSeasoning) {
+                data.seasonings.add(toPlace);
+                // spawn a simple particle effect to visualise seasoning
+                CookingVisuals.playSeasoningEffect(block, toPlace);
+            } else {
+                data.ingredients.add(toPlace);
+            }
+            decrementPlayerHandBySlot(player, handSlot);
+            player.updateInventory();
+            return true;
+        } catch (Exception ex) {
+            Specialization.getInstance().getLogger().warning("[Cooking] Failed placing ingredient: " + ex.getMessage());
+            throw ex;
+        }
+    }
 
     private void decrementPlayerHandBySlot(Player player, EquipmentSlot handSlot) {
         if (handSlot == EquipmentSlot.OFF_HAND) {
@@ -1104,7 +1010,9 @@ public class CookingListener implements Listener {
                 event.setCancelled(true);
                 try {
                     it.remove();
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    Specialization.getInstance().getLogger().warning("[Cooking] Error removing spawned item: " + e.getMessage());
+                    throw e;
                 }
                 return;
             }
@@ -1125,11 +1033,15 @@ public class CookingListener implements Listener {
                 // if cooked, allow pickup but cleanup session
                 try {
                     removePreviewFromDisk(d);
-                } catch (Throwable ignored) {
+                } catch (Exception e) {
+                    Specialization.getInstance().getLogger().warning("[Cooking] Error removing preview from disk: " + e.getMessage());
+                    throw e;
                 }
                 try {
                     d.displayEntity.remove();
-                } catch (Throwable ignored) {
+                } catch (Exception e) {
+                    Specialization.getInstance().getLogger().warning("[Cooking] Error removing preview entity: " + e.getMessage());
+                    throw e;
                 }
                 d.displayEntity = null;
                 return;
@@ -1144,7 +1056,9 @@ public class CookingListener implements Listener {
             if (d == null) continue;
             try {
                 if (d.stand != null && d.stand.getUniqueId().equals(stand.getUniqueId())) return d;
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                Specialization.getInstance().getLogger().warning("[Cooking] Error while matching stand to session: " + e.getMessage());
+                throw e;
             }
         }
         return null;
@@ -1173,7 +1087,10 @@ public class CookingListener implements Listener {
             }
             data.ingredients = newIngredients;
             data.seasonings = newSeasonings;
-        } catch (Throwable ignored) {}
+        } catch (Exception e) {
+            Specialization.getInstance().getLogger().warning("[Cooking] Error resyncing session from campfire: " + e.getMessage());
+            throw e;
+        }
     }
 
     private boolean isActiveCooking(CookingItemData d) {
@@ -1192,102 +1109,87 @@ public class CookingListener implements Listener {
 
         // Use configured cooking time (seconds) from session; fallback to 10 seconds
         int cookSeconds = 10;
-        try { cookSeconds = Math.max(1, session.cookTimeSeconds); } catch (Throwable ignored) {}
+        try { cookSeconds = Math.max(1, session.cookTimeSeconds); } catch (Exception e) { Specialization.getInstance().getLogger().warning("[Cooking] Error reading cook time: " + e.getMessage()); throw e; }
         final int DURATION_TICKS = cookSeconds * 20;
         session.cookingInProgress = true;
         session.viewer = (starter == null ? null : starter.getUniqueId());
         // Start visuals (bossbar + preview already present)
-        try { CookingVisuals.startProgressBar(session, starter, DURATION_TICKS); } catch (Throwable ignored) {}
-        try { CookingVisuals.playStartEffects(session); } catch (Throwable ignored) {}
+        CookingVisuals.startProgressBar(session, starter, DURATION_TICKS);
+        CookingVisuals.playStartEffects(session);
 
         // schedule completion task (cancel any previous)
-        try { if (session.cookTask != null) session.cookTask.cancel(); } catch (Throwable ignored) {}
+        if (session.cookTask != null) try { session.cookTask.cancel(); } catch (Exception e) { Specialization.getInstance().getLogger().warning("[Cooking] Error cancelling previous cookTask: " + e.getMessage()); throw e; }
 
         session.cookTask = new org.bukkit.scheduler.BukkitRunnable() {
             @Override
             public void run() {
                 try {
-                    // logging removed
+                    Specialization.getInstance().getLogger().info("[Cooking DEBUG] finalize run for session at " + session.campfireLocation + " viewer=" + session.viewer + " food=" + (session.food==null?"null":session.food.getType().toString()) + " displayEntity=" + (session.displayEntity==null?"null":session.displayEntity.isValid()) + " destroyed=" + session.destroyed);
 
-                     // If the session has been destroyed (campfire broken), abort finalization entirely
-                     if (session.destroyed) {
-                         // logging removed
-                         return;
-                     }
+                    // If the session has been destroyed (campfire broken), abort finalization entirely
+                    if (session.destroyed) {
+                        Specialization.getInstance().getLogger().info("[Cooking] Session destroyed during cook; aborting finalization for " + session.campfireLocation);
+                        return;
+                    }
 
-                     // Mark cooked and unset in-progress
-                     session.cooked = true;
-                     session.cookingInProgress = false;
+                    // Mark cooked and unset in-progress
+                    session.cooked = true;
+                    session.cookingInProgress = false;
 
-                     // Try to make any existing preview item pickable
-                     try {
-                         if (session.displayEntity != null && session.displayEntity.isValid()) {
-                             try { session.displayEntity.setItemStack(session.food.clone()); } catch (Throwable ignored) {}
-                             try { session.displayEntity.setGravity(true); } catch (Throwable ignored) {}
-                             try { session.displayEntity.setPickupDelay(0); } catch (Throwable ignored) {}
-                             try { session.displayEntity.setInvulnerable(false); } catch (Throwable ignored) {}
-                             try { session.displayEntity.setUnlimitedLifetime(false); } catch (Throwable ignored) {}
-                             try { removePreviewFromDisk(session); } catch (Throwable e) { /* ignore preview disk removal errors */ }
-                         }
-                     } catch (Throwable exPreview) {
-                         // ignore preview exceptions
-                     }
+                    // Try to make any existing preview item pickable
+                    if (session.displayEntity != null && session.displayEntity.isValid()) {
+                        session.displayEntity.setItemStack(session.food.clone());
+                        session.displayEntity.setGravity(true);
+                        session.displayEntity.setPickupDelay(0);
+                        session.displayEntity.setInvulnerable(false);
+                        session.displayEntity.setUnlimitedLifetime(false);
+                        removePreviewFromDisk(session);
+                        Specialization.getInstance().getLogger().info("[Cooking DEBUG] made existing preview pickable for session at " + session.campfireLocation);
+                    }
 
-                     // Drop an explicit item at the campfire center as a guaranteed backup
-                     try {
-                         if (session.campfireLocation != null) {
-                             Location dropLoc = session.campfireLocation.clone().add(0.5, 0.5, 0.5);
-                             org.bukkit.entity.Item dropped = session.campfireLocation.getWorld().dropItem(dropLoc, session.food.clone());
-                             try { dropped.getPersistentDataContainer().set(new NamespacedKey(Specialization.getInstance(), "cooking_result"), PersistentDataType.BOOLEAN, true); } catch (Throwable ignored) {}
-                             try { dropped.setPickupDelay(0); } catch (Throwable ignored) {}
-                             try { dropped.setInvulnerable(false); } catch (Throwable ignored) {}
-                             try { dropped.setUnlimitedLifetime(false); } catch (Throwable ignored) {}
-                         }
-                     } catch (Throwable exDrop) {
-                         // ignore drop errors
-                     }
+                    // Drop an explicit item at the campfire center as a guaranteed backup
+                    if (session.campfireLocation != null) {
+                        Location dropLoc = session.campfireLocation.clone().add(0.5, 0.5, 0.5);
+                        org.bukkit.entity.Item dropped = session.campfireLocation.getWorld().dropItem(dropLoc, session.food.clone());
+                        try { dropped.getPersistentDataContainer().set(new NamespacedKey(Specialization.getInstance(), "cooking_result"), PersistentDataType.BOOLEAN, true); } catch (Exception e) { Specialization.getInstance().getLogger().warning("[Cooking] Failed to tag dropped item: " + e.getMessage()); throw e; }
+                        dropped.setPickupDelay(0);
+                        dropped.setInvulnerable(false);
+                        dropped.setUnlimitedLifetime(false);
+                        Specialization.getInstance().getLogger().info("[Cooking DEBUG] explicitly dropped result item at " + dropLoc + " for session at " + session.campfireLocation);
+                    }
 
-                     // Play finish sound and award XP to the starter only (if available)
-                     try {
-                         if (session.viewer != null) {
-                             org.bukkit.entity.Player starterPlayer = Bukkit.getPlayer(session.viewer);
-                             if (starterPlayer != null && starterPlayer.isOnline()) {
-                                 CookingVisuals.playFinishEffects(session, starterPlayer);
-                                 PlayerUtil.message(starterPlayer, "<green>Cooking complete! Your meal is ready.", 1);
-                                 // Award configured farmer XP for this recipe
-                                 try {
-                                     int xpToAward = Math.max(0, session.cookExp);
-                                     if (xpToAward > 0) {
-                                         com.minecraftcivilizations.specialization.Player.CustomPlayer cp = com.minecraftcivilizations.specialization.Player.CustomPlayer.getCustomPlayer(starterPlayer);
-                                         if (cp == null) {
-                                             // fallback: try CoreUtil lookup
-                                             try {
-                                                 cp = com.minecraftcivilizations.specialization.util.CoreUtil.getPlayer(starterPlayer);
-                                             } catch (Throwable ignored) {}
-                                         }
-                                         if (cp != null) {
-                                             try {
-                                                 cp.addSkillXp(com.minecraftcivilizations.specialization.Skill.SkillType.FARMER, xpToAward, starterPlayer.getLocation());
-                                             } catch (Throwable addEx) {
-                                                 // ignore XP awarding errors
-                                             }
-                                         } else {
-                                             // no CustomPlayer found; XP cannot be awarded
-                                         }
-                                     }
-                                 } catch (Throwable xpEx) {
-                                     // ignore XP lookup errors
-                                 }
-                             }
-                         }
-                     } catch (Throwable ignored) {}
+                    // Play finish sound and award XP to the starter only (if available)
+                    if (session.viewer != null) {
+                        org.bukkit.entity.Player starterPlayer = Bukkit.getPlayer(session.viewer);
+                        if (starterPlayer != null && starterPlayer.isOnline()) {
+                            CookingVisuals.playFinishEffects(session, starterPlayer);
+                            PlayerUtil.message(starterPlayer, "<green>Cooking complete! Your meal is ready.", 1);
+                            // Award configured farmer XP for this recipe (with debug logging)
+                            int xpToAward = Math.max(0, session.cookExp);
+                            Specialization.getInstance().getLogger().info("[Cooking] cookExp for session at " + session.campfireLocation + " = " + xpToAward);
+                            if (xpToAward > 0) {
+                                com.minecraftcivilizations.specialization.Player.CustomPlayer cp = com.minecraftcivilizations.specialization.Player.CustomPlayer.getCustomPlayer(starterPlayer);
+                                if (cp == null) {
+                                    // fallback: try CoreUtil lookup
+                                    cp = com.minecraftcivilizations.specialization.util.CoreUtil.getPlayer(starterPlayer);
+                                }
+                                if (cp == null) {
+                                    Specialization.getInstance().getLogger().warning("[Cooking] Could not find CustomPlayer for " + starterPlayer.getName() + " - XP not awarded.");
+                                } else {
+                                    cp.addSkillXp(com.minecraftcivilizations.specialization.Skill.SkillType.FARMER, xpToAward, starterPlayer.getLocation());
+                                    Specialization.getInstance().getLogger().info("[Cooking] Awarded " + xpToAward + " Farmer XP to " + starterPlayer.getName() + " new_farmer_level=" + cp.getSkillLevel(com.minecraftcivilizations.specialization.Skill.SkillType.FARMER));
+                                }
+                            }
+                        }
+                    }
 
-                 } catch (Throwable ex) {
-                     // ignore finalization errors
-                 } finally {
+                } catch (Exception ex) {
+                    Specialization.getInstance().getLogger().warning("[Cooking] Error finalizing cooking session: " + ex.getMessage());
+                    throw ex;
+                } finally {
                     // Cleanup visuals and scheduled tasks, clear campfire slots and reset state
-                    try { if (session.displayEntity != null && session.displayEntity.isValid()) { try { session.displayEntity.remove(); } catch (Throwable ignored) {} session.displayEntity = null; } } catch (Throwable ignored) {}
-                    try { if (session.recipientDisplay != null) { try { session.recipientDisplay.remove(); } catch (Throwable ignored) {} session.recipientDisplay = null; } } catch (Throwable ignored) {}
+                    try { if (session.displayEntity != null && session.displayEntity.isValid()) { session.displayEntity.remove(); session.displayEntity = null; } } catch (Exception e) { Specialization.getInstance().getLogger().warning("[Cooking] Error removing display entity: " + e.getMessage()); throw e; }
+                    try { if (session.recipientDisplay != null) { session.recipientDisplay.remove(); session.recipientDisplay = null; } } catch (Exception e) { Specialization.getInstance().getLogger().warning("[Cooking] Error removing recipient display: " + e.getMessage()); throw e; }
                     // Clear the physical campfire slots so station is reset
                     try {
                         if (session.campfireLocation != null) {
@@ -1297,25 +1199,23 @@ public class CookingListener implements Listener {
                                 for (int si = 0; si < 4; si++) cstate.setItem(si, null);
                                 cstate.update(true);
                                 // optionally ensure campfire is unlit
-                                try {
-                                    org.bukkit.block.data.type.Campfire cfdata = (org.bukkit.block.data.type.Campfire) cb.getBlockData();
-                                    if (cfdata.isLit()) { cfdata.setLit(false); cb.setBlockData(cfdata); }
-                                } catch (Throwable ignored) {}
+                                org.bukkit.block.data.type.Campfire cfdata = (org.bukkit.block.data.type.Campfire) cb.getBlockData();
+                                if (cfdata.isLit()) { cfdata.setLit(false); cb.setBlockData(cfdata); }
                             }
                         }
-                    } catch (Throwable ignored) {}
+                    } catch (Exception e) { Specialization.getInstance().getLogger().warning("[Cooking] Error clearing campfire slots: " + e.getMessage()); throw e; }
 
-                    try { CookingVisuals.stopProgressBar(session); } catch (Throwable ignored) {}
-                    try { if (session.progressTask != null) { session.progressTask.cancel(); session.progressTask = null; } } catch (Throwable ignored) {}
-                    try { if (session.maintenanceTask != null) { session.maintenanceTask.cancel(); session.maintenanceTask = null; } } catch (Throwable ignored) {}
-                    try { if (session.cookTask != null) { session.cookTask.cancel(); } } catch (Throwable ignored) {}
+                    try { CookingVisuals.stopProgressBar(session); } catch (Exception e) { Specialization.getInstance().getLogger().warning("[Cooking] Error stopping progress bar: " + e.getMessage()); throw e; }
+                    try { if (session.progressTask != null) { session.progressTask.cancel(); session.progressTask = null; } } catch (Exception e) { Specialization.getInstance().getLogger().warning("[Cooking] Error cancelling progressTask: " + e.getMessage()); throw e; }
+                    try { if (session.maintenanceTask != null) { session.maintenanceTask.cancel(); session.maintenanceTask = null; } } catch (Exception e) { Specialization.getInstance().getLogger().warning("[Cooking] Error cancelling maintenanceTask: " + e.getMessage()); throw e; }
+                    try { if (session.cookTask != null) { session.cookTask.cancel(); } } catch (Exception e) { Specialization.getInstance().getLogger().warning("[Cooking] Error cancelling cookTask: " + e.getMessage()); throw e; }
                     session.cookTask = null;
                     session.cookingInProgress = false;
 
                     // Play a world-level finish sound so nearby players hear it
                     try {
-                        try { CookingVisuals.playWorldFinishSound(session); } catch (Throwable ignored) {}
-                    } catch (Throwable ignored) {}
+                        CookingVisuals.playWorldFinishSound(session);
+                    } catch (Exception e) { Specialization.getInstance().getLogger().warning("[Cooking] Error playing world finish sound: " + e.getMessage()); throw e; }
 
                     // Reset recipient and food so the station requires a new recipient to be placed for subsequent cooks
                     try {
@@ -1323,17 +1223,17 @@ public class CookingListener implements Listener {
                         session.recipientId = null;
                         session.food = null;
                         session.cookExp = 0;
-                    } catch (Throwable ignored) {}
+                    } catch (Exception e) { Specialization.getInstance().getLogger().warning("[Cooking] Error resetting session fields: " + e.getMessage()); throw e; }
 
                     // ensure cleanUp won't try to restore the previous lit state
-                    try { session.wasLit = false; } catch (Throwable ignored) {}
+                    try { session.wasLit = false; } catch (Exception e) { Specialization.getInstance().getLogger().warning("[Cooking] Error clearing wasLit: " + e.getMessage()); throw e; }
                     // defensively remove any lingering cooking armor stand at this campfire (ensure no invisible stand remains)
-                    try { removeCookingStandAt(session.campfireLocation); } catch (Throwable ignored) {}
+                    try { removeCookingStandAt(session.campfireLocation); } catch (Exception e) { Specialization.getInstance().getLogger().warning("[Cooking] Error removing cooking stand: " + e.getMessage()); throw e; }
                     // Fully clean up the session (remove displays and remove session from registry)
-                    try { cleanUp(session, session.campfireLocation); } catch (Throwable ignored) {}
-                 }
-             }
-         }.runTaskLater(Specialization.getInstance(), DURATION_TICKS);
+                    try { cleanUp(session, session.campfireLocation); } catch (Exception e) { Specialization.getInstance().getLogger().warning("[Cooking] Error during final cleanUp: " + e.getMessage()); throw e; }
+                }
+            }
+        }.runTaskLater(Specialization.getInstance(), DURATION_TICKS);
     }
 
     private void removeCookingStandAt(Location loc) {
@@ -1344,8 +1244,7 @@ public class CookingListener implements Listener {
                     try {
                         as.getEquipment().setItemInMainHand(null);
                         as.remove();
-                    } catch (Exception ignored) {
-                    }
+                    } catch (Exception e) { Specialization.getInstance().getLogger().warning("[Cooking] Error removing cooking stand entity: " + e.getMessage()); throw e; }
                 }
             }
         }
