@@ -45,13 +45,13 @@ public class CraftingListener implements Listener {
                 if (
                         (
                                 name.startsWith("IRON_") || name.startsWith("GOLDEN_") ||
-                                name.startsWith("DIAMOND_") || name.startsWith("NETHERITE_")
+                                        name.startsWith("DIAMOND_") || name.startsWith("NETHERITE_")
                         )
                                 &&
-                        (
-                                name.endsWith("_PICKAXE") || name.endsWith("_AXE") ||
-                                name.endsWith("_SHOVEL") || name.endsWith("_HOE") || name.endsWith("_SWORD")
-                        )
+                                (
+                                        name.endsWith("_PICKAXE") || name.endsWith("_AXE") ||
+                                                name.endsWith("_SHOVEL") || name.endsWith("_HOE") || name.endsWith("_SWORD")
+                                )
                 ) {
                     return true;
                 }
@@ -105,6 +105,20 @@ public class CraftingListener implements Listener {
 
         }
     }
+
+    public void keepGenericItem(CraftItemEvent event, Material material, ItemStack newItem) {
+        ItemStack[] matrix = event.getInventory().getMatrix();
+
+        for (int i = 0; i < matrix.length; i++) {
+            if (matrix[i] != null && matrix[i].getType() == material) {
+                int finalI = i;
+                Bukkit.getScheduler().runTaskLater(Specialization.getInstance(), () -> {
+                    event.getInventory().setItem(finalI + 1, newItem);
+                }, 1L);
+            }
+        }
+    }
+
     private String getRecipeKey(Recipe recipe) {
         // for custom recipes like "bandage_recipe"
         if (recipe instanceof ShapelessRecipe shapelessRecipe) {
@@ -128,9 +142,16 @@ public class CraftingListener implements Listener {
         ItemStack crafted = event.getCurrentItem();
 
         if (event.getRecipe() instanceof ShapelessRecipe recipe) {
-            NamespacedKey stringRecipe = new NamespacedKey(Specialization.getInstance(), "wool_to_string_recipe");
-            if (recipe.getKey().equals(stringRecipe)) {
+            NamespacedKey recipeKey = new NamespacedKey(Specialization.getInstance(), "wool_to_string_recipe");
+            if (recipe.getKey().equals(recipeKey)) {
                 woolToStringTooCheck(event);
+            }
+        }
+
+        if (event.getRecipe() instanceof ShapedRecipe recipe) {
+            NamespacedKey recipeKey = new NamespacedKey(Specialization.getInstance(), "wheat_dough");
+            if (recipe.getKey().equals(recipeKey)) {
+                keepGenericItem(event, Material.WATER_BUCKET, new ItemStack(Material.BUCKET, 1));
             }
         }
 
