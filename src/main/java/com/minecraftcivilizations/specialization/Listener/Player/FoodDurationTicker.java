@@ -8,6 +8,7 @@ import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
+import com.minecraftcivilizations.specialization.CraftEngine.CraftEngineUtil;
 import com.minecraftcivilizations.specialization.Listener.Player.Interactions.FoodInteractionListener;
 import com.minecraftcivilizations.specialization.Specialization;
 import net.kyori.adventure.text.Component;
@@ -35,16 +36,6 @@ import java.util.Objects;
 public class FoodDurationTicker implements Listener {
     private final boolean enabled = false;;
 
-    private String getItemId(ItemStack item) {
-        //if (CustomItem.isCustomItem(item)) {
-            //return event.getRecipe().toString().toUpperCase(Locale.ROOT);
-        //} else
-        if (CraftEngineItems.isCustomItem(item)) {
-            var ceItem = CraftEngineItems.getCustomItemId(item);
-            if (ceItem != null) return ceItem.toString().toUpperCase(Locale.ROOT).replace(":","_");
-        }
-        return item.getType().key().value().toUpperCase(Locale.ROOT);
-    }
     public FoodDurationTicker() {
         Bukkit.getScheduler().scheduleSyncRepeatingTask(Specialization.getInstance(), () -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
@@ -121,7 +112,7 @@ public class FoodDurationTicker implements Listener {
         ItemStack clicked = event.getCurrentItem();
         ClickType clickType = event.getClick();
 
-        if (!isAir(cursor) && !isAir(clicked) && event.getAction() == InventoryAction.SWAP_WITH_CURSOR && Objects.equals(getItemId(cursor), getItemId(clicked))) {
+        if (!isAir(cursor) && !isAir(clicked) && event.getAction() == InventoryAction.SWAP_WITH_CURSOR && Objects.equals(CraftEngineUtil.getItemId(cursor), CraftEngineUtil.getItemId(clicked))) {
             InventoryType.SlotType slotType = event.getSlotType();
             int slot = event.getSlot();
 
@@ -159,7 +150,7 @@ public class FoodDurationTicker implements Listener {
     private ItemStack updateExpirationLore(ItemStack item) {
         ItemMeta meta = item.getItemMeta();
         if (meta == null || item.getType() == Material.AIR) return item;
-        String id = getItemId(item);
+        String id = CraftEngineUtil.getItemId(item);
         if (!SpecializationConfig.getFoodExpirationConfig().getConfig().hasPath(id)) return item;
         int expiration = SpecializationConfig.getFoodExpirationConfig().getInteger(id)*20*50;
         PersistentDataContainer pdc = meta.getPersistentDataContainer();

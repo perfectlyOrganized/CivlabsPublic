@@ -2,6 +2,7 @@ package com.minecraftcivilizations.specialization.Listener.Player.Blocks;
 
 import com.google.gson.reflect.TypeToken;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
+import com.minecraftcivilizations.specialization.CraftEngine.CraftEngineUtil;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.Specialization;
@@ -15,7 +16,7 @@ public class PlaceBlockListener implements Listener {
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
-        Pair<SkillType, Double> pair = SkillType.getSkillXpFromConfig(SpecializationConfig.getXpGainFromPlacingConfig(), event.getBlockPlaced().getType().toString());
+        Pair<SkillType, Double> pair = SkillType.getSkillXpFromConfig(SpecializationConfig.getXpGainFromPlacingConfig(),CraftEngineUtil.getItemId(event));
 
         if (!event.getBlock().getType().isBlock()) return;
         CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(event.getPlayer().getUniqueId());

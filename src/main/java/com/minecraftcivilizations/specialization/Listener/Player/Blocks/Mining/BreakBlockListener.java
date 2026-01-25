@@ -2,6 +2,7 @@ package com.minecraftcivilizations.specialization.Listener.Player.Blocks.Mining;
 
 import com.google.gson.reflect.TypeToken;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
+import com.minecraftcivilizations.specialization.CraftEngine.CraftEngineUtil;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
@@ -69,7 +70,7 @@ public class BreakBlockListener implements Listener {
         if (breakSpeedAttr != null) {
             breakSpeedAttr.setBaseValue(SpecializationConfig.getBlockHardnessConfig().getDouble(event.getBlock().getType().toString()));
 
-            Pair<SkillType, Double> pair = SkillType.getSkillXpFromConfig(SpecializationConfig.getXpGainFromBreakingConfig(), event.getBlock().getType().toString());
+            Pair<SkillType, Double> pair = SkillType.getSkillXpFromConfig(SpecializationConfig.getXpGainFromBreakingConfig(),  CraftEngineUtil.getItemId(event));
             CustomPlayer player = CoreUtil.getPlayer(event.getPlayer().getUniqueId());
             BlockData blockData = event.getBlock().getBlockData();
 
