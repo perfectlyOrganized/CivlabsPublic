@@ -186,6 +186,7 @@ public final class Specialization extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ReinforcementProtectionListener(), this);
         getServer().getPluginManager().registerEvents(new PreJoinEventListener(), this);
         getServer().getPluginManager().registerEvents(new StonecutterListener(this), this);
+        getServer().getPluginManager().registerEvents(new com.minecraftcivilizations.specialization.Cooking.CookingListener(), this);
         getServer().getPluginManager().registerEvents(new CraftingListener(this), this);
         getServer().getPluginManager().registerEvents(new FurnaceListener(), this);
         getServer().getPluginManager().registerEvents(new AutoCrafterListener(), this);
