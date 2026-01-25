@@ -1,9 +1,6 @@
 package com.minecraftcivilizations.specialization;
 
-import com.minecraftcivilizations.specialization.CraftEngine.MetalDetectorBehavior;
-import com.minecraftcivilizations.specialization.CraftEngine.MortarAndPestleBehavior;
-import com.minecraftcivilizations.specialization.CraftEngine.MusketBehavior;
-import com.minecraftcivilizations.specialization.CraftEngine.HammerBehavior;
+import com.minecraftcivilizations.specialization.CraftEngine.*;
 import net.momirealms.craftengine.core.block.BlockBehavior;
 import net.momirealms.craftengine.core.block.CustomBlock;
 import net.momirealms.craftengine.core.block.behavior.BlockBehaviorFactory;
@@ -111,6 +108,8 @@ public final class Specialization extends JavaPlugin {
     @Getter
     private HammerBehavior hammerBehavior;
     @Getter
+    private ThrowableExplosiveBehavior throwableExplosiveBehavior;
+    @Getter
     private FoodDurationTicker foodDurationTicker;
     @Getter
     private PlayerDownedListener playerDownedListener;
@@ -161,6 +160,7 @@ public final class Specialization extends JavaPlugin {
         hammerListener = new HammerListener();
         hammerBehavior = new HammerBehavior();
         foodDurationTicker = new FoodDurationTicker();
+        throwableExplosiveBehavior = new ThrowableExplosiveBehavior();
 //      emoteListener = new EmoteListener(this);
 
         getServer().getMessenger().registerIncomingPluginChannel(this, "civlabs:weathersync", new TimeSyncListener());
@@ -204,13 +204,14 @@ public final class Specialization extends JavaPlugin {
         getServer().getPluginManager().registerEvents(hammerListener, this);
         getServer().getPluginManager().registerEvents(hammerBehavior, this);
         getServer().getPluginManager().registerEvents(foodDurationTicker, this);
+        getServer().getPluginManager().registerEvents(throwableExplosiveBehavior, this);
         //town data does not need to wait anymore
         //TownManager.scanAllPlayersForTownsAsync();
         ItemBehaviors.register(Key.of("specialization:musket_behavior"), MusketBehavior.FACTORY);
         ItemBehaviors.register(Key.of("specialization:hammer_behavior"), HammerBehavior.FACTORY);
         ItemBehaviors.register(Key.of("specialization:mortar_and_pestle_behavior"), MortarAndPestleBehavior.FACTORY);
         ItemBehaviors.register(Key.of("specialization:metal_detector_behavior"), MetalDetectorBehavior.FACTORY);
-
+        ItemBehaviors.register(Key.of("specialization:throwable_explosive_behavior"), ThrowableExplosiveBehavior.FACTORY);
 
         //overworld game rules
         World overworld = Bukkit.getWorlds().get(0);

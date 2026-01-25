@@ -17,6 +17,7 @@ import net.momirealms.craftengine.core.block.entity.BlockEntity;
 import net.momirealms.craftengine.core.entity.player.InteractionResult;
 import net.momirealms.craftengine.core.item.CustomItem;
 import net.momirealms.craftengine.core.item.Item;
+import net.momirealms.craftengine.core.item.ItemBuildContext;
 import net.momirealms.craftengine.core.item.behavior.ItemBehavior;
 import net.momirealms.craftengine.core.item.behavior.ItemBehaviorFactory;
 import net.momirealms.craftengine.core.item.context.UseOnContext;
@@ -52,15 +53,8 @@ public class MortarAndPestleBehavior extends ItemBehavior  {
             return Optional.of(new ItemStack(material));
         }
         CustomItem<ItemStack> item = CraftEngineItems.byId(itemId);
-        if (item != null) return Optional.empty();
-        return Optional.of(item.buildItemStack());
-    }
-    private String getItemId(ItemStack item) {
-        if (CraftEngineItems.isCustomItem(item)) {
-            var ceItem = CraftEngineItems.getCustomItemId(item);
-            if (ceItem != null) return ceItem.toString().toUpperCase(Locale.ROOT).replace(":","_");
-        }
-        return item.getType().key().value().toUpperCase(Locale.ROOT);
+        if (item == null) return Optional.empty();
+        return Optional.of(item.buildItemStack(ItemBuildContext.empty(), 1));
     }
     public InteractionResult useOnBlock(UseOnContext context) {
         Object blockState = FastNMS.INSTANCE.method$BlockGetter$getBlockState(
@@ -97,10 +91,10 @@ public class MortarAndPestleBehavior extends ItemBehavior  {
 
             for (SkillType skill : SkillType.values()) {
                 Config conversionTypes = SpecializationConfig.getGrindConfig().getObject(skill.name());
-                if (!conversionTypes.hasPath(getItemId(item))) continue;
+                if (!conversionTypes.hasPath(CraftEngineUtil.getItemId(item))) continue;
 
 
-                List<? extends ConfigObject> conversions = conversionTypes.getObjectList(getItemId(item));
+                List<? extends ConfigObject> conversions = conversionTypes.getObjectList(CraftEngineUtil.getItemId(item));
                 Config conversion;
                 for (ConfigObject conversionObject : conversions) {
                     conversion = conversionObject.toConfig();
