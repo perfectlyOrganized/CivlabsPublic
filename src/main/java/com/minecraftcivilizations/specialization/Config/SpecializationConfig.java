@@ -305,6 +305,7 @@ public class SpecializationConfig {
             data.put("DAYTIME_SPEED_BUFF", .03);
             data.put("NIGHTTIME_SPEED_BUFF", .2);
             data.put("MOB_RULE_TARGET_RANGE", 48);
+            data.put("MOB_RULE_VERTICAL_FOLLOW_RANGE", 16);
             data.put("BLOCK_BREAK_CHANCE_PERCENTAGE", 30);
             data.put("BLOCK_BREAK_IGNORE_LIST_REGEX", List.of(".*BRICK.*", "OBSIDIAN"));
             data.put("VISUAL_BREAKING_INCREASE_PER_TICK_PERCENTAGE", 1.0);
