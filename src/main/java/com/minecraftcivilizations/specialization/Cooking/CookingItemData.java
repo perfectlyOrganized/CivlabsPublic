@@ -1,7 +1,6 @@
 package com.minecraftcivilizations.specialization.Cooking;
 
 import org.bukkit.Location;
-import org.bukkit.boss.BossBar;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.ItemDisplay;
@@ -22,13 +21,19 @@ public class CookingItemData {
     public List<ItemStack> ingredients = new ArrayList<>();
     public ItemStack food;
     public List<ItemStack> seasonings = new ArrayList<>();
-    public BukkitTask cookTask;
+    public BukkitTask cookTask; // used as the READY task (marks item ready to collect)
+    public BukkitTask burnTask; // scheduled to make the food burnt if not collected
     public BukkitTask progressTask;
     public BukkitTask maintenanceTask;
-    public BossBar bossBar;
+    public BukkitTask flameTask; // separate periodic task for spawning flame particles while cooking
+    // ambient looping sound task while cooking / preview present
+    public BukkitTask ambientTask;
     // true when actual cooking (the timed process) is in progress
     public boolean cookingInProgress = false;
+    // 'cooked' is true when the food reached "ready to be collected" state
     public boolean cooked = false;
+    // true when the food has become burnt
+    public boolean burnt = false;
     // XP reward configured for this recipe (from cookingConfig), awarded to the player who started the cook
     public int cookExp = 0;
     // default cook time = 10s
@@ -44,5 +49,6 @@ public class CookingItemData {
         this.recipient = recipient;
         this.recipientId = recipientId;
         this.viewer = null;
+        this.ambientTask = null;
     }
 }
