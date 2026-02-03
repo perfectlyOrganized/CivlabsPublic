@@ -177,6 +177,7 @@ public final class Specialization extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerInteractListener(), this);
         getServer().getPluginManager().registerEvents(new PlayerInteractEntityListener(), this);
         getServer().getPluginManager().registerEvents(new FishingListener(), this);
+        getServer().getPluginManager().registerEvents(new HeroOfTheVillageListener(), this);
         combatManager = new CombatManager(this); // Guardsman Damage Output
         new FoodInteractionListener(this);
         getServer().getPluginManager().registerEvents(new HungerSystem(this, emoteManager), this);
@@ -187,6 +188,14 @@ public final class Specialization extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PreJoinEventListener(), this);
         getServer().getPluginManager().registerEvents(new StonecutterListener(this), this);
         getServer().getPluginManager().registerEvents(new com.minecraftcivilizations.specialization.Cooking.CookingListener(), this);
+        getServer().getPluginManager().registerEvents(new com.minecraftcivilizations.specialization.Cooking.CookingConsumeListener(), this);
+        // Register packet listener for blocking totem sound during HOTV animation
+        com.minecraftcivilizations.specialization.Cooking.CookingConsumeListener.registerPacketListener();
+        // Start cleanup task for HOTV totems
+        com.minecraftcivilizations.specialization.Cooking.CookingConsumeListener.startCleanupTask();
+
+        // Initialize cooking session manager and clean up orphaned entities from previous sessions
+        com.minecraftcivilizations.specialization.Cooking.CookingSessionManager.getInstance().loadPersistedPreviews();
         getServer().getPluginManager().registerEvents(new CraftingListener(this), this);
         getServer().getPluginManager().registerEvents(new FurnaceListener(), this);
         getServer().getPluginManager().registerEvents(new AutoCrafterListener(), this);
@@ -345,6 +354,10 @@ public final class Specialization extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+
+        // Shutdown cooking system first to clean up entities
+        com.minecraftcivilizations.specialization.Cooking.CookingSessionManager.getInstance().shutdown();
+
         for (Player p : Bukkit.getOnlinePlayers()) {
             phantomRideListener.PhantomStateSave(p);
         }
