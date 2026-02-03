@@ -156,6 +156,15 @@ public class CustomPlayer extends minecraftcivilizations.com.minecraftCivilizati
         double xpMultiplier = SpecializationConfig.getSkillsConfig().getDouble("XP_MULTIPLIER");
         double xpClassMultiplier = SpecializationConfig.getSkillsConfig().getDouble(skillType+"_XP_MULTIPLIER");
         double totalXpMultiplier = xpMultiplier * xpClassMultiplier;
+
+        // Apply Hero of the Village XP multiplier (only for positive XP gains)
+        if (xp > 0 && player != null) {
+            double hotvMultiplier = getHeroOfTheVillageMultiplier(player);
+            if (hotvMultiplier > 1.0) {
+                totalXpMultiplier *= hotvMultiplier;
+            }
+        }
+
         xp *= totalXpMultiplier;
         Skill skill = getSkill(skillType);
         skill.applyXp(player, xp, allowNegative);
@@ -472,6 +481,22 @@ public class CustomPlayer extends minecraftcivilizations.com.minecraftCivilizati
 
     public static CustomPlayer getCustomPlayer(Player player){
         return CoreUtil.getPlayer(player);
+    }
+
+    // XP multiplier based on HOTV level: 1=1.2x, 2=1.4x, 3=1.6x, 4=1.8x, 5+=2.0x
+    private double getHeroOfTheVillageMultiplier(Player player) {
+        if (player == null) return 1.0;
+
+        PotionEffect hotvEffect = player.getPotionEffect(PotionEffectType.HERO_OF_THE_VILLAGE);
+        if (hotvEffect == null) return 1.0;
+
+        return switch (hotvEffect.getAmplifier()) {
+            case 0 -> 1.2;
+            case 1 -> 1.4;
+            case 2 -> 1.6;
+            case 3 -> 1.8;
+            default -> 2.0;
+        };
     }
 
 }

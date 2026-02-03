@@ -171,6 +171,19 @@ public class SpecializationConfig {
             data.put("possible_sauces", List.of("minecraft:glow_ink_sac", "minecraft:ink_sac", "minecraft:ghast_tear"));
             // Default sound id to play when cooking finishes (can be overridden in cookingConfig.json)
             data.put("finish_sound", Collections.singletonList("specialization:cooking_success"));
+            // Naming patterns for seasonings/sauces (used to alter result ids when seasonings/sauces are applied)
+            // These values can be overridden in cookingConfig
+            // Examples: sugar -> prefix "sweet_" so "specialization:bread_apple" -> "specialization:sweet_bread_apple"
+            data.put("sugar_foodname", Collections.singletonList("sweet_"));
+            data.put("chocolate_foodname", Collections.singletonList("chocolate_"));
+            data.put("glazed_foodname", Collections.singletonList("glazed_"));
+            data.put("salty_foodname", Collections.singletonList("salty_"));
+            data.put("lichen_", Collections.singletonList("lichen_"));
+            data.put("blaze_peppered_", Collections.singletonList("blaze_peppered_"));
+            // Sauces
+            data.put("foodname_with_ink", Collections.singletonList("_with_ink"));
+            data.put("foodname_with_glow_ink", Collections.singletonList("_with_glow_ink"));
+            data.put("sorrowful_foodname", Collections.singletonList("sorrowful_"));
             for (SkillType skillType : SkillType.values()) {
                 for (SkillLevel skillLevel : SkillLevel.values()) {
                     data.put(skillType + "_" + skillLevel, new ArrayList<>());
