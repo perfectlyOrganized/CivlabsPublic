@@ -90,6 +90,6 @@ public class ShootPlayerMobGoal implements Goal<Mob> {
                 .normalize();
 
         // Spawn and launch projectile
-        MusketBehavior.shootParticleBeam(mob, eyeLoc, direction, mob.getWorld());
+        MusketBehavior.shootProjectile(mob, eyeLoc, direction, mob.getWorld());
     }
 }
