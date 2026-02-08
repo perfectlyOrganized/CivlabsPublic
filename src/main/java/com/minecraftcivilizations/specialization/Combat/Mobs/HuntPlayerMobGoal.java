@@ -206,7 +206,7 @@ public class HuntPlayerMobGoal implements Goal<Mob> {
                     .toVector()
                     .normalize();
 
-            MusketBehavior.shootParticleBeam(mob, mob.getEyeLocation(), direction, mob.getWorld());
+            MusketBehavior.shootProjectile(mob, mob.getEyeLocation(), direction, mob.getWorld());
             return;
         }
         if (tick % 120 == 0) {
