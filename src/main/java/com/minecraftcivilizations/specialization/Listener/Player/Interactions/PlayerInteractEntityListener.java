@@ -10,6 +10,7 @@ import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.minecraftcivilizations.specialization.util.CoreUtil;
+import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Options.Pair;
@@ -23,7 +24,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityBreedEvent;
-import org.bukkit.event.entity.EntityDismountEvent;
 import org.bukkit.event.entity.EntityTameEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -71,7 +71,7 @@ public class PlayerInteractEntityListener implements Listener {
 
         if (!canTame) {
             e.setCancelled(true);
-            player.sendMessage(Component.text("You don't have the required skill level to tame this!", NamedTextColor.RED));
+            PlayerUtil.sendMessage(player,Component.text("You don't have the required skill level to tame this!", NamedTextColor.RED));
         }
     }
 

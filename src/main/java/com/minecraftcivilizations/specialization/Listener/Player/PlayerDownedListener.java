@@ -97,7 +97,7 @@ public class PlayerDownedListener implements Listener {
         Debug.broadcast("down", "<gray>[DOWNED-DEBUG] setDowned(" + player.getName() + ") = " + new_downed);
 
         PersistentDataContainer pdc = player.getPersistentDataContainer();
-        if(pdc.has(downedKey)){
+        if(pdc.has(downedKey, PersistentDataType.BYTE)){
             boolean previous_downed = pdc.get(downedKey, PersistentDataType.BYTE)==1;
             if(previous_downed == new_downed){
                 Debug.broadcast("down", "<dark_gray>Player is "+(previous_downed?"already downed":"not downed")+" so nothing happened");
@@ -166,7 +166,7 @@ public class PlayerDownedListener implements Listener {
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player player = event.getEntity();
 
-        CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
+        CustomPlayer customPlayer = Specialization.customPlayerManager.getCustomPlayer(player.getUniqueId());
         // Reset all skills to 0
         for (SkillType type : SkillType.values()) {
             double currentXp = customPlayer.getSkill(type).getXp();
@@ -176,7 +176,7 @@ public class PlayerDownedListener implements Listener {
         if (isDowned(player)) {
             setDowned(player, false, 0);
         }
-        Debug.broadcast("death", Component.text(player.getName()+" died 💀 ").color(TextColor.color(122,88,88)).append(Debug.formatLocationClickable(event.getPlayer().getLocation(), false)));
+        Debug.broadcast("death", Component.text(player.getName()+" died 💀 ").color(TextColor.color(122,88,88)).append(Debug.formatLocationClickable(event.getEntity().getLocation(), false)));
     }
 
     public void clearMount(Player player) {
@@ -401,7 +401,6 @@ public class PlayerDownedListener implements Listener {
                     a.setMarker(false);
                     a.setArms(false);
                     a.addPassenger(player);
-                    a.getAttribute(Attribute.SCALE).setBaseValue(0.01);
                 });
                 downStands.put(id, stand);
             } else {

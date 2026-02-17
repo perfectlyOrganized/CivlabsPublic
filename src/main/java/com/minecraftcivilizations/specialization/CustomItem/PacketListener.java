@@ -39,7 +39,7 @@ public class PacketListener extends PacketAdapter {
 
         // --- Block sleep messages ---
         if (event.getPacketType() == PacketType.Play.Server.SYSTEM_CHAT) {
-            var comp = event.getPacket().getChatComponents().read(0);
+            var comp = event.getPacket().getChatComponents().readSafely(0);
             if (comp != null) {
                 try {
                     String json = comp.getJson();
@@ -125,25 +125,5 @@ public class PacketListener extends PacketAdapter {
 //        }
     }
 
-    @Override
-    public void onPacketReceiving(PacketEvent event) {
-        // Only process SOUND_EFFECT packets
 
-        Debug.broadcast("packet", "<blue>packet receive:</blue> "+event.getPacketType().name() + event.getPlayer());
-
-        if (event.getPacketType() != PacketType.Play.Server.NAMED_SOUND_EFFECT) return;
-
-        Player player = event.getPlayer();
-
-        if(!player.getEquipment().getItemInMainHand().getType().equals(Material.CROSSBOW)) return;
-
-
-        // Here you can filter only your emote crossbows
-        // For example, check if player is holding an EmoteItem of type CLAP
-        ItemStack item = player.getInventory().getItemInMainHand();
-        CustomItem custom_item = Specialization.getInstance().getCustomItemManager().getCustomItem(item);
-        if(custom_item instanceof EmoteItem emote_item) {
-            event.setCancelled(true); // suppress the sound for this packet
-        }
-    }
 }

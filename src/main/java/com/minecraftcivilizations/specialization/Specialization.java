@@ -1,12 +1,11 @@
 package com.minecraftcivilizations.specialization;
 
-import com.minecraftcivilizations.specialization.CraftEngine.*;
-import net.momirealms.craftengine.core.block.BlockBehavior;
-import net.momirealms.craftengine.core.block.CustomBlock;
-import net.momirealms.craftengine.core.block.behavior.BlockBehaviorFactory;
-import net.momirealms.craftengine.core.block.behavior.BlockBehaviors;
-import net.momirealms.craftengine.core.item.behavior.ItemBehaviors;
-import net.momirealms.craftengine.core.util.Key;
+import com.minecraftcivilizations.specialization.Combat.Mobs.HuntPlayerMobGoal;
+import com.minecraftcivilizations.specialization.GUI.GUIManager;
+import com.minecraftcivilizations.specialization.Player.CustomPlayerManager;
+import com.minecraftcivilizations.specialization.util.ComponentUtils;
+import com.mojang.authlib.GameProfile;
+import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import org.bukkit.Difficulty;
 import co.aikar.commands.PaperCommandManager;
 import com.comphenix.protocol.PacketType;
@@ -16,14 +15,11 @@ import com.comphenix.protocol.wrappers.EnumWrappers;
 import com.comphenix.protocol.wrappers.PlayerInfoData;
 import com.comphenix.protocol.wrappers.WrappedChatComponent;
 import com.comphenix.protocol.wrappers.WrappedGameProfile;
-import com.destroystokyo.paper.profile.CraftPlayerProfile;
 import com.minecraftcivilizations.specialization.Combat.*;
 import com.minecraftcivilizations.specialization.Command.*;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.CustomItem.CustomItemManager;
 import com.minecraftcivilizations.specialization.Data.DataManager;
-import com.minecraftcivilizations.specialization.Distance.TownManager;
-import com.minecraftcivilizations.specialization.Listener.Blocks.AutoCrafterListener;
 import com.minecraftcivilizations.specialization.Listener.Blocks.ReinforcementProtectionListener;
 import com.minecraftcivilizations.specialization.Listener.BurnListener;
 import com.minecraftcivilizations.specialization.Listener.Player.*;
@@ -40,7 +36,6 @@ import com.minecraftcivilizations.specialization.Listener.XpTransferBookListener
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Player.LocalNameGenerator;
 import com.minecraftcivilizations.specialization.Player.PreJoinEventListener;
-import com.minecraftcivilizations.specialization.Recipe.Blueprints;
 import com.minecraftcivilizations.specialization.Recipe.RecipeBlocker;
 import com.minecraftcivilizations.specialization.Recipe.Recipes;
 import com.minecraftcivilizations.specialization.Reinforcement.ReinforcementManager;
@@ -49,22 +44,16 @@ import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.SmartEntity.SmartEntityManager;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.minecraftcivilizations.specialization.StaffTools.DebugListenCommand;
-import com.minecraftcivilizations.specialization.util.LocatorBarManager;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
-import com.mojang.authlib.GameProfile;
 import lombok.Getter;
-import minecraftcivilizations.com.minecraftCivilizationsCore.Component.ComponentUtils;
-import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.json.JSONComponentSerializer;
-import net.minecraft.server.level.ServerPlayer;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameRule;
 import org.bukkit.World;
-import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -81,10 +70,10 @@ public final class Specialization extends JavaPlugin {
     public static Logger logger;
     public ReviveListener reviveListener;
     //Holder for transient player data such as cooldowns
-    static Map<UUID, PlayerUtil> playerUtilMap = new HashMap<>();
+    public static Map<UUID, PlayerUtil> playerUtilMap = new HashMap<>();
     PaperCommandManager commandManager;
     @Getter
-    private LocalNameGenerator localNameGenerator;
+    public static LocalNameGenerator localNameGenerator;
     private Debug debug;
     private PhantomRideListener phantomRideListener;
     //    private EmoteListener emoteListener;
@@ -94,7 +83,7 @@ public final class Specialization extends JavaPlugin {
     @Getter
     private SmartEntityManager smart_entity_manager;
     @Getter
-    private CustomItemManager customItemManager;
+    public CustomItemManager customItemManager;
     @Getter
     private CombatManager combatManager;
     @Getter
@@ -104,18 +93,19 @@ public final class Specialization extends JavaPlugin {
     private XPMonitoringCommand xpMonitoringCommand;
 
     @Getter
-    private HammerListener hammerListener;
-    @Getter
-    private HammerBehavior hammerBehavior;
-    @Getter
-    private ThrowableExplosiveBehavior throwableExplosiveBehavior;
-    @Getter
     private FoodDurationTicker foodDurationTicker;
     @Getter
     private PlayerDownedListener playerDownedListener;
+    @Getter
+    public HuntPlayerMobGoal huntPlayerMobGoalSystem;
     private RecipeBlocker recipeBlocker;
     private EmoteManager emoteManager;
-
+    @Getter
+    public static CustomPlayerManager customPlayerManager;
+    @Getter
+    private PlayerClickListener playerClickListener;
+    @Getter
+    public static GUIManager guiManager;
     public static void notify(Player player, String msg) {
         message(player, msg);
     }
@@ -144,7 +134,9 @@ public final class Specialization extends JavaPlugin {
         // TODO PDC-xp-hotfix
         //  Skill.InitializeSkillKeys(this);
 
-
+        guiManager = new GUIManager();
+        playerClickListener = new PlayerClickListener();
+        customPlayerManager = new CustomPlayerManager();
         localChat = new LocalChat();
         playerDownedListener = new PlayerDownedListener(this);
         reviveListener = new ReviveListener(playerDownedListener);
@@ -157,17 +149,17 @@ public final class Specialization extends JavaPlugin {
         pvpManager = new PVPManager(playerDownedListener, this);
         recipeBlocker = new RecipeBlocker();
         armorTrimSystem = new BlacksmithArmorTrim();
-        hammerListener = new HammerListener();
-        hammerBehavior = new HammerBehavior();
         foodDurationTicker = new FoodDurationTicker();
-        throwableExplosiveBehavior = new ThrowableExplosiveBehavior();
+        huntPlayerMobGoalSystem = new HuntPlayerMobGoal(this);
 //      emoteListener = new EmoteListener(this);
 
         getServer().getMessenger().registerIncomingPluginChannel(this, "civlabs:weathersync", new TimeSyncListener());
 
         //commands registered here
         setupCommands();
-
+        getServer().getPluginManager().registerEvents(guiManager, this);
+        getServer().getPluginManager().registerEvents(playerClickListener, this);
+        getServer().getPluginManager().registerEvents(customPlayerManager, this);
         getServer().getPluginManager().registerEvents(new PlayerMineListener(), this);
         getServer().getPluginManager().registerEvents(new BreakBlockListener(), this);
         getServer().getPluginManager().registerEvents(new PlaceBlockListener(), this);
@@ -182,17 +174,13 @@ public final class Specialization extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new HungerSystem(this, emoteManager), this);
         getServer().getPluginManager().registerEvents(new LeashListener(), this);
         getServer().getPluginManager().registerEvents(new BedListener(), this);
-        getServer().getPluginManager().registerEvents(new LocatorBarManager(this), this);
         getServer().getPluginManager().registerEvents(new ReinforcementProtectionListener(), this);
         getServer().getPluginManager().registerEvents(new PreJoinEventListener(), this);
         getServer().getPluginManager().registerEvents(new StonecutterListener(this), this);
-        getServer().getPluginManager().registerEvents(new com.minecraftcivilizations.specialization.Cooking.CookingListener(), this);
         getServer().getPluginManager().registerEvents(new CraftingListener(this), this);
         getServer().getPluginManager().registerEvents(new FurnaceListener(), this);
-        getServer().getPluginManager().registerEvents(new AutoCrafterListener(), this);
 
         //new TownManager();
-        getServer().getPluginManager().registerEvents(new MoveListener(), this);
         getServer().getPluginManager().registerEvents(new CrossBowListener(), this);
         getServer().getPluginManager().registerEvents(new LocalChat(), this);
         getServer().getPluginManager().registerEvents(new PatDown(), this);
@@ -202,17 +190,10 @@ public final class Specialization extends JavaPlugin {
         getServer().getPluginManager().registerEvents(playerDownedListener, this);
         getServer().getPluginManager().registerEvents(reviveListener, this);
         getServer().getPluginManager().registerEvents(recipeBlocker, this);
-        getServer().getPluginManager().registerEvents(hammerListener, this);
-        getServer().getPluginManager().registerEvents(hammerBehavior, this);
         getServer().getPluginManager().registerEvents(foodDurationTicker, this);
-        getServer().getPluginManager().registerEvents(throwableExplosiveBehavior, this);
+        getServer().getPluginManager().registerEvents(huntPlayerMobGoalSystem, this);
         //town data does not need to wait anymore
         //TownManager.scanAllPlayersForTownsAsync();
-        ItemBehaviors.register(Key.of("specialization:musket_behavior"), MusketBehavior.FACTORY);
-        ItemBehaviors.register(Key.of("specialization:hammer_behavior"), HammerBehavior.FACTORY);
-        ItemBehaviors.register(Key.of("specialization:mortar_and_pestle_behavior"), MortarAndPestleBehavior.FACTORY);
-        ItemBehaviors.register(Key.of("specialization:metal_detector_behavior"), MetalDetectorBehavior.FACTORY);
-        ItemBehaviors.register(Key.of("specialization:throwable_explosive_behavior"), ThrowableExplosiveBehavior.FACTORY);
 
         //overworld game rules
         World overworld = Bukkit.getWorlds().get(0);
@@ -225,10 +206,8 @@ public final class Specialization extends JavaPlugin {
             world.setGameRule(GameRule.DO_IMMEDIATE_RESPAWN, true);
             world.setGameRule(GameRule.NATURAL_REGENERATION, false);
             world.setGameRule(GameRule.SHOW_DEATH_MESSAGES, false);
-            world.setGameRule(GameRule.LOCATOR_BAR, true);
             world.setGameRule(GameRule.WATER_SOURCE_CONVERSION, false);
             world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
-            world.setGameRule(GameRule.MINECART_MAX_SPEED, 24);
         }
 
         //global game rules
@@ -236,102 +215,19 @@ public final class Specialization extends JavaPlugin {
         Bukkit.getWorlds().forEach(w -> w.setGameRule(GameRule.DO_TRADER_SPAWNING, false));
 
         Recipes.init();
-        Blueprints.init();
         XpGainMonitor.init();
 
-        Bukkit.updateRecipes();
-
-
-        MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().setCustomPlayerClass(CustomPlayer.class);
-
-        MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().setOnPrePlayerJoin(playerJoinEvent -> {
-
-            try {
-                CustomPlayer load = null;
-                try {
-                    load = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().load(playerJoinEvent.getUniqueId());
-                } catch (FileNotFoundException e) {
-                    Specialization.getInstance().getLogger().severe(String.format("Couldn't load player %s", playerJoinEvent.getPlayerProfile().getName()));
-                }
-                Component localName;
-                String real_name = playerJoinEvent.getName();
-                if (load != null) {
-                    MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().addCustomPlayer(load);
-                    localName = load.getName();
-                } else {
-                    MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().addCustomPlayer(new CustomPlayer(playerJoinEvent.getUniqueId()));
-                    CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(playerJoinEvent.getUniqueId());
-                    customPlayer.setName(Component.text(localNameGenerator.nextName()).color(NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false));
-                    double height = Skill.mapValue(Math.random(), 0.0, 1.0, .85, 1.0);
-                    customPlayer.setHeight(height);
-                    localName = customPlayer.getName();
-                }
-
-
-                CraftPlayerProfile profile = (CraftPlayerProfile) playerJoinEvent.getPlayerProfile();
-                GameProfile gameProfile = profile.getGameProfile();
-                Field ff = gameProfile.getClass().getDeclaredField("name");
-                ff.setAccessible(true);
-                ff.set(gameProfile, ComponentUtils.serializeComponentAsString(localName));
-
-                UUID uniqueId = playerJoinEvent.getUniqueId();
-                if (!playerUtilMap.containsKey(uniqueId)) {
-                    playerUtilMap.put(uniqueId, new PlayerUtil(uniqueId));
-                }
-
-                Debug.broadcast("login", ChatColor.YELLOW + real_name + " has joined the server (" + localName + ")");
-
-            } catch (NoSuchFieldException | IllegalAccessException e) {
-                logger.severe("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
-                e.printStackTrace();
-            }
-        });
-
-        MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().setOnPlayerJoin(playerJoinEvent -> {
-            CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(playerJoinEvent.getUniqueId());
-            Player player = playerJoinEvent.getPlayer();
-            if (player == null || customPlayer == null) {
-                logger.severe(String.format("%s was not able to be processed??? (null shit! \uD83D\uDC80\uD83D\uDC80\uD83D\uDC80)", playerJoinEvent.getUniqueId()));
-                return;
-            }
-            applyCustomName(player, customPlayer.getName());
-
-
-            // TODO PDC-xp-hotfix for later if we need it
-            //  customPlayer.reloadSkillsXp(playerJoinEvent.getPlayer());
-
-            // Assign player to team based on their highest skill
-//            TeamManager.setTeam(playerJoinEvent.getPlayer());
-
-        });
-
-        MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().setOnPlayerQuit(playerQuitEvent -> {
-            // Save downed state to restore on rejoin, then clean up current session state
-            CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(playerQuitEvent.getPlayer().getUniqueId());
-            if (customPlayer != null) {
-                if (customPlayer.isDowned()) {
-                    // Save that they were downed when they logged out
-                    customPlayer.setWasDownedOnLogout(true);
-                    // Clean up current session state to prevent infinite death loop
-                    customPlayer.setDowned(false);
-//                    playerDeathListener.setDowned(playerQuitEvent.getPlayer(), true);
-                } else {
-                    // They weren't downed, so clear the flag
-                    customPlayer.setWasDownedOnLogout(false);
-                }
-            }
-            MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().removeCustomPlayer(playerQuitEvent.getPlayer().getUniqueId());
-        });
+        //Bukkit.updateRecipes();
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             CustomPlayer loadedPlayer = null;
             try {
-                loadedPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().load(player.getUniqueId());
+                loadedPlayer =   customPlayerManager.load(player.getUniqueId());
             } catch (FileNotFoundException e) {
-                Specialization.getInstance().getLogger().severe(String.format("Couldn't load player %s", player.name()));
+                Specialization.getInstance().getLogger().severe(String.format("Couldn't load player %s", player.getName()));
             }
             if (loadedPlayer != null) {
-                MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().addCustomPlayer(loadedPlayer);
+                customPlayerManager.addCustomPlayer(loadedPlayer);
             }
         }
 
@@ -351,7 +247,7 @@ public final class Specialization extends JavaPlugin {
         emoteManager.shutdown();
         smart_entity_manager.shutdown();
         DataManager.getScheduler().shutdown();
-        MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().saveAll();
+        customPlayerManager.saveAll();
         XpGainMonitor.saveConfigToDisk();
     }
 
@@ -384,15 +280,9 @@ public final class Specialization extends JavaPlugin {
         );
 
 
-        // Register tab completion for all custom items
-        commandManager.getCommandCompletions().registerCompletion("customitems", c ->
-                new ArrayList<>(customItemManager.getCustomItemIds())
-        );
-
         commandManager.registerCommand(new ClassCommand());
         commandManager.registerCommand(new SetXpCommand());
         commandManager.registerCommand(new SetLoreCommand());
-        commandManager.registerCommand(new TownsCommand());
         commandManager.registerCommand(new SuicideCommand(playerDownedListener, pvpManager, this));
         commandManager.registerCommand(new RestoreHealthCommand());
         commandManager.registerCommand(new NotifyRestartCommand());
@@ -414,70 +304,93 @@ public final class Specialization extends JavaPlugin {
 
 
     public void applyCustomName(Player player, Component name) {
-        CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore
-                .getInstance()
-                .getCustomPlayerManager()
-                .getCustomPlayer(player.getUniqueId());
+        CustomPlayer customPlayer = customPlayerManager.getCustomPlayer(player.getUniqueId());
 
         // Update the CustomPlayer's stored name
         customPlayer.setName(name);
 
-        // Send the packet to all online players to update the display name
+        // Create the packet with display name only
         PacketContainer packet = createChangeNamePacket(player.getUniqueId(), name);
+
+        if (packet == null) {
+            return; // Packet creation failed
+        }
+
+        // Send to all online players
         for (Player p : Bukkit.getOnlinePlayers()) {
-            ProtocolLibrary.getProtocolManager().sendServerPacket(p, packet);
-            // Also send each other player's custom name to the target player
-            CustomPlayer otherPlayer = (CustomPlayer) MinecraftCivilizationsCore
-                    .getInstance()
-                    .getCustomPlayerManager()
-                    .getCustomPlayer(p.getUniqueId());
-            if (otherPlayer != null) {
-                ProtocolLibrary.getProtocolManager().sendServerPacket(player,
-                        createChangeNamePacket(p.getUniqueId(), otherPlayer.getName()));
+            try {
+                ProtocolLibrary.getProtocolManager().sendServerPacket(p, packet);
+
+                // Also send each other player's custom name to the target player
+                CustomPlayer otherPlayer = customPlayerManager.getCustomPlayer(p.getUniqueId());
+                if (otherPlayer != null && !p.equals(player)) {
+                    PacketContainer otherPacket = createChangeNamePacket(p.getUniqueId(), otherPlayer.getName());
+                    if (otherPacket != null) {
+                        ProtocolLibrary.getProtocolManager().sendServerPacket(player, otherPacket);
+                    }
+                }
+            } catch (Exception e) {
+                Specialization.logger.warning("Failed to send name packet to " + p.getName() + ": " + e.getMessage());
             }
         }
-
-        // Update the internal GameProfile to ensure name persists correctly
-        try {
-            ServerPlayer profile = ((CraftPlayer) player).getHandle();
-            GameProfile gameProfile = profile.getGameProfile();
-            Field nameField = gameProfile.getClass().getDeclaredField("name");
-            nameField.setAccessible(true);
-            nameField.set(gameProfile, ComponentUtils.serializeComponentAsString(name));
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            e.printStackTrace();
-        }
-
-        // Force client to refresh player to avoid caching issues
-        Bukkit.getScheduler().runTask(Specialization.getInstance(), () -> {
-            for (Player all : Bukkit.getOnlinePlayers()) {
-                all.hidePlayer(Specialization.getInstance(), player);
-                all.showPlayer(Specialization.getInstance(), player);
-            }
-        });
     }
 
+    private void changeGameProfile(Player player, String newName) {
+        try {
+            Object craftPlayer = player.getClass().getMethod("getHandle").invoke(player);
+            Field gameProfileField = craftPlayer.getClass().getDeclaredField("bK"); // Version dependent!
+            gameProfileField.setAccessible(true);
 
+            GameProfile profile = (GameProfile) gameProfileField.get(craftPlayer);
+
+            Field nameField = profile.getClass().getDeclaredField("name");
+            nameField.setAccessible(true);
+            nameField.set(profile, newName);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
     private PacketContainer createChangeNamePacket(UUID uuid, Component name) {
         PacketContainer packet = ProtocolLibrary.getProtocolManager().createPacket(PacketType.Play.Server.PLAYER_INFO);
 
-        // Update the display name only
-        packet.getPlayerInfoActions().write(0,
-                Collections.singleton(EnumWrappers.PlayerInfoAction.UPDATE_DISPLAY_NAME));
+        try {
+            // Get the actual player to use their real username
+            Player player = Bukkit.getPlayer(uuid);
+            String realUsername = player != null ? player.getName() : "Player";
 
-        WrappedGameProfile profile = new WrappedGameProfile(uuid, ComponentUtils.serializeComponentAsString(name));
-        WrappedChatComponent nameComponent = WrappedChatComponent.fromJson(
-                JSONComponentSerializer.json().serialize(name)
-        );
+            // Create profile with REAL username, not the display name
+            WrappedGameProfile profile = new WrappedGameProfile(uuid, realUsername);
 
-        List<PlayerInfoData> playerInfoData = List.of(
-                new PlayerInfoData(profile, 0, EnumWrappers.NativeGameMode.SURVIVAL, nameComponent)
-        );
-        packet.getPlayerInfoDataLists().write(1, playerInfoData);
+            // Convert Component to JSON safely
+            String jsonName;
+            try {
+                // Try JSON serializer first
+                jsonName = GsonComponentSerializer.gson().serialize(name);
+            } catch (NoSuchMethodError e) {
+                // Fallback to legacy formatting
+                jsonName = "{\"text\":\"" + ComponentUtils.serializeComponentAsString(name) + "\"}";
+            }
+
+            WrappedChatComponent nameComponent = WrappedChatComponent.fromJson(jsonName);
+
+            // Set player info action
+            packet.getPlayerInfoActions().write(0,
+                    Collections.singleton(EnumWrappers.PlayerInfoAction.UPDATE_DISPLAY_NAME));
+
+            // Create player info data
+            List<PlayerInfoData> playerInfoData = List.of(
+                    new PlayerInfoData(profile, 0, EnumWrappers.NativeGameMode.SURVIVAL, nameComponent)
+            );
+            packet.getPlayerInfoDataLists().write(1, playerInfoData);
+
+        } catch (Exception e) {
+            // Log the error but don't crash
+            Specialization.logger.warning("Failed to create name change packet: " + e.getMessage());
+            return null;
+        }
 
         return packet;
     }
-
 
     public Debug getDebugUtils() {
         return debug;

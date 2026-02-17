@@ -63,14 +63,11 @@ public class PurgeGoldenApplesCommand extends BaseCommand {
         }
         
         // Check if it has blessed food lore
-        List<Component> lore = item.getItemMeta().lore();
+        List<String> lore = item.getItemMeta().getLore();
         if (lore == null) return false;
         
-        for (Component component : lore) {
-            if (component instanceof net.kyori.adventure.text.TextComponent) {
-                String content = ((net.kyori.adventure.text.TextComponent) component).content();
-                if ("Blessed Food".equals(content)) return true;
-            }
+        for (String string : lore) {
+            if ("Blessed Food".equals(string)) return true;
         }
         return false;
     }

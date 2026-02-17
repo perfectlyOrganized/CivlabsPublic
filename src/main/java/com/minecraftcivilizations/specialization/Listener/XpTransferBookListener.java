@@ -77,7 +77,7 @@ public class XpTransferBookListener implements Listener {
             event.setCancelled(true);
 
             if(item.hasItemMeta() && item.getItemMeta() instanceof BookMeta m){
-                if(m.getPersistentDataContainer().has(XP_BLESSED_KEY)){
+                if(m.getPersistentDataContainer().has(XP_BLESSED_KEY, PersistentDataType.BOOLEAN)){
                     PlayerUtil.message(player, "Book is already blessed");
                     return;
                 }
@@ -106,7 +106,6 @@ public class XpTransferBookListener implements Listener {
             ));
             applyBookInstructions(book_meta);
             book_meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-            book_meta.setEnchantmentGlintOverride(true);
             book_meta.getPersistentDataContainer().set(XP_BLESSED_KEY, PersistentDataType.INTEGER, 1);
             item.setItemMeta(book_meta);
 
@@ -178,7 +177,7 @@ public class XpTransferBookListener implements Listener {
         }
 
 
-        String[] page_split = pages.getFirst().split("Levels:");
+        String[] page_split = pages.get(0).split("Levels:");
         if(page_split.length<2){
             return;
         }
@@ -213,7 +212,6 @@ public class XpTransferBookListener implements Listener {
 
         player.setTotalExperience(targetXp);
         player.setLevel(playerLevel - requestedLevels);
-        player.getWorld().playSound(player.getLocation(), Sound.BLOCK_DECORATED_POT_INSERT, SoundCategory.AMBIENT, 0.6f, PITCH +random(-PITCH_VARIANCE, PITCH_VARIANCE));
         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.AMBIENT, 0.1f, PITCH +-0.4f +random(-PITCH_VARIANCE, PITCH_VARIANCE));
         // --- Replace writable book with enchanted XP book (one tick later) ---
         Bukkit.getScheduler().runTask(Specialization.getInstance(), () -> {
@@ -244,7 +242,6 @@ public class XpTransferBookListener implements Listener {
         );
         // ChatColor.GOLD+event.getNewBookMeta().getTitle())
         xpMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-        xpMeta.setEnchantmentGlintOverride(true);
         xpMeta.getPersistentDataContainer().set(XP_AMOUNT_KEY, PersistentDataType.INTEGER, totalXp);
         xpBook.setItemMeta(xpMeta);
 
@@ -295,8 +292,8 @@ public class XpTransferBookListener implements Listener {
             }
 
             int particles = (int)(scaled_exp/2);
-            location.getWorld().spawnParticle(Particle.ENCHANT, lerpLocationFast(old_location, location,0.5f), 3, 0,0,0);
-            location.getWorld().spawnParticle(Particle.ENCHANT, location, 3, 0,0,0);
+            location.getWorld().spawnParticle(Particle.ENCHANTMENT_TABLE, lerpLocationFast(old_location, location,0.5f), 3, 0,0,0);
+            location.getWorld().spawnParticle(Particle.ENCHANTMENT_TABLE, location, 3, 0,0,0);
 
             if(tick % 4 == 0) {
                 float pitch = 0.6f+((float)tick/40f);

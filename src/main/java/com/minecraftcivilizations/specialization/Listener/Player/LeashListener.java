@@ -17,7 +17,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.EntityBlockFormEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
-import org.bukkit.event.entity.EntityDismountEvent;
+
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
@@ -117,7 +117,8 @@ public final class LeashListener implements Listener {
         targetPlayer.getPersistentDataContainer().set(new NamespacedKey(Specialization.getInstance(), "is_leashed"), PersistentDataType.BOOLEAN, true);
         proxies.put(targetPlayer, proxy);
 
-        leasher.getInventory().getItemInMainHand().subtract(1);
+        ItemStack item = leasher.getInventory().getItemInMainHand();
+        item.setAmount(item.getAmount()-1);
     }
 
     private void unleashPlayer(Player targetPlayer, Sheep proxy) {
@@ -160,8 +161,6 @@ public final class LeashListener implements Listener {
             sm.setCanPickupItems(false);
             sm.setCollidable(false);
             sm.setGlowing(false);
-            sm.getAttribute(Attribute.STEP_HEIGHT).setBaseValue(1.0);
-            sm.getAttribute(Attribute.SCALE).setBaseValue(0.23);
             sm.getEquipment().clear();
         });
     }
@@ -211,21 +210,6 @@ public final class LeashListener implements Listener {
         }
     }
 
-    @EventHandler
-    public void onDismount(EntityDismountEvent e) {
-        if (e.isCancelled()) return;
-        if (!(e.getEntity() instanceof Player rider)) return;
-
-        Boolean isLeashed = rider.getPersistentDataContainer().get(
-                new NamespacedKey(Specialization.getInstance(), "is_leashed"),
-                PersistentDataType.BOOLEAN
-        );
-
-//        if (isLeashed != null && isLeashed) {
-//
-//            e.setCancelled(true); // Prevent dismount while leashed
-//        }
-    }
 
     // -------------------------
     // Prevent snow layering

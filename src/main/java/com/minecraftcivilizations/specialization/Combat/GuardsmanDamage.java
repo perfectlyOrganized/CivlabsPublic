@@ -7,7 +7,6 @@ import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
-import net.minecraft.world.entity.animal.Animal;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -42,20 +41,32 @@ public class GuardsmanDamage implements Listener {
     }
 
     @EventHandler
-    public void onGuardsmanLevelUp(SkillLevelChangeEvent event){
-        if(event.getSkillType() == SkillType.GUARDSMAN){
+    public void onGuardsmanLevelUp(SkillLevelChangeEvent event) {
+        if (event.getSkillType() == SkillType.GUARDSMAN) {
             Player player = event.getPlayer();
-            int new_level = event.getNewLevel();
-            AttributeInstance attribute = player.getAttribute(Attribute.MAX_HEALTH);
-            AttributeModifier modifier = attribute.getModifier(MAX_HEALTH_KEY);
-            if(modifier != null){
-                attribute.removeModifier(modifier);
-            }
-            modifier = new AttributeModifier(MAX_HEALTH_KEY,
-                    event.getNewLevel() * 2.0, // add +1 health per level
+            int newLevel = event.getNewLevel();
+
+            AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+
+            // Find and remove existing modifier by key
+            attribute.getModifiers().stream()
+                    .filter(modifier -> modifier.getName().equals(MAX_HEALTH_KEY.toString()))
+                    .findFirst()
+                    .ifPresent(attribute::removeModifier);
+
+            // Create and add new modifier
+            AttributeModifier modifier = new AttributeModifier(
+                    MAX_HEALTH_KEY.toString(),
+                    newLevel * 2.0,
                     AttributeModifier.Operation.ADD_NUMBER
             );
+
             attribute.addModifier(modifier);
+
+            // Ensure player doesn't lose health if current > new max
+            if (player.getHealth() > player.getMaxHealth()) {
+                player.setHealth(player.getMaxHealth());
+            }
         }
     }
 
@@ -121,7 +132,9 @@ public class GuardsmanDamage implements Listener {
          */
         if(victim instanceof Monster monster) {
             double extra = Math.max(0, ((double) lvl - 1)) / 2.0;
-            if (event.isCritical()) {
+            if (!damager.isOnGround() &&
+                    !damager.isSprinting() &&
+                    damager.getFallDistance() > 0) {
                 extra *= 1.5;
             }
             if (extra > 0) {

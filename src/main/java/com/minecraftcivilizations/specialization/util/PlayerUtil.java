@@ -3,7 +3,12 @@ package com.minecraftcivilizations.specialization.util;
 import com.minecraftcivilizations.specialization.Specialization;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.title.Title;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
@@ -27,10 +32,46 @@ public class PlayerUtil {
         return MiniMessage.miniMessage().deserialize(logoGradient);
     }
 
+    private static final LegacyComponentSerializer LEGACY_SERIALIZER =
+            LegacyComponentSerializer.legacySection();
+
+    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
+
+    public static void sendRichMessage(Player player, String miniMessage) {
+        Component component = MINI_MESSAGE.deserialize(miniMessage);
+        String legacyMessage = LEGACY_SERIALIZER.serialize(component);
+        player.sendMessage(legacyMessage);
+    }
+
+    public static void sendComponent(Player player, Component component) {
+        player.sendMessage(LEGACY_SERIALIZER.serialize(component));
+    }
+    public static void sendMessage(Player player, Component message) {
+        player.sendMessage(LEGACY_SERIALIZER.serialize(message));
+    }
+
+    public static void sendMessage(Player player, String miniMessage) {
+        Component component = MiniMessage.miniMessage().deserialize(miniMessage);
+        player.sendMessage(LEGACY_SERIALIZER.serialize(component));
+    }
+
+    public static void sendActionBar(Player player, Component component) {
+        player.spigot().sendMessage(
+                ChatMessageType.ACTION_BAR,
+                TextComponent.fromLegacyText(LEGACY_SERIALIZER.serialize(component))
+        );
+    }
     /**
      * Sends a message with an optional cooldown in seconds.
      * If cooldownSeconds <= 0, no cooldown is applied.
      */
+
+    public static void showTitle(Player target, Component title, Component subtitle) {
+        String titleText = LegacyComponentSerializer.legacySection().serialize(title);
+        String subtitleText = LegacyComponentSerializer.legacySection().serialize(subtitle);
+
+        target.sendTitle(titleText, subtitleText, 10, 70, 20);
+    }
 
     public static void message(Player player, Object msg, double cooldownSeconds) {
         String key = "msg_" + player.getUniqueId();
@@ -54,11 +95,26 @@ public class PlayerUtil {
         } else {
             throw new IllegalArgumentException("Unsupported message type: " + msg.getClass());
         }
-
-        player.sendMessage(buildLogo().append(prefix).append(messageComp));
+        sendMessage(player,buildLogo().append(prefix).append(messageComp));
     }
 
+    public static Player getNearestPlayer(Location location, double radius) {
+        double radiusSquared = radius * radius;
+        Player nearest = null;
+        double nearestDistanceSquared = Double.MAX_VALUE;
 
+        for (Player player : location.getWorld().getPlayers()) {
+            if (!player.isOnline()) continue;
+
+            double distanceSquared = player.getLocation().distanceSquared(location);
+            if (distanceSquared <= radiusSquared && distanceSquared < nearestDistanceSquared) {
+                nearestDistanceSquared = distanceSquared;
+                nearest = player;
+            }
+        }
+
+        return nearest;
+    }
     public static void message(Player player, Object msg) {
         message(player, msg, 0);
     }
@@ -342,6 +398,15 @@ public class PlayerUtil {
         return 0;
     }
 
+    public static boolean isCritical(Player player) {
+        // Critical hit conditions from Minecraft
+        return player.getFallDistance() > 0.0f &&
+                !player.isOnGround() &&
+                !player.isInWater() &&
+                !player.isClimbing() &&
+                player.getVelocity().getY() < 0.0 && // Actually falling
+                player.getAttackCooldown() == 1.0f;   // Full cooldown for max damage
+    }
     /**
      * Get the total amount of experience required to progress to the next level.
      *

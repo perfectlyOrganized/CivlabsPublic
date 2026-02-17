@@ -11,6 +11,7 @@ import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
@@ -780,9 +781,12 @@ public class LocalNameGenerator implements Listener {
         Component mainTitle = MiniMessage.miniMessage().deserialize("Your name is: <gold>" + player.getName() + "</gold>");
         Component subTitle = MiniMessage.miniMessage().deserialize("<gray>You have <red>" + getRemainingTime(player) + " </red>minutes to reroll name.</gray>");
 
-        Title t = Title.title(mainTitle, subTitle, 20, 150, 50);
+// Convert to legacy strings (with § color codes)
+        String titleText = LegacyComponentSerializer.legacySection().serialize(mainTitle);
+        String subtitleText = LegacyComponentSerializer.legacySection().serialize(subTitle);
 
-        player.showTitle(t);
+// Send using Bukkit/Spigot method
+        player.sendTitle(titleText, subtitleText, 10, 70, 20);
         // Retrieve temp data
         TempNameData data = tempNames.get(uuid);
 
@@ -799,9 +803,9 @@ public class LocalNameGenerator implements Listener {
         PlayerUtil.message(player, MiniMessage.miniMessage().deserialize("<gradient:#0D1B2A:#1B263B>=====================================</gradient>"));
 
         // Display current name
-        player.sendMessage(
+        PlayerUtil.sendMessage(player,
                 Component.text("Your current name is: ", NamedTextColor.GRAY)
-                        .append(Component.text(names.getFirst(), NamedTextColor.GOLD)
+                        .append(Component.text(names.get(0), NamedTextColor.GOLD)
                                 .decoration(TextDecoration.ITALIC, false))
         );
 
@@ -822,8 +826,8 @@ public class LocalNameGenerator implements Listener {
                 message = message.append(Component.text(" || ", NamedTextColor.GRAY));
             }
         }
-        player.sendMessage( message);
-        player.sendMessage( MiniMessage.miniMessage().deserialize("<gray>You have <red>" + getRemainingTime(player) + "</red> minute(s) to select a rerolled name.</gray>"));
+        PlayerUtil.sendMessage(player, message);
+        PlayerUtil.sendMessage(player, MiniMessage.miniMessage().deserialize("<gray>You have <red>" + getRemainingTime(player) + "</red> minute(s) to select a rerolled name.</gray>"));
         PlayerUtil.message(player, MiniMessage.miniMessage().deserialize("<gradient:#3E4C7F:#2A3253>=====================================</gradient>"));
     }
 

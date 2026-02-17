@@ -231,12 +231,10 @@ public class HungerSystem implements Listener {
         // Play swing animation
         ItemStack held = player.getInventory().getItemInMainHand();
 
-        player.swingHand(EquipmentSlot.HAND);
-
         float pitch = 0.8f + (float) (Math.random() * 0.4f); // 0.8–1.2
         target.getWorld().playSound(target.getLocation(), Sound.ENTITY_PLAYER_BURP, SoundCategory.PLAYERS, 1f, pitch);
         target.getWorld().spawnParticle(
-                Particle.ITEM,
+                Particle.BLOCK_DUST,
                 target.getEyeLocation(),
                 8,
                 0.2, 0, 0.5,

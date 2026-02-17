@@ -11,8 +11,6 @@ import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.minecraft.world.level.block.SweetBerryBushBlock;
-import net.minecraft.world.level.block.SweetBerryBushBlock;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -35,7 +33,6 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.components.FoodComponent;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
@@ -70,7 +67,6 @@ public class RightClickListener implements Listener {
                     }
                 }
                 if (success) {
-                    player.swingHand(EquipmentSlot.OFF_HAND);
                     player.getInventory().getItemInOffHand().setAmount(player.getInventory().getItemInOffHand().getAmount() - 1);
                     PlayerUtil.message(player, Component.text("§6Wooden Reinforcement").color(NamedTextColor.GOLD).decorations(Set.of(TextDecoration.BOLD, TextDecoration.ITALIC), false));
                 }
@@ -104,10 +100,8 @@ public class RightClickListener implements Listener {
                 }
                 if (success) {
                     if (useOffHand) {
-                        player.swingHand(EquipmentSlot.OFF_HAND);
                         player.getInventory().getItemInOffHand().setAmount(player.getInventory().getItemInOffHand().getAmount() - 1);
                     } else {
-                        player.swingHand(EquipmentSlot.HAND);
                         player.getInventory().getItemInMainHand().setAmount(player.getInventory().getItemInMainHand().getAmount() - 1);
                     }
                     PlayerUtil.message(player, Component.text("§7Lightly Reinforced").color(NamedTextColor.WHITE).decorations(Set.of(TextDecoration.BOLD, TextDecoration.ITALIC), false));
@@ -129,10 +123,8 @@ public class RightClickListener implements Listener {
                 }
                 if (success) {
                     if (useOffHand) {
-                        player.swingHand(EquipmentSlot.OFF_HAND);
                         player.getInventory().getItemInOffHand().setAmount(player.getInventory().getItemInOffHand().getAmount() - 1);
                     } else {
-                        player.swingHand(EquipmentSlot.HAND);
                         player.getInventory().getItemInMainHand().setAmount(player.getInventory().getItemInMainHand().getAmount() - 1);
                     }
                     PlayerUtil.message(player, Component.text("§7Heavily Reinforced").color(NamedTextColor.WHITE).decorations(Set.of(TextDecoration.BOLD, TextDecoration.ITALIC), false));

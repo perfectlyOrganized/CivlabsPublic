@@ -208,9 +208,9 @@ public class PVPManager implements Listener, CommandExecutor {
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
-        UUID id = event.getPlayer().getUniqueId();
+        UUID id = event.getEntity().getUniqueId();
         combatMap.remove(id);
-        PlayerUtil.message(event.getPlayer(),"You may §bsafely§7 log out");
+        PlayerUtil.message(event.getEntity(),"You may §bsafely§7 log out");
         BossBar bar = combatBars.remove(id);
         if (bar != null) bar.removeAll();
     }
@@ -236,7 +236,6 @@ public class PVPManager implements Listener, CommandExecutor {
             as.getPersistentDataContainer().set(MARKER_KEY, PersistentDataType.STRING, id.toString());
             // #TODO test this shit
            // if (!playerDownedListener.isDowned(player)) as.getPersistentDataContainer().set(DEAD_KEY, PersistentDataType.INTEGER, 0);;
-            as.getAttribute(Attribute.SCALE).setBaseValue(0.01);
 
             // Serialize only main inventory (slots 0-35)
             ItemStack[] mainInv = new ItemStack[36];
@@ -341,7 +340,7 @@ public class PVPManager implements Listener, CommandExecutor {
             if (invBytes != null) player.getInventory().setContents(ItemSerialization.fromBytes(invBytes));
             if (armorBytes != null) player.getInventory().setArmorContents(ItemSerialization.fromBytes(armorBytes));
             double health = marker.getPersistentDataContainer().getOrDefault(HEALTH_KEY, PersistentDataType.DOUBLE, player.getMaxHealth());
-            player.setHealth(Math.min(health, player.getAttribute(Attribute.MAX_HEALTH).getValue()));
+            player.setHealth(Math.min(health, player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue()));
             PlayerUtil.message(player,"You §ccombat-logged§7, but your mannequin §asurvived");
             Debug.broadcast("combatlog", "<grey>[Login] Restored inventory and health(" + health + ") for " + player.getName());
         }
@@ -419,7 +418,7 @@ public class PVPManager implements Listener, CommandExecutor {
         String playerUUIDStr = zombie.getPersistentDataContainer().get(MARKER_KEY, PersistentDataType.STRING);
         if (playerUUIDStr == null) return;
 
-        ArmorStand marker = getMarkerByPlayer(UUID.fromString(playerUUIDStr), zombie.getChunk());
+        ArmorStand marker = getMarkerByPlayer(UUID.fromString(playerUUIDStr), zombie.getLocation().getChunk());
         if (marker == null) return;
 
         double currentHealth = zombie.getHealth();
@@ -439,7 +438,7 @@ public class PVPManager implements Listener, CommandExecutor {
         if (!(event.getEntity() instanceof Zombie zombie)) return;
 
         PersistentDataContainer pdc = zombie.getPersistentDataContainer();
-        if (!pdc.has(OWNER_KEY)) return;
+        if (!pdc.has(OWNER_KEY, PersistentDataType.STRING)) return;
 
         // Early exit: zombie has no owner => clear drops and return
         if (!pdc.has(OWNER_KEY, PersistentDataType.STRING)) {
@@ -462,7 +461,7 @@ public class PVPManager implements Listener, CommandExecutor {
             return;
         }
 
-        ArmorStand marker = getMarkerByPlayer(ownerId, zombie.getChunk());
+        ArmorStand marker = getMarkerByPlayer(ownerId, zombie.getLocation().getChunk());
 
         // If no marker exists => NO DROPS
         if (marker == null) {
@@ -485,7 +484,7 @@ public class PVPManager implements Listener, CommandExecutor {
             for (ItemStack item : ItemSerialization.fromBytes(invBytes)) {
                 if (item != null) {
                     zombie.getWorld().dropItemNaturally(zombie.getLocation(), item);
-                    Debug.broadcast("combatlog", "<grey>[Mannequin Item]: " + item.getItemMeta().displayName());
+                    Debug.broadcast("combatlog", "<grey>[Mannequin Item]: " + item.getItemMeta().getDisplayName());
                 }
             }
             marker.getPersistentDataContainer().remove(INVENTORY_KEY);
@@ -525,10 +524,9 @@ public class PVPManager implements Listener, CommandExecutor {
         zombie.setSilent(true);
         zombie.setCanPickupItems(false);
         zombie.setRemoveWhenFarAway(true);
-        zombie.setShouldBurnInDay(false);
         zombie.setAge(0); //0 = adult | -100 = ticks until adult
-        zombie.getAttribute(Attribute.MAX_HEALTH).setBaseValue(player.getMaxHealth());
-        zombie.setHealth(Math.min(storedHealth, zombie.getAttribute(Attribute.MAX_HEALTH).getValue()));
+        zombie.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(player.getMaxHealth());
+        zombie.setHealth(Math.min(storedHealth, zombie.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue()));
 
         // Set main-hand and off-hand from marker inventory
         if (invBytes != null) {
@@ -546,7 +544,7 @@ public class PVPManager implements Listener, CommandExecutor {
         }
 
         Debug.broadcast("combatlog", "<grey>[SpawnZombie] Spawned zombie for " + player.getName() +
-                " | Health: " + zombie.getHealth() + "/" + zombie.getAttribute(Attribute.MAX_HEALTH).getValue());
+                " | Health: " + zombie.getHealth() + "/" + zombie.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
 
         return zombie;
     }

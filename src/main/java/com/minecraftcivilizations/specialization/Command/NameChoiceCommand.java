@@ -45,9 +45,7 @@ public class NameChoiceCommand extends BaseCommand {
         if (!isNameValid(sender, chosenName, data)) return;
 
         // Update CustomPlayer object
-        CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore
-                .getInstance()
-                .getCustomPlayerManager()
+        CustomPlayer customPlayer = Specialization.customPlayerManager
                 .getCustomPlayer(uuid);
 
         Component newName = Component.text(chosenName)
@@ -62,8 +60,8 @@ public class NameChoiceCommand extends BaseCommand {
             // Mark in PDC
             nameGenerator.confirmNameChoice(sender.getUniqueId(), chosenName);
             // simulate writing and sealing a name
-            sender.playSound(sender.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, SoundCategory.UI, 0.8f, 1.2f);
-            sender.playSound(sender.getLocation(), Sound.ITEM_BOOK_PUT, SoundCategory.UI, 0.5f, 1f);
+            sender.playSound(sender.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, SoundCategory.NEUTRAL, 0.8f, 1.2f);
+            sender.playSound(sender.getLocation(), Sound.ITEM_BOOK_PUT, SoundCategory.NEUTRAL, 0.5f, 1f);
             PlayerUtil.message(sender,
                     Component.text("Your name is now: ")
                             .append(newName.color(NamedTextColor.GOLD))

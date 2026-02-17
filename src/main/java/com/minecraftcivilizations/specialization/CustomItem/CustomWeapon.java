@@ -2,13 +2,11 @@ package com.minecraftcivilizations.specialization.CustomItem;
 
 import com.minecraftcivilizations.specialization.Combat.CombatManager;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.minecraftcivilizations.specialization.util.CoreUtil;
 import com.minecraftcivilizations.specialization.util.ItemStackUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.ChatMessageType;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerItemHeldEvent;
@@ -22,9 +20,9 @@ import java.awt.Color;
 import static com.minecraftcivilizations.specialization.util.MathUtils.*;
 import static net.md_5.bungee.api.ChatColor.*;
 
-public class CustomWeapon extends CustomItem{
+public class CustomWeapon extends CustomItemBase {
 
-    public CustomWeapon(String id) {
+    public CustomWeapon(int id) {
         super(id);
     }
 
@@ -274,22 +272,13 @@ public class CustomWeapon extends CustomItem{
                 }
 
                 if(msg!=null)
-                    player.sendActionBar(MiniMessage.miniMessage().deserialize(msg));
+                    PlayerUtil.sendActionBar(player,MiniMessage.miniMessage().deserialize(msg));
             }
             // TODO add level up listener for guardsman to reset this cooldown
             playerUtil.setCooldown("guardsman_feeling", 1200*5);
         }
     }
 
-    @Override
-    public void onItemSwitchAway(PlayerItemHeldEvent event, ItemStack oldItem, ItemStack newItem) {
-        CustomItem ci = CustomItemManager.getInstance().getCustomItem(newItem);
-//        Debug.broadcast("customitem", "old item: "+ci.getId());
-        if (ci != this || oldItem.getType()!=newItem.getType()) {
-            Player player = event.getPlayer();
-            if(isOnCooldown(player))return;
-            player.getWorld().playSound(player.getLocation(), Sound.ITEM_HORSE_ARMOR_UNEQUIP, SoundCategory.PLAYERS, 0.25f, random(1.4f, 1.5f));
-        }
-    }
+
 
 }

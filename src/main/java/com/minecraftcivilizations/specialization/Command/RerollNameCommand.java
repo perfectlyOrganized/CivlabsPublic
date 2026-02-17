@@ -128,9 +128,7 @@ public class RerollNameCommand extends BaseCommand {
                 .color(NamedTextColor.WHITE)
                 .decoration(TextDecoration.ITALIC, false);
 
-        CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore
-                .getInstance()
-                .getCustomPlayerManager()
+        CustomPlayer customPlayer = Specialization.customPlayerManager
                 .getCustomPlayer(target.getUniqueId());
 
         customPlayer.setName(newName);

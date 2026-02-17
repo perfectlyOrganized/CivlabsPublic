@@ -2,13 +2,15 @@ package com.minecraftcivilizations.specialization.Listener.Player.Blocks.Mining;
 
 import com.google.gson.reflect.TypeToken;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
-import com.minecraftcivilizations.specialization.CraftEngine.CraftEngineUtil;
+import com.minecraftcivilizations.specialization.CraftEngine.ItemGetterUtil;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.util.CoreUtil;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
+import com.typesafe.config.Config;
+import minecraftcivilizations.com.minecraftCivilizationsCore.Config.ConfigFile;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Options.Pair;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -50,9 +52,9 @@ public class BreakBlockListener implements Listener {
          * This resets the block break progress done by mobs
          */
         Block block = event.getBlock();
-        Collection<Player> nearbyPlayers = block.getLocation().getNearbyPlayers(16);
-        nearbyPlayers.stream()
-                .filter(player -> player.getGameMode().equals(GameMode.SURVIVAL))
+        Collection<Player> nearbyPlayers = block.getWorld().getPlayers().stream()
+                .filter(player -> player.getGameMode() == GameMode.SURVIVAL)
+                .filter(player -> player.getLocation().distanceSquared(block.getLocation()) <= 256) // 16^2 = 256
                 .collect(Collectors.toSet());
         if (nearbyPlayers != null && !nearbyPlayers.isEmpty()) {
             nearbyPlayers.forEach(player -> player.sendBlockDamage(block.getLocation(), 0));
@@ -65,12 +67,12 @@ public class BreakBlockListener implements Listener {
             }
         }
 
-        AttributeInstance breakSpeedAttr = event.getPlayer().getAttribute(Attribute.BLOCK_BREAK_SPEED);
+       // AttributeInstance breakSpeedAttr = event.getPlayer().getAttribute(Attribute.PLAYER_BLOCK_BREAK_SPEED);
 
-        if (breakSpeedAttr != null) {
-            breakSpeedAttr.setBaseValue(SpecializationConfig.getBlockHardnessConfig().getDouble(event.getBlock().getType().toString()));
+//        if (breakSpeedAttr != null) {
+//            breakSpeedAttr.setBaseValue(SpecializationConfig.getBlockHardnessConfig().getDouble(event.getBlock().getType().toString()));
 
-            Pair<SkillType, Double> pair = SkillType.getSkillXpFromConfig(SpecializationConfig.getXpGainFromBreakingConfig(),  CraftEngineUtil.getItemId(event));
+            Pair<SkillType, Double> pair = SkillType.getSkillXpFromConfig(SpecializationConfig.getXpGainFromBreakingConfig(),  ItemGetterUtil.getItemId(event));
             CustomPlayer player = CoreUtil.getPlayer(event.getPlayer().getUniqueId());
             BlockData blockData = event.getBlock().getBlockData();
 
@@ -87,7 +89,7 @@ public class BreakBlockListener implements Listener {
                     player.addSkillXp(pair.key(), pair.value(), event.getBlock().getLocation());
                 }
             }
-        }
+      //  }
         minerListener(event);
         farmerListener(event);
     }
@@ -125,9 +127,15 @@ public class BreakBlockListener implements Listener {
     public void minerListener(BlockBreakEvent event) {
         CustomPlayer player = CoreUtil.getPlayer(event.getPlayer());
         Material materialName = event.getBlock().getType();
-        SkillLevel skillRequired = SkillLevel.valueOf(SpecializationConfig.getCanMinerLvlBreakConfig().getString(materialName.toString()));
+        Config CanMinerLvlBreak = SpecializationConfig.getCanMinerLvlBreakConfig().getConfig();
+        String item = materialName.toString();
+        if (!CanMinerLvlBreak.hasPath(item)) {
+            return;
+        }
 
-        if (skillRequired != null && player.getSkillLevel(SkillType.MINER) < skillRequired.getLevel()) {
+        SkillLevel skillRequired = SkillLevel.valueOf(CanMinerLvlBreak.getString(materialName.toString()));
+
+        if (player.getSkillLevel(SkillType.MINER) < skillRequired.getLevel()) {
             event.setDropItems(false);
             if (event.getPlayer().getGameMode() == GameMode.SURVIVAL)
                 PlayerUtil.message(event.getPlayer(),"You are unable to mine this ore.");
@@ -137,9 +145,15 @@ public class BreakBlockListener implements Listener {
     public void farmerListener(BlockBreakEvent event) {
         CustomPlayer player = CoreUtil.getPlayer(event.getPlayer());
         Material materialName = event.getBlock().getType();
-        SkillLevel skillRequired = SkillLevel.valueOf(SpecializationConfig.getCanFarmerBreakConfig().getString(materialName.toString()));
+        Config CanFarmerBreak = SpecializationConfig.getCanFarmerBreakConfig().getConfig();
+        String item = materialName.toString();
+        if (!CanFarmerBreak.hasPath(item)) {
+            return;
+        }
 
-        if (skillRequired != null && player.getSkillLevel(SkillType.FARMER) < skillRequired.getLevel()) {
+        SkillLevel skillRequired = SkillLevel.valueOf(CanFarmerBreak.getString(materialName.toString()));
+
+        if (player.getSkillLevel(SkillType.FARMER) < skillRequired.getLevel()) {
             event.setDropItems(false);
             PlayerUtil.message(event.getPlayer(), org.bukkit.ChatColor.RED + "You are unable to farm this");
         }
@@ -159,13 +173,12 @@ public class BreakBlockListener implements Listener {
         List<Block> l = new ArrayList<>();
         l.add(b);
         BlockData d = b.getBlockData();
-        switch (d) {
-            case Door door -> l.add(b.getRelative(door.getHalf() == Bisected.Half.TOP ? BlockFace.DOWN : BlockFace.UP));
-            case Bed bed ->
-                    l.add(b.getRelative(bed.getPart() == Bed.Part.HEAD ? bed.getFacing().getOppositeFace() : bed.getFacing()));
-            case Bisected bi -> l.add(b.getRelative(bi.getHalf() == Bisected.Half.TOP ? BlockFace.DOWN : BlockFace.UP));
-            default -> {
-            }
+        if (d instanceof Door door) {
+            l.add(b.getRelative(door.getHalf() == Bisected.Half.TOP ? BlockFace.DOWN : BlockFace.UP));
+        } else if (d instanceof Bed bed) {
+            l.add(b.getRelative(bed.getPart() == Bed.Part.HEAD ? bed.getFacing().getOppositeFace() : bed.getFacing()));
+        } else if (d instanceof Bisected bi) {
+            l.add(b.getRelative(bi.getHalf() == Bisected.Half.TOP ? BlockFace.DOWN : BlockFace.UP));
         }
         return l;
     }

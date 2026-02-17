@@ -1,20 +1,20 @@
 package com.minecraftcivilizations.specialization.Listener.Player.Inventories;
 
-import com.google.gson.reflect.TypeToken;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
+import com.minecraftcivilizations.specialization.Data.Pair;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
+import com.minecraftcivilizations.specialization.util.ItemStackUtils;
+import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import com.typesafe.config.ConfigException;
-import minecraftcivilizations.com.minecraftCivilizationsCore.Item.CustomItem;
-import minecraftcivilizations.com.minecraftCivilizationsCore.Item.ItemUtils;
-import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
-import minecraftcivilizations.com.minecraftCivilizationsCore.Options.Pair;
+import minecraftcivilizations.com.minecraftCivilizationsCore.Config.ConfigFile;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.momirealms.craftengine.bukkit.api.CraftEngineItems;
 import org.bukkit.*;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
@@ -24,8 +24,6 @@ import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.inventory.*;
-import org.bukkit.inventory.meta.Damageable;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.plugin.Plugin;
 
@@ -82,29 +80,7 @@ public class CraftingListener implements Listener {
         this.plugin = plugin;
     }
 
-    public void woolToStringTooCheck(CraftItemEvent event) {
-        ItemStack[] matrix = event.getInventory().getMatrix();
 
-        for (int i = 0; i < matrix.length; i++) {
-            if (matrix[i] != null && matrix[i].getType() == Material.SHEARS) {
-                ItemStack shears = matrix[i].clone();
-                ItemMeta itemMeta = shears.getItemMeta();
-                if (itemMeta instanceof Damageable damage) {
-                    int durability = damage.getDamage() + 1;
-                    damage.setDamage(durability);
-                    shears.setItemMeta(damage);
-                    if (!damage.hasMaxDamage() || durability < damage.getMaxDamage()) {
-                        int finalI = i;
-                        Bukkit.getScheduler().runTaskLater(Specialization.getInstance(), () -> {
-                            event.getInventory().setItem(finalI + 1, shears);
-                        }, 1L);
-                    }
-
-                }
-            }
-
-        }
-    }
 
     public void keepGenericItem(CraftItemEvent event, Material material, ItemStack newItem) {
         ItemStack[] matrix = event.getInventory().getMatrix();
@@ -141,12 +117,6 @@ public class CraftingListener implements Listener {
 
         ItemStack crafted = event.getCurrentItem();
 
-        if (event.getRecipe() instanceof ShapelessRecipe recipe) {
-            NamespacedKey recipeKey = new NamespacedKey(Specialization.getInstance(), "wool_to_string_recipe");
-            if (recipe.getKey().equals(recipeKey)) {
-                woolToStringTooCheck(event);
-            }
-        }
 
         if (event.getRecipe() instanceof ShapedRecipe recipe) {
             NamespacedKey recipeKey = new NamespacedKey(Specialization.getInstance(), "wheat_dough");
@@ -156,7 +126,7 @@ public class CraftingListener implements Listener {
         }
 
         if (COMPLEX_ITEMS.contains(crafted.getType())) {
-            CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
+            CustomPlayer customPlayer = Specialization.customPlayerManager.getCustomPlayer(player.getUniqueId());
 
             int amount = getCraftedAmount(event);
             for(int i = 0; i < amount; i++) {
@@ -168,10 +138,11 @@ public class CraftingListener implements Listener {
         Double xp = 0.0;
         SkillType skillType = SkillType.BLACKSMITH;
         String itemName = getCraftId(event);
+
         for (SkillType skill : SkillType.values()) {
             try {
                 xp = SpecializationConfig.getXpGainFromCraftingConfig().getDouble(skill.name() + "." + itemName);
-            } catch(ConfigException.Missing _) {}
+            } catch(ConfigException.Missing _e) {}
             if (xp != 0) {
                 skillType = skill;
                 break;
@@ -180,8 +151,7 @@ public class CraftingListener implements Listener {
 
         int craftedAmount = getCraftedAmount(event);
 
-        CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
-
+        CustomPlayer customPlayer = Specialization.customPlayerManager.getCustomPlayer(player.getUniqueId());
 
         int lvl = (int) Math.max(customPlayer.getSkillLevel(skillType), customPlayer.getSkillLevel(SkillType.BLACKSMITH)*1.5);
         if(lvl>5)lvl = 5;
@@ -213,7 +183,7 @@ public class CraftingListener implements Listener {
             }
             if(ThreadLocalRandom.current().nextDouble()<0.0125){
                 // Fun Messages
-                String item_name = ItemUtils.getFriendlyName(event.getRecipe().getResult().getType());
+                String item_name = ItemStackUtils.getFriendlyName(event.getRecipe().getResult().getType());
                 switch(ThreadLocalRandom.current().nextInt(6)){
                     case 0:
                         hungry_msg = "<red>You're too craft to hungry</red>"; break;
@@ -229,7 +199,7 @@ public class CraftingListener implements Listener {
                         hungry_msg = "<red>"+item_name+" demands that you eat!</red>"; break;
                 }
             }
-            player.sendActionBar(MiniMessage.miniMessage().deserialize(hungry_msg));
+            PlayerUtil.sendActionBar(player,MiniMessage.miniMessage().deserialize(hungry_msg));
             return;
         }
 
@@ -263,19 +233,19 @@ public class CraftingListener implements Listener {
 
     private String getCraftId(CraftItemEvent event) {
         ItemStack item = event.getCurrentItem();
-        if (CustomItem.isCustomItem(item)) {
+        if (Specialization.getInstance().customItemManager.isCustomItem(item)) {
             return event.getRecipe().toString().toUpperCase(Locale.ROOT);
-        } else if (CraftEngineItems.isCustomItem(item)) {
-            return CraftEngineItems.getCustomItemId(item).toString().toUpperCase(Locale.ROOT).replace(":","_");
         } else {
-            return item.getType().key().value().toUpperCase(Locale.ROOT);
+            if (!item.getType().getKey().getNamespace().equals("minecraft"))
+                return item.getType().getKey().toString().toUpperCase(Locale.ROOT).replace(":","_");
+            return item.getType().getKey().getKey().toUpperCase(Locale.ROOT);
         }
     }
 
     private double getFoodReduction(CraftItemEvent event) {
         String itemName = getCraftId(event);
         ItemStack item = event.getCurrentItem();
-
+        if (!SpecializationConfig.getHungerCostConfig().getConfig().hasPath(itemName)) return 0;
         double value = SpecializationConfig.getHungerCostConfig().getDouble(itemName);
         if (value == 1.0) {
             Material type = item.getType();
@@ -502,43 +472,33 @@ public class CraftingListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onPrepareItemCraft(PrepareItemCraftEvent event) {
-        if (event.getInventory().getViewers().isEmpty()) return;
+        HumanEntity viewer = event.getViewers().stream()
+                .findFirst()
+                .orElse(null);
 
-        Player player = null;
-
-        for (var viewer : event.getInventory().getViewers()) {
-            if (viewer instanceof Player) {
-                player = (Player) viewer;
-                break;
-            }
-        }
-
-        if (player == null) return;
+        if (!(viewer instanceof Player player)) return;
 
         Recipe recipe = event.getRecipe();
         if (recipe == null) return;
 
-        if (!(recipe instanceof Keyed)) {
-            return;
+        // Get recipe key
+        NamespacedKey recipeKey = null;
+        if (recipe instanceof Keyed keyed) {
+            recipeKey = keyed.getKey();
         }
 
-        NamespacedKey recipeKey = ((Keyed) recipe).getKey();
-
         if (shouldBlockRecipe(player, recipeKey)) {
-            LOGGER.info("Blocking recipe " + recipeKey + " for player " + player.getName() + " due to insufficient skill level");
+            LOGGER.info("Blocking recipe " + recipeKey + " for player " + player.getName());
             event.getInventory().setResult(null);
+
+            // Try to undiscover, but don't rely on it
             player.undiscoverRecipe(recipeKey);
-        } else {
-            if (!player.hasDiscoveredRecipe(recipeKey)) {
-                player.discoverRecipe(recipeKey);
-                LOGGER.fine("Discovered recipe " + recipeKey + " for player " + player.getName() + " on-demand");
-            }
+            player.updateInventory();
         }
     }
 
     public static boolean shouldBlockRecipe(Player player, NamespacedKey recipeKey) {
-        CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance()
-                .getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
+        CustomPlayer customPlayer = Specialization.customPlayerManager.getCustomPlayer(player.getUniqueId());
 
         if(customPlayer.getAdditionUnlockedRecipes() != null &&
                 customPlayer.getAdditionUnlockedRecipes().contains(recipeKey)) {

@@ -22,6 +22,7 @@ import minecraftcivilizations.com.minecraftCivilizationsCore.Options.Pair;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.md_5.bungee.api.ChatMessageType;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -41,7 +42,7 @@ import static com.minecraftcivilizations.specialization.Skill.Skill.mapValue;
 import static com.minecraftcivilizations.specialization.Skill.SkillType.getDisplayName;
 
 @Getter
-public class CustomPlayer extends minecraftcivilizations.com.minecraftCivilizationsCore.Player.CustomPlayer {
+public class CustomPlayer extends CustomPlayerBase {
     private static final @NotNull NamespacedKey MAX_HEALTH_KEY = new NamespacedKey(Specialization.getInstance(), "CLASS_HEALTH_BOOST");
     @Getter
     @Setter
@@ -88,7 +89,7 @@ public class CustomPlayer extends minecraftcivilizations.com.minecraftCivilizati
     private void loadPlayer() {
         CustomPlayer customPlayer = null;
         try {
-            customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().load(this.getUuid());
+            customPlayer = Specialization.customPlayerManager.load(this.getUuid());
         } catch (FileNotFoundException e) {
             Specialization.getInstance().getLogger().severe(String.format("Couldn't load player %s", this.getUuid()));
         }
@@ -112,13 +113,6 @@ public class CustomPlayer extends minecraftcivilizations.com.minecraftCivilizati
             skill1.setSkillType(skill);
             this.skills.add(skill1);
         }
-
-        Player player = Bukkit.getPlayer(getUuid());
-
-        if (player == null) return;
-
-        Objects.requireNonNull(player.getAttribute(Attribute.BLOCK_BREAK_SPEED)).setBaseValue(0);
-        Objects.requireNonNull(player.getAttribute(Attribute.BLOCK_BREAK_SPEED)).setBaseValue(0);
     }
 
 
@@ -169,15 +163,14 @@ public class CustomPlayer extends minecraftcivilizations.com.minecraftCivilizati
                 "<gray>"+skill.getXp()+"</gray> " +
                 "<"+color+">(" +(negative?"":"+") +xp+")</"+color+"> " +
                 "<gray>"+getDisplayName(skillType)+"</gray>");
-
-        player.sendActionBar(simple_xp_msg);
+        PlayerUtil.sendActionBar(player, simple_xp_msg);
         int currentLevel = this.getSkillLevel(skillType);
         if (!silent && this.isSoundEnabled) {
             float pitch = 0.8f + (float) (Math.random() * 0.4f); // random between 0.8–1.2
             if(soundLocation != null){
-                player.playSound(soundLocation.add(0.5, 0.5, 0.5), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.UI, 0.02f, pitch);
+                player.playSound(soundLocation.add(0.5, 0.5, 0.5), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.NEUTRAL, 0.02f, pitch);
             } else {
-                player.playSound(player, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.UI, 0.05f, pitch);
+                player.playSound(player, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.NEUTRAL, 0.05f, pitch);
             }
         }
         XpGainMonitor.handleXpGain(player, skillType, xp);
@@ -227,26 +220,6 @@ public class CustomPlayer extends minecraftcivilizations.com.minecraftCivilizati
         }
     }
 
-    private void applyMaxHealth(Player player) {
-        AttributeInstance attribute = player.getAttribute(Attribute.MAX_HEALTH);
-        if (attribute == null) return;
-        AttributeModifier modifier = attribute.getModifier(MAX_HEALTH_KEY);
-        if(modifier != null){
-            attribute.removeModifier(modifier);
-        }
-        CustomPlayer customPlayer = getCustomPlayer(player);
-        double bonus = 0.0;
-        for (SkillType skill : SkillType.values()) {
-            String key = skill.name() + "_MAX_HEALTH_PER_LEVEL";
-            bonus += SpecializationConfig.getSkillsConfig().getDouble(key) * customPlayer.getSkillLevel(skill);
-        }
-
-        modifier = new AttributeModifier(MAX_HEALTH_KEY,
-                bonus, // add +1 health per level
-                AttributeModifier.Operation.ADD_NUMBER
-        );
-        attribute.addModifier(modifier);
-    }
 
     public void applyEffects(Player player){
         for (SkillType skill : SkillType.values()) {
@@ -256,7 +229,7 @@ public class CustomPlayer extends minecraftcivilizations.com.minecraftCivilizati
                 NamespacedKey effectKey = NamespacedKey.fromString(potionConfig.getString("effect"));
 
                 assert effectKey != null;
-                PotionEffectType potionEffectType = Registry.EFFECT.get(effectKey);
+                PotionEffectType potionEffectType =  PotionEffectType.getByKey(effectKey);
                 if(amplifier < 0) continue;
                 if(potionEffectType == null) throw new IllegalStateException("invalid potion effect type in config" + effectKey);
                 if(player.getActivePotionEffects().stream().anyMatch(effect -> effect.getType().equals(potionEffectType) && effect.getDuration() == -1)){

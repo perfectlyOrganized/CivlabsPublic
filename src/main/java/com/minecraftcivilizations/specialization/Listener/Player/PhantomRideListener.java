@@ -136,7 +136,7 @@ public class PhantomRideListener implements Listener {
                 phantom.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, PotionEffect.INFINITE_DURATION, 0, false, false));
                 phantom.getWorld().spawnParticle(Particle.HEART, phantom.getLocation().add(0, 1, 0), 3, 0.4, 0.4, 0.4);
             } else {
-                phantom.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, phantom.getLocation().add(0, 1, 0), 6, 0.4, 0.4, 0.4);
+                phantom.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, phantom.getLocation().add(0, 1, 0), 6, 0.4, 0.4, 0.4);
             }
 
             return;

@@ -1,8 +1,7 @@
 package com.minecraftcivilizations.specialization.Listener.Player;
 
-import com.minecraftcivilizations.specialization.CustomItem.CustomItem;
+import com.minecraftcivilizations.specialization.CustomItem.CustomItemBase;
 import com.minecraftcivilizations.specialization.CustomItem.CustomItemManager;
-import com.minecraftcivilizations.specialization.CustomItem.DefineCustomItems;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.Specialization;
@@ -10,7 +9,8 @@ import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.minecraftcivilizations.specialization.util.CoreUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.platform.bukkit.BukkitComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -24,7 +24,6 @@ import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDismountEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -110,10 +109,11 @@ public class ReviveListener implements Listener {
 // CREATE REVIVE INVENTORY
 // -------------------------------
     public Inventory createReviveInventory(Player downed) {
-        Inventory inv = Bukkit.createInventory(
-                null, 54,
-                Component.text("Reviving " + downed.getName(), NamedTextColor.BLACK)
-        );
+        Component titleComponent = Component.text("Reviving " + downed.getName(), NamedTextColor.BLACK);
+        Inventory inv;
+
+        String title = LegacyComponentSerializer.legacySection().serialize(titleComponent);
+        inv = Bukkit.createInventory(null, 54, title);
 
         // shuffle & place injuries
         List<InjuryItem> injuries = new ArrayList<>(INJURIES);
@@ -150,7 +150,9 @@ public class ReviveListener implements Listener {
     private ItemStack createHealthyItem(HealthyItem h) {
         ItemStack item = new ItemStack(h.mat());
         ItemMeta meta = item.getItemMeta();
-        meta.displayName(Component.text(h.name(), NamedTextColor.GREEN));
+        Component displayName = Component.text(h.name(), NamedTextColor.GREEN);
+        String legacyString = LegacyComponentSerializer.legacySection().serialize(displayName);
+        meta.setDisplayName(legacyString);
         item.setItemMeta(meta);
         return item;
     }
@@ -174,26 +176,21 @@ public class ReviveListener implements Listener {
     private ItemStack createInjuryItem(InjuryItem inj) {
         ItemStack item = new ItemStack(inj.mat());
         ItemMeta meta = item.getItemMeta();
-        meta.displayName(Component.text(inj.name(), NamedTextColor.RED));
+        Component displayName = Component.text(inj.name(), NamedTextColor.RED);
+        String legacyString = LegacyComponentSerializer.legacySection().serialize(displayName);
+        meta.setDisplayName(legacyString);
         meta.getPersistentDataContainer().set(INJURY_KEY, PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta);
         return item;
     }
 
-    private ItemStack createHealthyItem() {
-        HealthyItem h = HEALTHY_ITEMS.get(ThreadLocalRandom.current().nextInt(HEALTHY_ITEMS.size()));
-        ItemStack item = new ItemStack(h.mat());
-        ItemMeta meta = item.getItemMeta();
-        meta.displayName(Component.text(h.name(), NamedTextColor.GREEN));
-        item.setItemMeta(meta);
-        return item;
-    }
 
     private ItemStack createBandageItem() {
         ItemStack paper = new ItemStack(Material.PAPER);
         ItemMeta meta = paper.getItemMeta();
-        meta.displayName(Component.text("Bandage", NamedTextColor.WHITE));
-        meta.setEnchantmentGlintOverride(true);
+        Component displayName = Component.text("Bandage", NamedTextColor.WHITE);
+        String legacyString = LegacyComponentSerializer.legacySection().serialize(displayName);
+        meta.setDisplayName(legacyString);
         paper.setItemMeta(meta);
         return paper;
     }
@@ -263,7 +260,7 @@ public class ReviveListener implements Listener {
     public void onInventoryClick(InventoryClickEvent e) {
         if (!(e.getWhoClicked() instanceof Player healer)) return;
 
-        String title = PlainTextComponentSerializer.plainText().serialize(e.getView().title());
+        String title = BukkitComponentSerializer.legacy().serialize(Component.text(e.getView().getTitle()));
         if (!title.startsWith("Reviving ")) return;
 
         e.setCancelled(true);
@@ -347,7 +344,7 @@ public class ReviveListener implements Listener {
     public void onInventoryClose(InventoryCloseEvent e) {
         if (!(e.getPlayer() instanceof Player healer)) return;
 
-        if (!e.getView().title().toString().contains("Reviving")) return;
+        if (!e.getView().getTitle().contains("Reviving")) return;
 
         Player downed = healerToDownedPlayer.get(healer.getUniqueId());
         if (downed == null) return;
@@ -399,9 +396,9 @@ public class ReviveListener implements Listener {
         ItemStack main = player.getInventory().getItemInMainHand();
         ItemStack off = player.getInventory().getItemInOffHand();
 
-        CustomItem used = CustomItem.getManager().getCustomItem(main) != null
-                ? CustomItem.getManager().getCustomItem(main)
-                : CustomItem.getManager().getCustomItem(off);
+        CustomItemBase used = CustomItemBase.getManager().getCustomItem(main) != null
+                ? CustomItemBase.getManager().getCustomItem(main)
+                : CustomItemBase.getManager().getCustomItem(off);
 
         if (used != null && CustomItemManager.getInstance().getDefinitions().bandage.equals(used)) {
             return; // They interacted with the bandage → block passenger pickup
@@ -421,11 +418,11 @@ public class ReviveListener implements Listener {
 
 
         player.addPassenger(target);
-        AttributeModifier slow = new AttributeModifier(CARRY_SLOW_KEY, -0.5, AttributeModifier.Operation.MULTIPLY_SCALAR_1);
+        AttributeModifier slow = new AttributeModifier(CARRY_SLOW_KEY.toString(), -0.5, AttributeModifier.Operation.MULTIPLY_SCALAR_1);
 
-        if (player.getAttribute(Attribute.MOVEMENT_SPEED) != null) {
+        if (player.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED) != null) {
 //            healer.sendMessage("slowness applied");
-            player.getAttribute(Attribute.MOVEMENT_SPEED).addModifier(slow);
+            player.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).addModifier(slow);
 //            healerSlowModifiers.put(healer.getUniqueId(), slow);
         }
 
@@ -481,11 +478,12 @@ public class ReviveListener implements Listener {
 
     //TODO: ALL DISMOUNT LOGIC NEEDS TO HAPPEN HERE OR POINT TO AN EVENT IN THIS CLASS
     @EventHandler(priority = EventPriority.LOWEST) //king of dismount logic checks
-    public void onDismount(EntityDismountEvent e) {
+    public void onVehicleExit(VehicleExitEvent e) {
+        LivingEntity exit = e.getExited();
+        Vehicle vehicle = e.getVehicle();
         if (e.isCancelled()) return;
-        if (!(e.getEntity() instanceof Player rider)) return;
+        if (!(exit instanceof Player rider)) return;
 //        if (rider.isDead()) return;
-        Entity vehicle = e.getDismounted();
 
         boolean forced = forcedDismount.remove(rider.getUniqueId());
 
@@ -511,7 +509,7 @@ public class ReviveListener implements Listener {
 
         // remove slowness for carrier
         if (vehicle instanceof Player carrier) {
-            if (e.getEntity() instanceof Player) {
+            if (exit instanceof Player) {
                 removeSlowIfNoPassengers(carrier, true);
             }
         }
@@ -526,12 +524,12 @@ public class ReviveListener implements Listener {
 
         if (!hasPlayerPassenger || override) {
             // proceed
-            AttributeModifier slow = healer.getAttribute(Attribute.MOVEMENT_SPEED).getModifier(CARRY_SLOW_KEY);
-//            AttributeModifier slow = healerSlowModifiers.remove(healer.getUniqueId());
-            if (slow != null && healer.getAttribute(Attribute.MOVEMENT_SPEED) != null) {
-                healer.getAttribute(Attribute.MOVEMENT_SPEED).removeModifier(slow);
-                Debug.broadcast("revive", "§7Removed slowed attribute for" + healer.getName());
-            }
+//            AttributeModifier slow = healer.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).getModifier(CARRY_SLOW_KEY);
+////            AttributeModifier slow = healerSlowModifiers.remove(healer.getUniqueId());
+//            if (slow != null && healer.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED) != null) {
+//                healer.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).removeModifier(slow);
+//                Debug.broadcast("revive", "§7Removed slowed attribute for" + healer.getName());
+//            }
         }
     }
 

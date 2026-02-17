@@ -114,7 +114,7 @@ public class BedListener implements Listener {
         if (player.isSneaking() && Objects.equals(bedOwnerUUID, player.getUniqueId().toString())) {
             clearBedId(headBlock);
             clearPlayerBed(player);
-            player.setRespawnLocation(null, false);
+            player.setBedSpawnLocation(null, false);
 
             float pitch = (float) ThreadLocalRandom.current().nextDouble(0.3, 0.6);
             clickedBlock.getWorld().playSound(clickedBlock.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_PLACE, 10f, pitch);
@@ -134,7 +134,7 @@ public class BedListener implements Listener {
             player.getPersistentDataContainer().set(PLAYER_BED_Y, PersistentDataType.INTEGER, headBlock.getY());
             player.getPersistentDataContainer().set(PLAYER_BED_Z, PersistentDataType.INTEGER, headBlock.getZ());
 
-            EffectsUtil.playBlockBoundingBox(player, clickedBlock, Particle.HAPPY_VILLAGER, 0.25);
+            EffectsUtil.playBlockBoundingBox(player, clickedBlock, Particle.VILLAGER_HAPPY, 0.25);
             float pitch = (float) ThreadLocalRandom.current().nextDouble(0.9, 1.3);
             clickedBlock.getWorld().playSound(clickedBlock.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 10f, pitch);
         }
@@ -189,7 +189,7 @@ public class BedListener implements Listener {
             Player owner = Bukkit.getPlayer(ownerUUID);
             if (owner != null) {
                 clearPlayerBed(owner);
-                owner.setRespawnLocation(null, false);
+                owner.setBedSpawnLocation(null, false);
                 PlayerUtil.message(owner, "§cYour bed was destroyed");
             }
         }
@@ -261,7 +261,7 @@ public class BedListener implements Listener {
             stopBedHealing(player);
             return;
         }
-        double max = player.getAttribute(Attribute.MAX_HEALTH).getValue();
+        double max = player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
         double newHealth = Math.min(player.getHealth() + 1.0, max);
 
         // stop if full HP
@@ -326,7 +326,7 @@ public class BedListener implements Listener {
 
 
                 //------------- APPLY HEAL -------------//
-                double max = player.getAttribute(Attribute.MAX_HEALTH).getValue();
+                double max = player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
                 double newHealth = Math.min(player.getHealth() + 1.0, max);
                 player.setHealth(newHealth);
 

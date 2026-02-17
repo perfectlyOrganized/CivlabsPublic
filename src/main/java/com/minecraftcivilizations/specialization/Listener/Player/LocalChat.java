@@ -3,6 +3,7 @@ package com.minecraftcivilizations.specialization.Listener.Player;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
+import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.*;
@@ -92,9 +93,9 @@ public class LocalChat implements Listener {
 
         Bukkit.getScheduler().runTask(Specialization.getInstance(), () -> {
             for (Player near : getNearbyPlayers(p)) {
-                near.sendRichMessage(fmt.formatted(p.getName(), raw));
+                PlayerUtil.sendRichMessage(near,fmt.formatted(p.getName(), raw));
             }
-            p.sendRichMessage(fmt.formatted(p.getName(), raw));
+            PlayerUtil.sendRichMessage(p, fmt.formatted(p.getName(), raw));
         });
 
         Debug.broadcast(
@@ -116,7 +117,7 @@ public class LocalChat implements Listener {
                 .getString("ANNOUNCEMENT_FORMAT");
 
         Bukkit.getOnlinePlayers()
-                .forEach(pl -> pl.sendRichMessage(fmt.formatted(actual)));
+                .forEach(pl -> PlayerUtil.sendRichMessage(pl,fmt.formatted(actual)));
 
         return true;
     }

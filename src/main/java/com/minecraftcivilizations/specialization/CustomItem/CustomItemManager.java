@@ -1,12 +1,8 @@
 package com.minecraftcivilizations.specialization.CustomItem;
 
 import com.minecraftcivilizations.specialization.Listener.Player.Inventories.SpecializationCraftItemEvent;
-import com.minecraftcivilizations.specialization.Listener.Player.ReviveListener;
 import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
-import io.papermc.paper.event.entity.EntityLoadCrossbowEvent;
-import io.papermc.paper.event.player.PlayerItemCooldownEvent;
-import io.papermc.paper.event.player.PlayerItemGroupCooldownEvent;
 import lombok.Getter;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Material;
@@ -25,6 +21,7 @@ import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.*;
@@ -40,15 +37,15 @@ public class CustomItemManager implements Listener {
     static final NamespacedKey key_custom_item_id = new NamespacedKey("specialization", "custom_item_id");
 
     // primary registry of custom items, used by events
-    private Map<String, CustomItem> custom_items_loaded = new HashMap<String, CustomItem>();
+    private Map<Integer, CustomItemBase> custom_items_loaded = new HashMap<Integer, CustomItemBase>();
 
     // a simple list of all custom items, mostly for commands
     @Getter
-    private List<CustomItem> customItems = new ArrayList<CustomItem>();
+    private List<CustomItemBase> customItemBas = new ArrayList<CustomItemBase>();
 
     // used by CustomItemCommand for Tab Completion
     @Getter
-    private List<String> customItemIds = new ArrayList<String>();
+    private List<Integer> customItemIds = new ArrayList<Integer>();
 
     Specialization plugin;
 
@@ -62,11 +59,11 @@ public class CustomItemManager implements Listener {
     }
 
     public void initializeCustomItems(){
-        custom_items_loaded = new HashMap<String, CustomItem>();
-        customItemIds = new ArrayList<String>();
+        custom_items_loaded = new HashMap<Integer, CustomItemBase>();
+        customItemIds = new ArrayList<Integer>();
         definitions = new DefineCustomItems(plugin);
-        for(CustomItem customItem : custom_items_loaded.values()){
-            customItem.init();
+        for(CustomItemBase customItemBas : custom_items_loaded.values()){
+            customItemBas.init();
         }
     }
 
@@ -77,11 +74,11 @@ public class CustomItemManager implements Listener {
     public static DefineCustomItems getDefinitions(){ return getInstance().definitions;}
 
 
-    void registerItem(CustomItem custom_item) {
+    void registerItem(CustomItemBase custom_item) {
         Specialization.getInstance().getLogger().info("Registering Custom Item: "+custom_item.getId());
 //        custom_items_to_register.add(customItem);
         custom_items_loaded.put(custom_item.getId(), custom_item); //used for event lookup
-        customItems.add(custom_item); //used by commands (for item reference)
+        customItemBas.add(custom_item); //used by commands (for item reference)
         customItemIds.add(custom_item.getId()); //used by commands (for tab completion)
     }
 
@@ -92,7 +89,7 @@ public class CustomItemManager implements Listener {
         ItemStack result = event.getInventory().getResult();
         if (result == null) return;
 
-        CustomItem ci = getCustomItem(result);
+        CustomItemBase ci = getCustomItem(result);
         if (ci != null) {
 //            Debug.broadcast("customitem", "prepare crafting custom item");
             Player player = (Player) event.getView().getPlayer();
@@ -105,7 +102,7 @@ public class CustomItemManager implements Listener {
 
     @EventHandler(priority = EventPriority.LOW)
     public void onCraftItem(CraftItemEvent event) {
-        CustomItem ci = getCustomItem(event.getCurrentItem());
+        CustomItemBase ci = getCustomItem(event.getCurrentItem());
         if (ci != null) {
             Player player = (Player) event.getWhoClicked();
             if (!ci.canPlayerCraft(player)) {
@@ -142,13 +139,14 @@ public class CustomItemManager implements Listener {
     /**
      * The primary way to get a Custom Item via Interactions
      */
-    public CustomItem getCustomItem(ItemStack item){
+    public CustomItemBase getCustomItem(ItemStack item){
         if (item == null || !item.hasItemMeta()) return null;
         ItemMeta meta = item.getItemMeta();
         if(meta!=null){
-            String id = meta.getPersistentDataContainer().get(key_custom_item_id, PersistentDataType.STRING);
+            PersistentDataContainer pdc = meta.getPersistentDataContainer();
+            Integer id = pdc.get(key_custom_item_id, PersistentDataType.INTEGER);
             if(id!=null){
-                CustomItem ci = custom_items_loaded.get(id);
+                CustomItemBase ci = custom_items_loaded.get(id);
                 return ci;
             }
         }
@@ -158,24 +156,24 @@ public class CustomItemManager implements Listener {
     /**
      * Gets Custom Item, used by commands
      */
-    public CustomItem getCustomItem(String id){
+    public CustomItemBase getCustomItem(String id){
         if(custom_items_loaded.containsKey(id)){
             return custom_items_loaded.get(id);
         }
         return null;
     }
-
-
-    public boolean isCustomItem(ItemStack item_stack, String id){
-        CustomItem custom_item = getCustomItem(item_stack);
-        if(custom_item != null && custom_item.getId().equals(id)){
-            return true;
-        }
-        return false;
+    public boolean isCustomItem(ItemStack item_stack){
+        CustomItemBase custom_item = getCustomItem(item_stack);
+        return custom_item != null;
     }
 
-    public boolean isCustomItem(ItemStack item_stack, CustomItem comparing_custom_item){
-        CustomItem custom_item = getCustomItem(item_stack);
+    public boolean isCustomItem(ItemStack item_stack, int id){
+        CustomItemBase custom_item = getCustomItem(item_stack);
+        return custom_item != null && custom_item.getId() == id;
+    }
+
+    public boolean isCustomItem(ItemStack item_stack, CustomItemBase comparing_custom_item){
+        CustomItemBase custom_item = getCustomItem(item_stack);
         if(custom_item != null && custom_item == comparing_custom_item){
             return true;
         }
@@ -184,7 +182,7 @@ public class CustomItemManager implements Listener {
 
 
     public boolean disableItem(String id) {
-        CustomItem item = custom_items_loaded.get(id);
+        CustomItemBase item = custom_items_loaded.get(id);
         if (item == null) return false;
         item.setEnabled(false);
         return true;
@@ -194,7 +192,7 @@ public class CustomItemManager implements Listener {
      * Returns if the item was null
      */
     public boolean enableItem(String id) {
-        CustomItem item = custom_items_loaded.get(id);
+        CustomItemBase item = custom_items_loaded.get(id);
         if(item!=null){
             if(item.isEnabled()) return false;
             item.setEnabled(true);
@@ -203,7 +201,7 @@ public class CustomItemManager implements Listener {
     }
 
     public void reloadItem(String id) {
-        CustomItem item = custom_items_loaded.get(id);
+        CustomItemBase item = custom_items_loaded.get(id);
         if (item == null) return;
 
         item.init();
@@ -232,7 +230,7 @@ public class CustomItemManager implements Listener {
     public void DispatchOnInteract(PlayerInteractEvent event){
         ItemStack itemstack = event.getItem();
         if(itemstack != null){
-            CustomItem custom_item = getCustomItem(itemstack);
+            CustomItemBase custom_item = getCustomItem(itemstack);
             if(custom_item!=null) {
                 if (custom_item.isEnabled() || event.getPlayer().isOp()) {
                     custom_item.onInteract(event, itemstack);
@@ -244,7 +242,7 @@ public class CustomItemManager implements Listener {
     @EventHandler
     public void DipatchOnPlayerDeath(PlayerDeathEvent event) {
         for (ItemStack itemstack : event.getDrops()){
-            CustomItem ci = getCustomItem(itemstack);
+            CustomItemBase ci = getCustomItem(itemstack);
             if(ci!=null){
                 ci.onPlayerDeath(event, itemstack);
             }
@@ -255,7 +253,7 @@ public class CustomItemManager implements Listener {
     @EventHandler
     public void  DispatchOnItemConsume(PlayerItemConsumeEvent event) {
         ItemStack itemstack = event.getItem();
-        CustomItem custom_item = getCustomItem(itemstack);
+        CustomItemBase custom_item = getCustomItem(itemstack);
         if(custom_item!=null) {
             if (custom_item.isEnabled() || event.getPlayer().isOp()) {
 //                if(custom_item.usesCooldownComponent()) {
@@ -267,24 +265,6 @@ public class CustomItemManager implements Listener {
         }
     }
 
-    // listen to the cooldown being applied (fired when an item would go on cooldown)
-    @EventHandler(ignoreCancelled = true)
-    public void onPlayerItemCooldown(PlayerItemCooldownEvent event) {
-        Player player = event.getPlayer();
-//        if(event.getCooldownGroup()){
-//
-//        }
-//        Material material = event.getType(); // the material receiving the cooldown
-//        if(event.setCancelled(true)){
-//
-//        }
-    }
-
-    // listen to the cooldown being applied (fired when an item would go on cooldown)
-    @EventHandler(ignoreCancelled = true)
-    public void onPlayerItemGroupCooldown(PlayerItemGroupCooldownEvent event) {
-        Player player = event.getPlayer();
-    }
 
 
     @EventHandler
@@ -292,13 +272,13 @@ public class CustomItemManager implements Listener {
         ItemStack old_item = event.getPlayer().getInventory().getItem(event.getPreviousSlot());
         ItemStack new_item = event.getPlayer().getInventory().getItem(event.getNewSlot());
         if (new_item != null) {
-            CustomItem custom = getCustomItem(new_item);
+            CustomItemBase custom = getCustomItem(new_item);
             if (custom != null) {
                 custom.onItemSwitchTo(event, old_item, new_item);
             }
         }
         if (old_item != null) {
-            CustomItem custom = getCustomItem(old_item);
+            CustomItemBase custom = getCustomItem(old_item);
             if (custom != null) {
                 custom.onItemSwitchAway(event, old_item, new_item);
             }
@@ -308,7 +288,7 @@ public class CustomItemManager implements Listener {
     @EventHandler
     public void DispatchOnInteractEntity(PlayerInteractEntityEvent event) {
         ItemStack is = event.getPlayer().getEquipment().getItem(event.getHand());
-        CustomItem custom_item = getCustomItem(is);
+        CustomItemBase custom_item = getCustomItem(is);
         if (custom_item != null) {
             if(custom_item.isEnabled() || event.getPlayer().isOp()) {
                 custom_item.onInteractEntity(event, is);
@@ -321,7 +301,7 @@ public class CustomItemManager implements Listener {
     @EventHandler
     public void DispatchOnBlockBreak(BlockBreakEvent event) {
         ItemStack item = event.getPlayer().getInventory().getItemInMainHand();
-        CustomItem custom = getCustomItem(item);
+        CustomItemBase custom = getCustomItem(item);
         if (custom != null) {
             custom.onBlockBreak(event);
         }
@@ -331,13 +311,13 @@ public class CustomItemManager implements Listener {
     public void DispatchOnItemDropPlayer(PlayerDropItemEvent event) {
         Item i = event.getItemDrop();
         ItemStack item_stack = event.getItemDrop().getItemStack();
-        CustomItem custom = getCustomItem(item_stack);
+        CustomItemBase custom = getCustomItem(item_stack);
         if (custom != null) {
             /**
              * Apply ID to the Item itself this helps with ItemRemoveEvent
              */
             ItemStack is = i.getItemStack();
-            i.getPersistentDataContainer().set(key_custom_item_id, PersistentDataType.STRING, custom.getId());
+            i.getPersistentDataContainer().set(key_custom_item_id, PersistentDataType.INTEGER, custom.getId());
 //            custom.onDropItemAny(item_stack);
             custom.onDropItemByPlayer(event);
         }
@@ -348,7 +328,7 @@ public class CustomItemManager implements Listener {
     @EventHandler
     public void DispatchOnInventoryClick(InventoryClickEvent event) {
         ItemStack item_stack = event.getCurrentItem();
-        CustomItem custom = getCustomItem(item_stack);
+        CustomItemBase custom = getCustomItem(item_stack);
         if (custom != null) {
             custom.onInventoryClick(event, item_stack);
         }
@@ -357,26 +337,18 @@ public class CustomItemManager implements Listener {
     @EventHandler
     public void DispatchOnShootProjectile(EntityShootBowEvent event) {
         ItemStack bow = event.getBow();
-        CustomItem ci = getCustomItem(bow);
+        CustomItemBase ci = getCustomItem(bow);
         if (ci != null) {
             ci.onShootBow(event);
         }
     }
 
-    @EventHandler
-    public void DispatchOnLoadCrossbow(EntityLoadCrossbowEvent event) {
-        ItemStack bow = event.getCrossbow();
-        CustomItem ci = getCustomItem(bow);
-        if (ci != null) {
-            ci.onLoadCrossbow(event);
-        }
-    }
 
 
     @EventHandler
     public void onCustomCraft(SpecializationCraftItemEvent event){
         ItemStack itemstack = event.getEvent().getCurrentItem();
-        CustomItem custom = getCustomItem(itemstack);
+        CustomItemBase custom = getCustomItem(itemstack);
         if (custom != null) {
             custom.onCustomCraft(event, itemstack);
         }

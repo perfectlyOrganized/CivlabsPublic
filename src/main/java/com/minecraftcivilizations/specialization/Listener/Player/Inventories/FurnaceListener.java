@@ -4,6 +4,7 @@ import com.google.gson.reflect.TypeToken;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
+import com.minecraftcivilizations.specialization.Specialization;
 import com.typesafe.config.ConfigException;
 import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Options.Pair;
@@ -34,13 +35,13 @@ public class FurnaceListener implements Listener {
     }
 
     private void furnaceSmelt(Player player, ItemStack item, int amount) {
-        CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
+        CustomPlayer customPlayer = Specialization.customPlayerManager.getCustomPlayer(player.getUniqueId());
         Double xp = 0.0;
         SkillType skillType = SkillType.MINER;
         for (SkillType skill : SkillType.values()) {
             try {
                 xp = SpecializationConfig.getXpGainFromSmeltingConfig().getDouble(skill.name() + "." + item.getType());
-            } catch(ConfigException.Missing _) {}
+            } catch(ConfigException.Missing _e) {}
             if (xp != 0) {
                 skillType = skill;
                 break;
@@ -50,13 +51,13 @@ public class FurnaceListener implements Listener {
     }
 
     private void smokerSmelt(Player player, ItemStack item, int amount) {
-        CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
+        CustomPlayer customPlayer = Specialization.customPlayerManager.getCustomPlayer(player.getUniqueId());
         Double xp = 0.0;
         SkillType skillType = SkillType.MINER;
         for (SkillType skill : SkillType.values()) {
             try {
                 xp = SpecializationConfig.getXpGainFromSmokingConfig().getDouble(skill.name() + "." + item.getType());
-            } catch(ConfigException.Missing _) {}
+            } catch(ConfigException.Missing _e) {}
             if (xp != 0) {
                 skillType = skill;
                 break;
@@ -66,13 +67,13 @@ public class FurnaceListener implements Listener {
     }
 
     private void blastSmelt(Player player, ItemStack item, int amount) {
-        CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
+        CustomPlayer customPlayer = Specialization.customPlayerManager.getCustomPlayer(player.getUniqueId());
         Double xp = 0.0;
         SkillType skillType = SkillType.MINER;
         for (SkillType skill : SkillType.values()) {
             try {
                 xp = SpecializationConfig.getXpGainFromBlastingConfig().getDouble(skill.name() + "." + item.getType());
-            } catch(ConfigException.Missing _) {}
+            } catch(ConfigException.Missing _e) {}
             if (xp != 0) {
                 skillType = skill;
                 break;

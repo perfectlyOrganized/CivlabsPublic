@@ -11,6 +11,7 @@ import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.*;
@@ -22,16 +23,19 @@ import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 /**
  * @author jfrogy, alectriciti
  */
-public class Bandage extends CustomItem {
+public class Bandage extends CustomItemBase {
     private static final NamespacedKey IS_DOWNED = new NamespacedKey(Specialization.getInstance(), "is_downed");
     private final ReviveListener reviveListener;
     NamespacedKey RECIPE_KEY = new NamespacedKey(Specialization.getInstance(), "bandage_recipe");
 
-    public Bandage(String id, String displayName) {
+    public Bandage(int id, String displayName) {
         super(id, displayName, org.bukkit.Material.PAPER, true);
         this.reviveListener = Specialization.getInstance().reviveListener;
     }
@@ -45,7 +49,7 @@ public class Bandage extends CustomItem {
         ShapelessRecipe bandage_recipe = new ShapelessRecipe(RECIPE_KEY, createItemStack(1));
         bandage_recipe.addIngredient(8, Material.PAPER);
         bandage_recipe.addIngredient(Material.SUGAR_CANE);
-        Bukkit.addRecipe(bandage_recipe, true);
+        Bukkit.addRecipe(bandage_recipe);
         }
 
 //            Bukkit.removeRecipe(RECIPE_KEY);
@@ -55,14 +59,22 @@ public class Bandage extends CustomItem {
 
     @Override
     public void onCreateItem(ItemStack itemStack, ItemMeta meta, Player player_who_crafted) {
-        meta.setEnchantmentGlintOverride(true);
-        meta.lore(java.util.List.of(
+        List<Component> loreComponents = java.util.List.of(
                 Component.text("As a Healer Shift + Right Click to heal yourself.").color(NamedTextColor.BLUE),
                 Component.text("Right Click a player to heal them or revive.").color(NamedTextColor.BLUE),
                 Component.empty(),
                 Component.text("Amount Healed and XP gained scale with Healer level.").color(NamedTextColor.GRAY),
                 Component.text("Crafted by " + (player_who_crafted != null ? player_who_crafted.getName() : "nobody")).color(NamedTextColor.GRAY)
-        ));
+        );
+
+        // Convert Components to legacy strings
+        List<String> loreStrings = new ArrayList<>();
+        for (Component component : loreComponents) {
+            loreStrings.add(LegacyComponentSerializer.legacySection().serialize(component));
+        }
+
+        // Set the lore
+        meta.setLore(loreStrings);
         itemStack.setItemMeta(meta);
     }
 
@@ -161,7 +173,7 @@ public class Bandage extends CustomItem {
         }
 
         double current_health = target.getHealth();
-        double max_health = target.getAttribute(Attribute.MAX_HEALTH).getValue();
+        double max_health = target.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
         if (current_health >= max_health) {
             PlayerUtil.message(healer,target.getName()+" already has full health", 10);
             return;
@@ -220,7 +232,7 @@ public class Bandage extends CustomItem {
 
         // Consume one Bandage
         bandage.setAmount(bandage.getAmount() - 1);
-        double maxHealth = target.getAttribute(Attribute.MAX_HEALTH).getValue();
+        double maxHealth = target.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
         double hp = new_health;
 
         // round down to nearest 0.5 hearts

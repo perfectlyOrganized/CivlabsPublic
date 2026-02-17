@@ -102,8 +102,6 @@ public class RepairingListener implements Listener {
         Location loc = player.getLocation();
         world.spawnParticle(Particle.CRIT, clickedBlock.getLocation().add(0.5, 1, 0.5), 6, 0.2, 0.3, 0.2, 0.1);
         world.playSound(loc, Sound.BLOCK_ANVIL_HIT, SoundCategory.PLAYERS, VOLUME, PITCH + random(-PITCH_VARIANCE, PITCH_VARIANCE));
-        world.playSound(loc, Sound.BLOCK_COPPER_GRATE_HIT, SoundCategory.PLAYERS, VOLUME, PITCH + random(-PITCH_VARIANCE, PITCH_VARIANCE));
-        world.playSound(loc, Sound.BLOCK_COPPER_GRATE_BREAK, SoundCategory.PLAYERS, VOLUME, PITCH + random(-PITCH_VARIANCE, PITCH_VARIANCE));
 
         //debug
 //        player.sendMessage(GREEN + "You repaired " + repairAmount + " durability for " + hungerCost + " hunger and " + xpCost + " XP.");

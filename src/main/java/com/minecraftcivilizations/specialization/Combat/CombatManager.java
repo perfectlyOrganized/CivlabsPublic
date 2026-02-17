@@ -102,6 +102,7 @@ public class CombatManager implements Listener {
         ProjectileSource source = projectile.getShooter();
         //TODO firework check
         if(source instanceof LivingEntity shooter){
+            boolean is_day_time = shooter.getWorld().getTime() < 12300;
             ItemStack weapon = shooter.getEquipment().getItemInMainHand();
             switch(weapon.getType()){
                 case BOW:
@@ -114,7 +115,7 @@ public class CombatManager implements Listener {
                         if(mobManager.isMobVariation(shooter)) {
                             MobVariation mobVariation = mobManager.getMobVariation(shooter);
                             if (shooter.getWorld().getEnvironment() == World.Environment.NORMAL) {
-                                multiplier *= shooter.getWorld().isDayTime() ? mobVariation.getDamageMultiplierDay() : mobVariation.getDamageMultiplierNight();
+                                multiplier *= is_day_time ? mobVariation.getDamageMultiplierDay() : mobVariation.getDamageMultiplierNight();
                             } else {
                                 multiplier *= mobVariation.getDamageMultiplierNether();}
                         }
@@ -144,7 +145,7 @@ public class CombatManager implements Listener {
      */
     public static double getCustomWeaponCrit(ItemStack weapon){
         if(weapon.hasItemMeta()) {
-            if (weapon.getItemMeta().getPersistentDataContainer().has(CRIT_BONUS_KEY)) {
+            if (weapon.getItemMeta().getPersistentDataContainer().has(CRIT_BONUS_KEY, PersistentDataType.DOUBLE)) {
                 return weapon.getItemMeta().getPersistentDataContainer().get(CRIT_BONUS_KEY, PersistentDataType.DOUBLE);
             }
         }
@@ -172,11 +173,7 @@ public class CombatManager implements Listener {
         /*
             CRIT SUPPRESSION (this allows us to override with our own crit system)
          */
-        if(event.isCritical()) {
-            double crit_suppression = event.getDamage()*0.6666; //inverse of 1.5x, extra 6 for safe measure <_<
-            event.setDamage(crit_suppression);
-            original_base = crit_suppression;
-        }
+
 
 
 //        Debug.broadcast("damage", " ");
@@ -190,7 +187,7 @@ public class CombatManager implements Listener {
 
 
         if(damager instanceof Projectile projectile){
-            if(projectile.getPersistentDataContainer().has(ARROW_DAMAGE_KEY)) {
+            if(projectile.getPersistentDataContainer().has(ARROW_DAMAGE_KEY, PersistentDataType.DOUBLE)) {
                 double multiplier = projectile.getPersistentDataContainer().get(ARROW_DAMAGE_KEY, PersistentDataType.DOUBLE);
                 event.setDamage(BASE, original_base * multiplier);
 
@@ -206,7 +203,7 @@ public class CombatManager implements Listener {
                         modifiers += "\n<gray>" + m.name() + "</gray>: " + Debug.formatDecimal(event.getDamage(m));
                     }
                     if (event.getEntity() instanceof Player p) {
-                        Debug.message(p, "damage", "Arrow Damage: <red>" + Debug.formatDecimal(original_base) + (event.isCritical() ? "<yellow>[CRIT]</yellow>" : "") +
+                        Debug.message(p, "damage", "Arrow Damage: <red>" + Debug.formatDecimal(original_base) + (PlayerUtil.isCritical(p) ? "<yellow>[CRIT]</yellow>" : "") +
                                 " <gold>[<gray>🏹</gray>x" + Debug.formatDecimal(multiplier) + "]</gold>" + "</red> Final: <red>" + Debug.formatDecimal(event.getFinalDamage()), modifiers);
                     }
                 }
@@ -221,14 +218,13 @@ public class CombatManager implements Listener {
          * Calculate Crit Modifier
          */
         double weapon_bonus_crit = 0.0;
-        if(event.isCritical()){
-            if(customPlayer!=null) {
-                if(damager instanceof Player dmger) {
+        if(customPlayer!=null){
+                if(damager instanceof Player dmger && PlayerUtil.isCritical(dmger)) {
                     ItemStack item = dmger.getEquipment().getItemInMainHand();
                     PlayerUtil u = PlayerUtil.getPlayerUtil(dmger);
                     int lvl = customPlayer.getSkillLevel(SkillType.GUARDSMAN);
                     weapon_bonus_crit = getCustomWeaponCrit(item) + opening_crit_baseline; // TODO refactor name, for opening crit ONLY
-                    if (u.isOnCooldown("crit_bonus") || dmger.getCooldown(item)>0) {
+                    if (u.isOnCooldown("crit_bonus") || dmger.getCooldown(item.getType())>0) {
                         weapon_bonus_crit = 0;
                     }
                     int cd = 120 - (lvl*10);
@@ -264,7 +260,6 @@ public class CombatManager implements Listener {
                     );
                 }
             }
-        }
 
 
         if(event.getEntity() instanceof Player) {
@@ -331,7 +326,7 @@ public class CombatManager implements Listener {
         double absorption = event.getDamage(ABSORPTION);
         double absorption_to_remove = 0;
         if (absorption < 0) {
-            if(event.getDamage(INVULNERABILITY_REDUCTION)==0) {
+            if(event.getDamage()==0) {
                 if (event.getEntity() instanceof Damageable target) {
                     double absorption_hearts = target.getAbsorptionAmount();
                     if(charge_amount>0.5) {
@@ -355,7 +350,7 @@ public class CombatManager implements Listener {
                 extramsg += " <light_purple>" + armorBreakSystem.breakArmorWithItem(le, event) + "</light_purple>";
             }
             if(weapon_bonus_crit>0){
-                le.getWorld().playSound(le.getLocation(), Sound.ITEM_WOLF_ARMOR_DAMAGE, 0.25f, 1);
+                le.getWorld().playSound(le.getLocation(), Sound.ENTITY_HORSE_ARMOR, 0.25f, 1);
             }
             if(event.isApplicable(BLOCKING)) {
                 double blocking_damage = event.getDamage(BLOCKING);
@@ -373,7 +368,7 @@ public class CombatManager implements Listener {
          */
         double DAMAGE_MINIMUM = 0;
         if(damager instanceof Player player) { //Mobs have a chance to hit zero with this cast
-            DAMAGE_MINIMUM = (0.075 * original_base) * (event.isCritical()?1.5:1.0);
+            DAMAGE_MINIMUM = (0.075 * original_base) * (PlayerUtil.isCritical(player) ? 1.5:1.0);
             double total_final = calculateTotalDamage(event);
 //        Debug.broadcast("damage", "Pre-Minimu calculation: "+total_final);
             if (total_final <= DAMAGE_MINIMUM) {
@@ -389,11 +384,7 @@ public class CombatManager implements Listener {
                 event.setDamage(BASE, DAMAGE_MINIMUM);
                 extramsg += " <dark_gray>[Minimum]</dark_gray>";
 
-                Sound sound = ArmorStats.getArmorSound(entity);
-                if (sound != null) {
-//                extramsg += " <dark_gray>[Sound]</dark_gray>";
-                    entity.getWorld().playSound(entity.getLocation(), sound, SoundCategory.PLAYERS, 0.75f, ThreadLocalRandom.current().nextFloat(0.1f) + 0.75f);
-                }
+
             }
         }
 
@@ -417,7 +408,7 @@ public class CombatManager implements Listener {
             double dmg = calculateTotalDamage(event);
             String ss = "";
             if(event.getEntity() instanceof LivingEntity lv) {
-                double maxhealth = lv.getAttribute(Attribute.MAX_HEALTH).getValue();
+                double maxhealth = lv.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
                 ss = " Hits-To-Kill: <red>"+(Math.ceil(maxhealth/dmg));
             }
             Debug.message(dmger,
@@ -430,7 +421,7 @@ public class CombatManager implements Listener {
         if(event.getEntity() instanceof Player victim){
             //display player CHARGE - ENSURE damager is in survival for testing
             double dmg = calculateTotalDamage(event);
-            double maxhealth = victim.getAttribute(Attribute.MAX_HEALTH).getValue();
+            double maxhealth = victim.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
             Debug.message(victim,
                     "damage",
                     "<dark_red>📩 Damage: <red>"+Debug.formatDecimal(dmg)+extramsg

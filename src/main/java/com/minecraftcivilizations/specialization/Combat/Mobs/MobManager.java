@@ -1,7 +1,6 @@
 package com.minecraftcivilizations.specialization.Combat.Mobs;
 
 import com.minecraftcivilizations.specialization.Combat.CombatManager;
-import com.minecraftcivilizations.specialization.MobGoals.ShootPlayerMobGoal;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.Specialization;
@@ -10,9 +9,6 @@ import com.minecraftcivilizations.specialization.util.CoreUtil;
 import com.minecraftcivilizations.specialization.util.WorldUtils;
 import lombok.extern.slf4j.Slf4j;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.momirealms.craftengine.bukkit.api.CraftEngineItems;
-import net.momirealms.craftengine.core.item.CustomItem;
-import net.momirealms.craftengine.core.util.Key;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -20,8 +16,6 @@ import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.damage.DamageSource;
-import org.bukkit.damage.DamageType;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -38,6 +32,8 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
@@ -55,7 +51,6 @@ import static com.minecraftcivilizations.specialization.util.MathUtils.*;
  * @see MobOverrideRule for individual rules for converting a mob into a variant
  * @see MobVariation for specific entity profile settings
  */
-@Slf4j
 public class MobManager implements Listener {
 
     public static final String TAKEDOWN_CHANCE = "takedown chance: ";
@@ -151,7 +146,7 @@ public class MobManager implements Listener {
     }
 
     public boolean isMobVariation(Entity entity){
-        return entity.getPersistentDataContainer().has(SPAWN_VARIATION_ID_KEY);
+        return entity.getPersistentDataContainer().has(SPAWN_VARIATION_ID_KEY, PersistentDataType.STRING);
     }
 
     //This simply flags the entity to be a variation
@@ -166,7 +161,7 @@ public class MobManager implements Listener {
      * @return A valid mob stat, the default as a fallback
      */
     public MobVariation getMobVariation(Entity e){
-        if(e.getPersistentDataContainer().has(SPAWN_VARIATION_ID_KEY)){
+        if(e.getPersistentDataContainer().has(SPAWN_VARIATION_ID_KEY, PersistentDataType.STRING)){
             String id = e.getPersistentDataContainer().get(SPAWN_VARIATION_ID_KEY, PersistentDataType.STRING);
             if(mob_variations.containsKey(id)){
                 return mob_variations.get(id);
@@ -225,10 +220,9 @@ public class MobManager implements Listener {
          */
         setDefaultRuleSetChance(0,
                 ZOMBIE, HUSK, DROWNED, ZOMBIE_VILLAGER,
-                SKELETON, BOGGED, STRAY,
+                SKELETON, STRAY,
                 CREEPER, SPIDER, CAVE_SPIDER,
                 SLIME, MAGMA_CUBE,
-                BREEZE,
                 GUARDIAN, ELDER_GUARDIAN,
                 PILLAGER, RAVAGER, ILLUSIONER, VINDICATOR, WITCH,
                 SILVERFISH, ENDERMITE, SHULKER,
@@ -319,7 +313,7 @@ public class MobManager implements Listener {
                                 .armorChance(Material.DIAMOND, 4, 0.35)
                                 .replaceOriginalMob()
                 , 200
-                ).addVariation(new MobVariation("skeleton_bogged", BOGGED)
+                ).addVariation(new MobVariation("skeleton_bogged", STRAY)
                         .health(1.5)
                         .damage(0.5, 0.8, 2.0)
                         .speed(1.25, 1.5)
@@ -554,13 +548,7 @@ public class MobManager implements Listener {
 
 
         setDefaultRuleSetChance(200, ENDERMAN);
-        new MobOverrideRule(2, ENDERMAN)
-                .addVariation(new MobVariation("creaker", CREAKING)
-                        .anger(true)
-                        .invisible()
-                        .health(0.1)
-                        .hunts(64)
-                        .replaceOriginalMob());
+
 
         // bee DONT DO THIS
 //        new MobOverrideRule(100, BEE).spawnInPacks()
@@ -652,7 +640,7 @@ public class MobManager implements Listener {
                     }
 
                     //Spawn a new mob with the variation settings
-                    Entity e = loc.getWorld().spawnEntity(loc, new_type, CreatureSpawnEvent.SpawnReason.CUSTOM);
+                    Entity e = loc.getWorld().spawnEntity(loc, new_type);
                     if(Debug.isAnyoneListening("mob", false)){
                     Debug.broadcast("mob", MiniMessage.miniMessage().deserialize("<light_purple>🏔</light_purple>"+e.getName()+" <gray>applied: <green>"+variation.getId()+" ")
                             .append(Debug.formatLocationClickable(e.getLocation(), true)));
@@ -669,10 +657,6 @@ public class MobManager implements Listener {
     }
 
 
-    @EventHandler
-    public void onMob(EntityDismountEvent event){
-
-    }
 
     @EventHandler
     public void onMobMount(VehicleEnterEvent event){
@@ -725,7 +709,7 @@ public class MobManager implements Listener {
                             loc = WorldUtils.getNextSafeVerticalPosition(loc);
                         }
                         //Spawn a new mob with the variation settings
-                        Entity e = loc.getWorld().spawnEntity(loc, new_type, CreatureSpawnEvent.SpawnReason.CUSTOM);
+                        Entity e = loc.getWorld().spawnEntity(loc, new_type);
                         if (e instanceof LivingEntity le) {
                             convertEntityToVariation(le, variation);
                             if(Debug.isAnyoneListening("mob", false)) {
@@ -735,14 +719,14 @@ public class MobManager implements Listener {
                             MobVariation mount_variation = variation.getMount();
                             if (mount_variation != null) {
                                 if (variation.getMountChance() > ThreadLocalRandom.current().nextDouble()) {
-                                    Entity ee = loc.getWorld().spawnEntity(loc, mount_variation.rollType(), CreatureSpawnEvent.SpawnReason.NATURAL);
+                                    Entity ee = loc.getWorld().spawnEntity(loc, mount_variation.rollType());
                                     convertEntityToVariation(ee, mount_variation);
                                     le.addPassenger(ee);
                                 }
                             }
                             if(variation.getSpawnExtra()>0){
                                 for(int i = 0; i < variation.getSpawnExtra(); i++){
-                                    Entity ee = loc.getWorld().spawnEntity(loc, new_type, CreatureSpawnEvent.SpawnReason.CUSTOM);
+                                    Entity ee = loc.getWorld().spawnEntity(loc, new_type);
                                     convertEntityToVariation(ee, variation);
                                 }
                             }
@@ -771,9 +755,9 @@ public class MobManager implements Listener {
      */
     public void applyStatsToEntity(LivingEntity entity, MobVariation stats) {
         entity.setPersistent(false);
-        boolean is_day_time = entity.getWorld().isDayTime();
+        boolean is_day_time = entity.getWorld().getTime() < 12300;
 
-        AttributeInstance attribute = entity.getAttribute(Attribute.MAX_HEALTH);
+        AttributeInstance attribute = entity.getAttribute(Attribute.GENERIC_MAX_HEALTH);
         double max_health = attribute.getBaseValue() * stats.getHealthMultiplier();
         attribute.setBaseValue(max_health);
         entity.setHealth(max_health);
@@ -791,73 +775,31 @@ public class MobManager implements Listener {
 //            damage_attribute.setBaseValue(damage_attribute.getBaseValue() * (is_day_time?stats.getDamageMultiplierDay():stats.getDamageMultiplierNight()));
 //        }
         // SCALE
-        AttributeInstance scale_attr = entity.getAttribute(Attribute.SCALE);
-        if (scale_attr != null) {
-            double mult = stats.getScale();          // e.g. 1.3
-            double amount = mult - 1.0;              // ADD_SCALAR expects +0.3
 
-            scale_attr.removeModifier(SCALE_KEY);
-            scale_attr.addModifier(new AttributeModifier(
-                    SCALE_KEY,
-                    amount,
-                    AttributeModifier.Operation.ADD_SCALAR
-            ));
-        }
 
         // MOVEMENT SPEED
-        AttributeInstance speed_attr = entity.getAttribute(Attribute.MOVEMENT_SPEED);
+        AttributeInstance speed_attr = entity.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
         if (speed_attr != null) {
             double mult = applyspeed_modifier *
                     (is_day_time ? stats.getSpeedMultiplierDay() : stats.getSpeedMultiplierNight());
             double amount = mult - 1.0;
 
-            speed_attr.removeModifier(MOVE_SPEED_KEY);
             speed_attr.addModifier(new AttributeModifier(
-                    MOVE_SPEED_KEY,
-                    amount,
-                    AttributeModifier.Operation.ADD_SCALAR
-            ));
-        }
-
-        // WATER SPEED
-        AttributeInstance water_attr = entity.getAttribute(Attribute.WATER_MOVEMENT_EFFICIENCY);
-        if (water_attr != null) {
-            double mult = applyspeed_modifier *
-                    (is_day_time ? stats.getWaterSpeedMultiplierDay() : stats.getWaterSpeedMultiplierNight());
-            double amount = mult - 1.0;
-
-            water_attr.removeModifier(WATER_SPEED_KEY);
-            water_attr.addModifier(new AttributeModifier(
-                    WATER_SPEED_KEY,
+                    MOVE_SPEED_KEY.toString(),
                     amount,
                     AttributeModifier.Operation.ADD_SCALAR
             ));
         }
 
 
-        // MOVEMENT SPEED
-        AttributeInstance step_attr = entity.getAttribute(Attribute.STEP_HEIGHT);
-        if (step_attr != null) {
-//            double mult = applyspeed_modifier *
-//                    (is_day_time ? stats.getSpeedMultiplierDay() : stats.getSpeedMultiplierNight());
-            double amount = stats.getStepHeight();
 
-            step_attr.removeModifier(STEP_HEIGHT_KEY);
-            step_attr.addModifier(new AttributeModifier(
-                    STEP_HEIGHT_KEY,
-                    amount,
-                    AttributeModifier.Operation.ADD_NUMBER
-            ));
-        }
+
 
         if(stats.isInvisible()){
             entity.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0, false, false, false));
         }
         if(stats.potionEffect!=null) {
             entity.addPotionEffect(stats.potionEffect);
-        }
-        if(stats.getBreed()!=null && !stats.getBreed().isEmpty()){
-            applyBreedSettings(entity, stats);
         }
         stats.applyRandomArmor(entity);
         if (stats.isDisableItemPickup()){
@@ -867,51 +809,6 @@ public class MobManager implements Listener {
         applyLogicToMob(entity, stats);
     }
 
-    private static void applyBreedSettings(LivingEntity entity, MobVariation stats) {
-        int x = ThreadLocalRandom.current().nextInt(stats.getBreed().size());
-        String breedname = stats.getBreed().get(x);
-        switch(entity.getType()) {
-            case EntityType.WOLF -> {
-                Wolf wolf = (Wolf) entity;
-                Wolf.Variant v = null;
-                switch (breedname.toLowerCase().trim()) {
-                    case "ashen":
-                        v = Wolf.Variant.ASHEN;
-                        break;
-                    case "black":
-                        v = Wolf.Variant.BLACK;
-                        break;
-                    case "chestnut":
-                        v = Wolf.Variant.CHESTNUT;
-                        break;
-                    case "pale":
-                        v = Wolf.Variant.PALE;
-                        break;
-                    case "rusty":
-                        v = Wolf.Variant.RUSTY;
-                        break;
-                    case "snowy":
-                        v = Wolf.Variant.SNOWY;
-                        break;
-                    case "spotted":
-                        v = Wolf.Variant.SPOTTED;
-                        break;
-                    case "striped":
-                        v = Wolf.Variant.STRIPED;
-                        break;
-                    case "woods":
-                        v = Wolf.Variant.WOODS;
-                        break;
-                    default:
-                        v = Wolf.Variant.WOODS; // safe fallback
-                        break;
-                }
-                if (v != null) {
-                    wolf.setVariant(v);
-                }
-            }
-        }
-    }
 
 
     /**
@@ -928,13 +825,6 @@ public class MobManager implements Listener {
                 bee.setAnger(1000000);
             }else if(entity instanceof Wolf wolf) {
                 wolf.setAngry(true);
-            }else if(entity instanceof PolarBear bear){
-                bear.setAggressive(true);
-                bear.setStanding(true);
-            }
-            if(entity instanceof Mob mob){
-                //includes dolphins etc
-                mob.setAggressive(true);
             }
         }
 
@@ -952,7 +842,7 @@ public class MobManager implements Listener {
          */
         if(stats.doesHunting()) {
             if (entity instanceof Mob mob) {
-                Bukkit.getMobGoals().addGoal(mob, 0, new HuntPlayerMobGoal(mob, stats.getFollowRange(), stats.doesBreaking(), stats.getBreakScalar()));
+                Specialization.getInstance().huntPlayerMobGoalSystem.addHuntGoal(mob, stats.getFollowRange(), stats.doesBreaking(), stats.getBreakScalar());
               //  Bukkit.getMobGoals().removeGoal(mob, ShootPlayerMobGoal.KEY);
                 //Bukkit.getMobGoals().addGoal(mob, 0, new ShootPlayerMobGoal(mob));
             }
@@ -970,7 +860,30 @@ public class MobManager implements Listener {
 //            }
 //        }
     }
+    public static void addCustomGoal(org.bukkit.entity.Mob bukkitMob, int priority, Object goal) {
+        try {
+            // Get the CraftMob class dynamically
+            Class<?> craftMobClass = Class.forName("org.bukkit.craftbukkit.v1_20_R1.entity.CraftMob");
 
+            // Check if the mob is a CraftMob
+            if (craftMobClass.isInstance(bukkitMob)) {
+                // Get the getHandle() method
+                Method getHandle = craftMobClass.getMethod("getHandle");
+                Object nmsMob = getHandle.invoke(bukkitMob);
+
+                // Access the goalSelector field
+                Field goalSelectorField = nmsMob.getClass().getField("goalSelector");
+                Object goalSelector = goalSelectorField.get(nmsMob);
+
+                // Add goal via reflection
+                Method addGoal = goalSelector.getClass().getMethod("addGoal", int.class,
+                        Class.forName("net.minecraft.world.entity.ai.goal.Goal"));
+                addGoal.invoke(goalSelector, priority, goal);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
     @EventHandler
     public void onEntityLoad(EntitiesLoadEvent event){
         List<Entity> entities = event.getEntities();
@@ -988,16 +901,6 @@ public class MobManager implements Listener {
     public void onDamage(EntityDamageByEntityEvent event){
         Entity damager = event.getDamager();
         Entity victim = event.getEntity();
-        if(isMobVariation(victim)){
-            MobVariation variation = getMobVariation(victim);
-            DamageType event_type = event.getDamageSource().getDamageType();
-            for(DamageType immunity : variation.immunity_types) {
-                if (event_type.equals(immunity)){
-                    event.setCancelled(true);
-                    return;
-                }
-            }
-        }
         if(damager instanceof Player px){
             if(victim instanceof Mob mob){
                 if(mob.getTarget()!=null){
@@ -1008,60 +911,6 @@ public class MobManager implements Listener {
                     }
                 }
             }
-        }
-
-        // MOB TAKE DAMAGE
-        switch(victim.getType()){
-            case CREAKING:
-                if(isMobVariation(victim)){
-                    double takedown_chance=0.25;
-                    CustomPlayer player = CoreUtil.getPlayer(event.getDamager().getUniqueId());
-                    if(player!=null){
-                        takedown_chance = 0.25 + (((double)player.getSkillLevel(SkillType.GUARDSMAN))/10);
-                    }
-//                    Debug.broadcast("mob", TAKEDOWN_CHANCE+takedown_chance);
-                    if(ThreadLocalRandom.current().nextDouble() > takedown_chance){
-                        event.setCancelled(true);
-                        Location teleport;
-                        Vector v = getDirectionVector(victim.getYaw(), victim.getPitch()).normalize();
-                        v = v.add(randomVectorCentered(1));
-                        teleport = victim.getLocation().add(v.multiply(random(10, 20)));
-                        Block block = teleport.getBlock();
-                        while(block.isSolid()){
-                            block = block.getRelative(BlockFace.UP);
-                        }
-                        teleport = block.getRelative(BlockFace.UP).getLocation().add(0.5,0.5,0.5);
-                        victim.teleport(teleport);
-                        victim.setFallDistance(-100);
-                        victim.getWorld().playSound(teleport, Sound.ENTITY_ENDERMAN_TELEPORT, 1, 1);
-
-                    }
-                }
-                break;
-        }
-        switch(damager.getType()){
-            case BEE:
-                if(isMobVariation(damager)) {
-                    if(ThreadLocalRandom.current().nextBoolean()) {
-                        ((Bee) damager).damage(10);
-                    }
-                    if(event.getDamageSource().getDamageType()!=DamageType.SPIT) {
-                        Bee bee = (Bee) event.getDamager();
-                        bee.setHasStung(false);
-                        bee.getServer().getScheduler().scheduleSyncDelayedTask(Specialization.getInstance(), new Runnable() {
-                            @Override
-                            public void run() {
-                                unsetBee(bee);
-                            }
-                        });
-                        event.setCancelled(true);
-                        if (victim instanceof LivingEntity le) {
-                            le.damage(0.5, DamageSource.builder(DamageType.SPIT).build());
-//                        Debug.broadcast("bee", ""+event.getDamageSource().getDamageType());
-                        }
-                    }
-                }
-                break;
         }
     }
 
@@ -1090,13 +939,14 @@ public class MobManager implements Listener {
         double newDamage = event.getDamage(BASE);
         double mob_damage_multiplier;
 
+        boolean is_day_time = entity.getWorld().getTime() < 12300;
 
         if(entity.getWorld().getEnvironment()== World.Environment.NORMAL){
-            mob_damage_multiplier = entity.getWorld().isDayTime()?stats.getDamageMultiplierDay():stats.getDamageMultiplierNight();
+            mob_damage_multiplier = is_day_time ? stats.getDamageMultiplierDay():stats.getDamageMultiplierNight();
         }else{
             mob_damage_multiplier = stats.getDamageMultiplierNether();
         }
-        double mob_damage_base_increase = entity.getWorld().isDayTime()?stats.getDamageBaseDay():stats.getDamageBaseNight();
+        double mob_damage_base_increase = is_day_time ? stats.getDamageBaseDay():stats.getDamageBaseNight();
         event.setDamage(BASE, (newDamage * mob_damage_multiplier) + mob_damage_base_increase);
 
 //      BACKUP PLAN FOR MOB DAMAGE:
@@ -1197,7 +1047,7 @@ public class MobManager implements Listener {
         }
 
         MobVariation mobStats = getMobVariation(victim);
-        if(victim.getPersistentDataContainer().has(EXP_GAIN_OVERRIDE_KEY)){
+        if(victim.getPersistentDataContainer().has(EXP_GAIN_OVERRIDE_KEY, PersistentDataType.BOOLEAN)){
             if(victim.getPersistentDataContainer().get(EXP_GAIN_OVERRIDE_KEY, PersistentDataType.BOOLEAN)){
                 xp_scale = 1.0;
             }
@@ -1251,7 +1101,6 @@ public class MobManager implements Listener {
             case DIAMOND_AXE:
             case NETHERITE_AXE:
             case TRIDENT:
-            case MACE:
                 return true;
             default: return false;
         }

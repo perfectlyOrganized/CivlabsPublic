@@ -19,10 +19,10 @@ public class RestoreHealthCommand extends BaseCommand {
         int playersHealed = 0;
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            double currentMaxHealth = Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).getValue();
+            double currentMaxHealth = Objects.requireNonNull(player.getAttribute(Attribute.GENERIC_MAX_HEALTH)).getValue();
 
             if (currentMaxHealth < 20.0) {
-                Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(20.0);
+                Objects.requireNonNull(player.getAttribute(Attribute.GENERIC_MAX_HEALTH)).setBaseValue(20.0);
                 playersHealed++;
                 player.sendMessage("§aYour max health has been restored to 20!");
             }

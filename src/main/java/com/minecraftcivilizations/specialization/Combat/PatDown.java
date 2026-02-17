@@ -29,7 +29,7 @@ public class PatDown implements Listener {
             Material type = hand.getType();
 
             boolean holdingLead = type == Material.LEAD;
-            boolean holdingCustomBandage = CustomItemManager.getDefinitions().bandage.isCustomItem(hand);
+            boolean holdingCustomBandage = Specialization.getInstance().customItemManager.isCustomItem(hand, 1301);
 
             if (holdingLead || holdingCustomBandage) {
                 return; // don't fire pat-down if using these items

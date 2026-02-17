@@ -1,6 +1,7 @@
 package com.minecraftcivilizations.specialization.StaffTools;
 
 import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -327,7 +328,7 @@ public class Debug implements Listener {
         for(UUID playeruuid : getInstance().getOrCreateChannelPlayerSet(debug_channel, register_channel)){
             Player player = Bukkit.getPlayer(playeruuid);
             if(player!=null && player.isOnline()) {
-                player.sendMessage(comp);
+                PlayerUtil.sendMessage(player,comp);
             }
         }
     }
@@ -349,7 +350,7 @@ public class Debug implements Listener {
         Debug debug = getInstance();
         Component comp = debug.formatDebugMessageDefault(debug_channel, msg, hover_details);
         if(debug.getOrCreateChannelPlayerSet(debug_channel, false).contains(player.getUniqueId())){
-            player.sendMessage(comp);
+            PlayerUtil.sendMessage(player,comp);
         }
     }
 
@@ -366,7 +367,7 @@ public class Debug implements Listener {
             msg = msg.hoverEvent(HoverEvent.showText(hover));
         }
         if(debug.getOrCreateChannelPlayerSet(debug_channel, false).contains(player.getUniqueId())){
-            player.sendMessage(getPrefix(debug_channel).append(msg));
+            PlayerUtil.sendMessage(player,getPrefix(debug_channel).append(msg));
         }
     }
 

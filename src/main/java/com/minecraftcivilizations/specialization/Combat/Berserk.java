@@ -6,6 +6,7 @@ import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.util.CoreUtil;
+import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import lombok.NonNull;
@@ -81,24 +82,20 @@ public class Berserk implements Listener {
         usedBerserkThisLife.remove(e.getPlayer().getUniqueId());
     }
 
-    public void showBerserkDurationTitle(final @NonNull Audience target) {
+    public void showBerserkDurationTitle(final @NonNull Player target) {
         final Title.Times times = Title.Times.times(
                 Duration.ofMillis(500),
                 Duration.ofMillis(3000),
                 Duration.ofMillis(1000)
         );
-        final Title title = Title.title(
-                Component.text("Awakened"),
-                Component.text("Muscle memory floods back from battles never fought."),
-                times
-        );
-        target.showTitle(title);
+
+        PlayerUtil.showTitle(target, Component.text("Awakened"), Component.text("Muscle memory floods back from battles never fought."));
     }
 
     public void applyBerserk(Player player) {
-        for (PotionEffectType potionEffectType : Registry.MOB_EFFECT) {
+        for (PotionEffectType potionEffectType : PotionEffectType.values()) {
             try {
-                String effectKey = potionEffectType.getKey().value().toUpperCase();
+                String effectKey = potionEffectType.getKey().getKey().toUpperCase();
                 List<? extends Config> effects = SpecializationConfig.getBerserkConfig().getList("berserk_effect");
                 effects.forEach((config -> {
                     Config effect = config.getObject(effectKey).toConfig();
@@ -114,7 +111,7 @@ public class Berserk implements Listener {
                         ));
                     }
                 }));
-            } catch (ConfigException.Missing _) {
+            } catch (ConfigException.Missing _e) {
 
             }
             catch (Exception ex) {
