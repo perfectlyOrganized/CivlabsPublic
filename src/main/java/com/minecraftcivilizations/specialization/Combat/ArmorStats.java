@@ -113,34 +113,6 @@ public final class ArmorStats {
         }
     }
 
-    public static Sound getArmorSound(Entity entity) {
-        if (!(entity instanceof LivingEntity living)) return null;
-        List<ItemStack> valid = new ArrayList<>();
-
-        for (ItemStack armor : living.getEquipment().getArmorContents()) {
-            if (armor != null && armor.getType() != Material.AIR) {
-                valid.add(armor);
-            }
-        }
-
-        if (valid.isEmpty()) return null;
-        ItemStack armor_to_check = valid.get(ThreadLocalRandom.current().nextInt(valid.size()));
-
-
-        Material mat = armor_to_check.getType();
-        Material base = getMaterialType(mat);
-        if(base==null)return null;
-        switch(base){
-            case LEATHER: return Sound.ITEM_WOLF_ARMOR_DAMAGE;
-            case CHAIN: return Sound.BLOCK_CHAIN_HIT;
-            case GOLD_INGOT: return Sound.BLOCK_HEAVY_CORE_HIT;
-            case IRON_INGOT: return Sound.BLOCK_HEAVY_CORE_PLACE;
-            case DIAMOND: return Sound.BLOCK_HEAVY_CORE_PLACE;
-            case NETHERITE_INGOT: return Sound.BLOCK_HEAVY_CORE_PLACE;
-        }
-        return null;
-    }
-
     @Override
     public String toString() {
         return "ArmorStats{armor=" + armor + ", toughness=" + toughness + ", knockback="+knockback_resist+"}";
@@ -315,9 +287,7 @@ public final class ArmorStats {
             case NETHERITE_BOOTS:
                 return Material.NETHERITE_INGOT;
 
-            // Turtle
-            case TURTLE_HELMET:
-                return Material.TURTLE_SCUTE;
+          
 
             default:
                 return null;
@@ -391,8 +361,8 @@ public final class ArmorStats {
             ItemMeta meta = item.getItemMeta();
 
             if((meta != null) && meta.hasAttributeModifiers()) {
-                Collection<AttributeModifier> armorMods = meta.getAttributeModifiers(Attribute.ARMOR);
-                Collection<AttributeModifier> toughnessMods = meta.getAttributeModifiers(Attribute.ARMOR_TOUGHNESS);
+                Collection<AttributeModifier> armorMods = meta.getAttributeModifiers(Attribute.GENERIC_ARMOR);
+                Collection<AttributeModifier> toughnessMods = meta.getAttributeModifiers(Attribute.GENERIC_ARMOR_TOUGHNESS);
 
                 if (armorMods != null) {
                     for (AttributeModifier mod : armorMods) {

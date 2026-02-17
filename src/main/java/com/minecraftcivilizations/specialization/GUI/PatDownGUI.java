@@ -1,6 +1,8 @@
 package com.minecraftcivilizations.specialization.GUI;
 
 import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.util.ItemStackUtils;
+import com.minecraftcivilizations.specialization.util.LoreUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import minecraftcivilizations.com.minecraftCivilizationsCore.GUI.GUI;
 import minecraftcivilizations.com.minecraftCivilizationsCore.GUI.GUIItem;
@@ -108,8 +110,8 @@ public class PatDownGUI extends GUI {
         ItemMeta meta = placeholder.getItemMeta();
         if (meta != null) {
             meta.addItemFlags(ItemFlag.values());
-            meta.displayName(Component.text(name).color(NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
-            meta.lore(List.of(Component.text("This slot is empty").color(NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false)));
+            LoreUtils.setItemDisplayName(meta, Component.text(name).color(NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+            meta.setLore(List.of("This slot is empty"));
             placeholder.setItemMeta(meta);
         }
         return placeholder;

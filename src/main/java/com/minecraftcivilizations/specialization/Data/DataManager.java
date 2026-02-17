@@ -39,7 +39,7 @@ public class DataManager {
 
         String timestamp = java.time.ZonedDateTime.now().toLocalTime().toString().substring(0, 8);
         for(Player player : Bukkit.getOnlinePlayers()){
-            CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
+            CustomPlayer customPlayer = Specialization.customPlayerManager.getCustomPlayer(player.getUniqueId());
             String msg = "Skills being saved for "+player.getName()+":";
             for(SkillType type : SkillType.values()){
                 double xp = customPlayer.getSkill(type).getXp();

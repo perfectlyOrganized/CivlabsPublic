@@ -4,7 +4,6 @@ import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.typesafe.config.ConfigException;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Config.ConfigFile;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Options.Pair;
-import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Material;
 
 public enum SkillType {
@@ -43,16 +42,21 @@ public enum SkillType {
     }
 
     public static String getDisplayName(SkillType skillType) {
-        return StringUtils.capitalize(skillType.name().toLowerCase());
+        return capitalize(skillType.name().toLowerCase());
     }
-
+    public static String capitalize(String str) {
+        if (str == null || str.isEmpty()) {
+            return str;
+        }
+        return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
+    }
     public static Pair<SkillType, Double> getSkillXpFromConfig(ConfigFile config, String key) {
         Double xp = 0.0;
         SkillType skillType = SkillType.BUILDER;
         for (SkillType skill : SkillType.values()) {
             try {
                 xp = config.getDouble(skill.name() + "." + key);
-            } catch(ConfigException.Missing _) {}
+            } catch(ConfigException.Missing _e) {}
             if (xp != 0) {
                 skillType = skill;
                 break;

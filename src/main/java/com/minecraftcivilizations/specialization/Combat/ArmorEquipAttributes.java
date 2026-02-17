@@ -1,6 +1,5 @@
 package com.minecraftcivilizations.specialization.Combat;
 
-import com.destroystokyo.paper.event.player.PlayerJumpEvent;
 import com.minecraftcivilizations.specialization.Listener.Player.Inventories.SpecializationCraftItemEvent;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.Specialization;
@@ -8,9 +7,7 @@ import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.minecraftcivilizations.specialization.util.ItemStackUtils;
 import com.minecraftcivilizations.specialization.util.MathUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
-import io.papermc.paper.event.entity.EntityEquipmentChangedEvent;
 import net.md_5.bungee.api.ChatColor;
-import net.momirealms.craftengine.bukkit.api.CraftEngineItems;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
@@ -21,6 +18,7 @@ import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.CraftItemEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.trim.ArmorTrim;
@@ -96,18 +94,12 @@ public class ArmorEquipAttributes implements Listener {
             item_type = Material.DIAMOND;
         } else if (typeName.startsWith("GOLDEN_")) {
             item_type = Material.GOLD_INGOT;
-        } else if (CraftEngineItems.isCustomItem(current) && CraftEngineItems.getCustomItemId(current).value().startsWith("COPPER_")) {
-            item_type = Material.COPPER_INGOT;
         } else if (typeName.startsWith("LEATHER_")) {
             item_type = Material.LEATHER;
         } else if (typeName.startsWith("NETHERITE_")) {
             item_type = Material.NETHERITE_INGOT;
 //        } else if (typeName.startsWith("CHAINMAIL_")) {
 //            item_type = Material.CHAIN;
-        } else if (typeName.startsWith("TURTLE_")) {
-            item_type = Material.TURTLE_SCUTE;
-        } else if (CraftEngineItems.isCustomItem(current) && CraftEngineItems.getCustomItemId(current).value().startsWith("EMERALD_")) {
-            item_type = Material.EMERALD;
         }
 
         material_weight = getMaterialWeight(mat);
@@ -263,74 +255,6 @@ public class ArmorEquipAttributes implements Listener {
         event.setCurrentItem(current);
     }
 
-    /**
-     * This displays Armor Weight to the player
-     * It also converts items to have weight if it somehow has not yet been converted
-     */
-    @EventHandler
-    public void onArmorChange(EntityEquipmentChangedEvent event) {
-        // Only care about players
-        if (!(event.getEntity() instanceof Player player)) return;
-
-//        UUID uuid = player.getUniqueId();
-//        double old_weight = player_weight_history.getOrDefault(uuid, weight_offset);
-
-        EntityEquipment equipment = player.getEquipment();
-
-        boolean armor_swap = false;
-
-        for (Map.Entry<EquipmentSlot, EntityEquipmentChangedEvent.EquipmentChange> entry
-                : event.getEquipmentChanges().entrySet()) {
-
-
-            EquipmentSlot slot = entry.getKey();
-            EntityEquipmentChangedEvent.EquipmentChange change = entry.getValue();
-            ItemStack oldItem = change.oldItem();
-            ItemStack newItem = change.newItem();
-// treat null or AIR as empty
-            boolean oldEmpty = oldItem.getType() == Material.AIR;
-            boolean newEmpty = newItem.getType() == Material.AIR;
-
-// ignore no-op changes
-            if (oldEmpty && newEmpty) continue;
-            if (!oldEmpty && !newEmpty && oldItem.isSimilar(newItem)) continue;
-
-            // Optional filter to just armor slots
-            switch (slot) {
-                case HEAD, CHEST, LEGS, FEET -> {
-                    if (newItem != null && !newItem.getType().isAir()) {
-                        ItemStack modified = applyStats(newItem); // your method
-                        armor_swap = true;
-                        if(modified!=null) {
-                            equipment.setItem(slot, modified);
-                        }
-                    }
-                }
-                default -> {}
-            }
-        }
-
-        if(armor_swap) {
-            double weight = calculateWeight(player);
-            double previous_weight = -25;
-            UUID uuid = player.getUniqueId();
-            if(weight_map.containsKey(uuid)) {
-                previous_weight = weight_map.get(uuid);
-            }
-
-
-            if(previous_weight != weight) {
-                WeightLevel level = weightLevel(weight);
-                player.sendActionBar("Armor Weight: " + level.color + weight +level.title);
-                weight_map.put(uuid, weight);
-            }
-//            Debug.broadcast("armorstats", "<blue>Armor:</blue> "+stats.getArmor()+" <blue>Toughness:</blue> "+stats.getToughness());
-//        player.updateInventory();
-//            Debug.broadcast("armorstats", "Player's Water Move: "+player.getAttribute(Attribute.WATER_MOVEMENT_EFFICIENCY).getValue());
-            }
-//            player_weight_history.put(uuid, weight);
-//        }
-    }
 
     public final double weight_offset = -25; //baseline, a player can have up to this before weight becomes effective
     public final double weight_threshold = 50;
@@ -343,6 +267,17 @@ public class ArmorEquipAttributes implements Listener {
             this.title = title;
             this.color = color;
         }
+    }
+
+    private EquipmentSlot getEquipmentSlot(int slot) {
+        return switch (slot) {
+            case 39 -> EquipmentSlot.HEAD;
+            case 38 -> EquipmentSlot.CHEST;
+            case 37 -> EquipmentSlot.LEGS;
+            case 36 -> EquipmentSlot.FEET;
+            case 40 -> EquipmentSlot.OFF_HAND;
+            default -> null; // Not an equipment slot
+        };
     }
 
     public WeightLevel weightLevel(double weight){
@@ -359,25 +294,17 @@ public class ArmorEquipAttributes implements Listener {
     }
 
     public boolean hasWeight(ItemStack item){
-        return item.getItemMeta().getPersistentDataContainer().has(WEIGHT_KEY);
+        return item.getItemMeta().getPersistentDataContainer().has(WEIGHT_KEY, PersistentDataType.DOUBLE);
     }
 
     public double getWeight(ItemStack item){
         if(item == null || item.getItemMeta() == null) return 0;
-        if(item.getItemMeta().getPersistentDataContainer().has(WEIGHT_KEY)) {
+        if(item.getItemMeta().getPersistentDataContainer().has(WEIGHT_KEY, PersistentDataType.DOUBLE)) {
             return item.getItemMeta().getPersistentDataContainer().get(WEIGHT_KEY, PersistentDataType.DOUBLE);
         }
         return 0;
     }
 
-    /**
-     * Applies the default weight to an item based on material/slot combination
-     * Used for default armor
-     */
-    public ItemStack applyStats(ItemStack item){
-        item = applyArmorStats(item, new ArmorStatsCustom(-1, 0), BLUE);
-        return item;
-    }
 
     /**
      * Applies weight to an armor piece with a custom weight override
@@ -393,19 +320,18 @@ public class ArmorEquipAttributes implements Listener {
 //        }
 
 //        Debug.broadcast("armor", "removing attribute modifiers and applying");
-        if (!CraftEngineItems.isCustomItem(item)) {
-            Collection<AttributeModifier> attributeModifiers = meta.getAttributeModifiers(Attribute.ARMOR);
+            Collection<AttributeModifier> attributeModifiers = meta.getAttributeModifiers(Attribute.GENERIC_ARMOR);
             if(attributeModifiers!=null) {
                 for (AttributeModifier mod : attributeModifiers) {
                     // handle armor modifier
-                    meta.removeAttributeModifier(Attribute.ARMOR, mod);
+                    meta.removeAttributeModifier(Attribute.GENERIC_ARMOR, mod);
                 }
             }
-            attributeModifiers = meta.getAttributeModifiers(Attribute.ARMOR_TOUGHNESS);
+            attributeModifiers = meta.getAttributeModifiers(Attribute.GENERIC_ARMOR_TOUGHNESS);
             if(attributeModifiers!=null) {
                 for (AttributeModifier mod : attributeModifiers) {
                     // handle armor modifier
-                    meta.removeAttributeModifier(Attribute.ARMOR_TOUGHNESS, mod);
+                    meta.removeAttributeModifier(Attribute.GENERIC_ARMOR_TOUGHNESS, mod);
                 }
             }
 
@@ -431,30 +357,30 @@ public class ArmorEquipAttributes implements Listener {
 
             ArmorStats vanillaStats = ArmorStats.getVanillaStats(item.getType());
             // VANILLA ARMOR OVERRIDE
-            AttributeModifier mod_armor = new AttributeModifier(
-                    new NamespacedKey(Specialization.getInstance(), item.getType().name().toLowerCase()+"_armor"),
-                    vanillaStats.getArmor(),
-                    AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.ARMOR);
-            meta.addAttributeModifier(Attribute.ARMOR, mod_armor);
-            AttributeModifier mod_tough = new AttributeModifier(
-                    new NamespacedKey(Specialization.getInstance(), item.getType().name().toLowerCase()+"_toughness"),
-                    vanillaStats.getToughness(),
-                    AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.ARMOR);
-            meta.addAttributeModifier(Attribute.ARMOR_TOUGHNESS, mod_tough);
-        }
+//            AttributeModifier mod_armor = new AttributeModifier(
+//                    new NamespacedKey(Specialization.getInstance(), item.getType().name().toLowerCase()+"_armor"),
+//                    vanillaStats.getArmor(),
+//                    AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.ARMOR);
+//            meta.addAttributeModifier(Attribute.GENERIC_ARMOR, mod_armor);
+//            AttributeModifier mod_tough = new AttributeModifier(
+//                    new NamespacedKey(Specialization.getInstance(), item.getType().name().toLowerCase()+"_toughness"),
+//                    vanillaStats.getToughness(),
+//                    AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.ARMOR);
+//            meta.addAttributeModifier(Attribute.GENERIC_ARMOR_TOUGHNESS, mod_tough);
 
-        if(custom_stats_override.getKnockback_resist()>0) {
-            AttributeModifier mod_knockback = new AttributeModifier(
-                    new NamespacedKey(Specialization.getInstance(), item.getType().name().toLowerCase() + "_knockback"),
-                    custom_stats_override.getKnockback_resist(),
-                    AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.ARMOR);
-            meta.removeAttributeModifier(Attribute.KNOCKBACK_RESISTANCE, mod_knockback);
-            meta.addAttributeModifier(Attribute.KNOCKBACK_RESISTANCE, mod_knockback);
-        }
+
+//        if(custom_stats_override.getKnockback_resist()>0) {
+//            AttributeModifier mod_knockback = new AttributeModifier(
+//                    new NamespacedKey(Specialization.getInstance(), item.getType().name().toLowerCase() + "_knockback"),
+//                    custom_stats_override.getKnockback_resist(),
+//                    AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.ARMOR);
+//            meta.removeAttributeModifier(Attribute.GENERIC_KNOCKBACK_RESISTANCE, mod_knockback);
+//            meta.addAttributeModifier(Attribute.GENERIC_KNOCKBACK_RESISTANCE, mod_knockback);
+//        }
 
         item.setItemMeta(meta);
 
-        if(!meta.getPersistentDataContainer().has(WEIGHT_KEY)) {
+        if(!meta.getPersistentDataContainer().has(WEIGHT_KEY, PersistentDataType.DOUBLE)) {
 
             double weight; //weight to apply to the item
             if (custom_stats_override.getWeight() != -1) {
@@ -479,11 +405,11 @@ public class ArmorEquipAttributes implements Listener {
 
             double slowness_debuff = -weight / 1000;
 
-            AttributeModifier mod_water_weight = new AttributeModifier(
-                    new NamespacedKey(Specialization.getInstance(), item.getType().name().toLowerCase() + "_weight_slowness"),
-                    slowness_debuff,
-                    AttributeModifier.Operation.ADD_SCALAR, EquipmentSlotGroup.ARMOR);
-            meta.addAttributeModifier(Attribute.MOVEMENT_SPEED, mod_water_weight);
+//            AttributeModifier mod_water_weight = new AttributeModifier(
+//                    new NamespacedKey(Specialization.getInstance(), item.getType().name().toLowerCase() + "_weight_slowness"),
+//                    slowness_debuff,
+//                    AttributeModifier.Operation.ADD_SCALAR, EquipmentSlotGroup.ARMOR);
+//            meta.addAttributeModifier(Attribute.GENERIC_MOVEMENT_SPEED, mod_water_weight);
 
             item.setItemMeta(meta);
             ItemStackUtils.setLoreLine(item, 0, color + "+" + weight + " Weight");
@@ -498,9 +424,6 @@ public class ArmorEquipAttributes implements Listener {
         switch (mat) {
             case LEATHER:
                 material_weight = 1.0;
-                break;
-            case TURTLE_SCUTE:
-                material_weight = 1.5;
                 break;
             case CHAIN:
                 material_weight = 2.0;
@@ -541,70 +464,9 @@ public class ArmorEquipAttributes implements Listener {
     }
 
 
-    private static final double BASE_WALK_SPEED = 0.1; // vanilla default
-    private static final double MAX_ADDITIVE_BOOST = 0.6; // safety cap
-
-    private static final EnumSet<EquipmentSlot> VALID_ARMOR_SLOTS = EnumSet.of(
-            EquipmentSlot.HEAD,
-            EquipmentSlot.CHEST,
-            EquipmentSlot.LEGS,
-            EquipmentSlot.FEET);
 
 
-    public double calculateWeight(Player player){
-        double weight = 0.0 + weight_offset;
-        EntityEquipment equipment = player.getEquipment();
-        for(EquipmentSlot slot : VALID_ARMOR_SLOTS){
-            ItemStack item = equipment.getItem(slot);
-            weight += getWeight(item);
-        }
-        return weight;
-    }
 
-    @EventHandler
-    public void onPlayerJump(PlayerJumpEvent event) {
-        Player player = event.getPlayer();
-//        if(player instanceof Player){
-//            return;
-//        }
-        if(!player.isSprinting())return;
-
-
-        Vector v = player.getVelocity();
-        double y = v.getY();
-
-        PlayerUtil util = PlayerUtil.getPlayerUtil(player);
-
-        //extend jump buffer
-
-//        util.setCooldown("jumpweight", 1500);
-
-
-        double weight = calculateWeight(player);
-
-        if(weight>0) {
-
-
-            long cooldown = util.getRemainingCooldown("jumpweight")/50;
-            long new_cooldown = Math.min(120, cooldown + 20 + (int)(weight/10));
-            util.setCooldown("jumpweight", new_cooldown);
-
-            Debug.broadcast("weight", "old cd: "+cooldown+" <gray>new cd: "+new_cooldown);
-
-            int threshold = 110 - ((int)(weight/1.5));
-            if(threshold < cooldown) {
-                int level = (int) (weight / 50);
-                int extra_ticks = (int)(cooldown-threshold)/4;
-                if(cooldown<80){
-                    level = Math.max(0, level-1);
-                }
-                //level
-                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 15 +(5 * level)+extra_ticks, level, false, false, false));
-            }
-        }else{
-//            Debug.broadcast("jump", player.getName() + " weight: " + weight + GRAY+" nothing applied");
-        }
-    }
 
 
 

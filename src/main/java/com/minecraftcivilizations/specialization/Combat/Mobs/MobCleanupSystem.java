@@ -24,7 +24,7 @@ public class MobCleanupSystem extends BukkitRunnable {
 
     public MobCleanupSystem(MobManager mobManager) {
         this.mobManager = mobManager;
-        this.world = Bukkit.getWorlds().getFirst();
+        this.world = Bukkit.getWorlds().get(0);
     }
 
 

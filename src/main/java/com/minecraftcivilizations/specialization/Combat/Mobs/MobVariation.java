@@ -3,10 +3,8 @@ package com.minecraftcivilizations.specialization.Combat.Mobs;
 
 import com.minecraftcivilizations.specialization.util.MathUtils;
 import lombok.Getter;
-import net.momirealms.craftengine.core.util.Key;
 import org.bukkit.Material;
 import org.bukkit.block.Biome;
-import org.bukkit.damage.DamageType;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
@@ -137,7 +135,6 @@ public class MobVariation {
 
     private double xp_multiplier = 1.0;
 
-    Set<DamageType> immunity_types = new HashSet<>();
 
     @Getter
     int spawnExtra = 0;
@@ -221,12 +218,6 @@ public class MobVariation {
     }
 
 
-    public MobVariation fuseTime(double fuse_time){
-        this.fuseTime = fuse_time;
-        return this;
-    }
-
-
     public MobVariation waterspeed(double day_multiplier, double night_multiplier){
         this.waterSpeedMultiplierNight = night_multiplier;
         this.waterSpeedMultiplierDay = day_multiplier;
@@ -245,12 +236,6 @@ public class MobVariation {
         return this;
     }
 
-    public double getScale() {
-        if(random_scale_enabled) {
-            return MathUtils.random(sizeSmallest, sizeLargest);
-        }
-        return sizeSmallest;
-    }
 
     /**
      * Only applies to custom overrides
@@ -297,10 +282,6 @@ public class MobVariation {
         return does_breaking;
     }
 
-    public MobVariation invisible() {
-        invisible = true;
-        return this;
-    }
 
     public boolean isInvisible(){
         return invisible;
@@ -325,16 +306,7 @@ public class MobVariation {
         return replace_original_mob;
     }
 
-    public MobVariation setMount(MobVariation mount) {
-        this.mount = mount;
-        return this;
-    }
 
-    public MobVariation setMount(MobVariation mount, double chance) {
-        this.mount = mount;
-        this.mountChance = chance;
-        return this;
-    }
 
     public MobVariation getMount() {
         return this.mount;
@@ -380,15 +352,6 @@ public class MobVariation {
         return this;
     }
 
-    public MobVariation addImmunity(DamageType type) {
-        immunity_types.add(type);
-        return this;
-    }
-
-    public MobVariation despawnFaraway() {
-        this.despawnFaraway = true;
-        return this;
-    }
 
 
     private static class ArmorRoll {

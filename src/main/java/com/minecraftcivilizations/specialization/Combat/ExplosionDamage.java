@@ -6,7 +6,6 @@ import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import org.bukkit.*;
 import org.bukkit.block.BlockState;
-import org.bukkit.damage.DamageType;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -113,68 +112,4 @@ public class ExplosionDamage implements Listener {
 //        }
 
     }
-
-    @EventHandler
-    public void onExplosion(EntityDamageByBlockEvent event){
-
-        //first stop
-
-
-        if (event.getCause() == EntityDamageEvent.DamageCause.BLOCK_EXPLOSION) {
-            Location hit = event.getEntity().getLocation();
-            // find nearest recorded explosion
-            Location nearest = null;
-            double min = Double.MAX_VALUE;
-            for (Location loc : lastExplosions.keySet()) {
-                double dist = loc.distanceSquared(hit);
-                if (dist < min) {
-                    min = dist;
-                    nearest = loc;
-                }
-            }
-            if (nearest != null && min < 16) { // within 4 blocks
-                Material cause = lastExplosions.get(nearest);
-                if (cause == Material.RESPAWN_ANCHOR || cause.name().contains("_BED")) {
-                    // Custom damage logic for respawn anchors or beds
-                    event.setDamage(1);
-                }
-            }
-        }
-
-        BlockState damagerBlockState = event.getDamagerBlockState();
-        if(damagerBlockState != null) {
-            Material type = damagerBlockState.getType();
-            if (type == Material.RESPAWN_ANCHOR) {
-
-            } else if (type.name().contains("_BED")) {
-                event.setDamage(BASE, event.getDamage(BASE) * 0.33);
-            }
-        }
-            String modifiers = "";
-
-            for (EntityDamageEvent.DamageModifier m : EntityDamageEvent.DamageModifier.values()) {
-//            if(event.getDamage(m)!=0)
-                if(event.isApplicable(m))
-                modifiers += "\n<gray>"+m.name()+"</gray>: "+Debug.formatDecimal(event.getDamage(m));
-            }
-//            Debug.broadcast("damage", "<gold>Explosion at "+   ": "+event.getDamage()+"</gold>", modifiers);
-
-
-
-    }
-
-
-
-    @EventHandler
-    public void onExplosionPrime(ExplosionPrimeEvent event){
-        if(event.getEntityType() == EntityType.END_CRYSTAL) {
-//            event.getEntity().getPersistentDataContainer().set(new NamespacedKey(Specialization.getInstance(), "endcrystal"), PersistentDataType.LONG, time);
-//            event.setCancelled(true);
-//            SmartEntity sme = new SmartEntity(event.getEntity(), event.getEntity().getLocation());
-        }
-    }
-
-
-
-
 }

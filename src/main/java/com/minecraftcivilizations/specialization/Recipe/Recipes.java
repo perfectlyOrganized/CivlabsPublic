@@ -1,8 +1,8 @@
 package com.minecraftcivilizations.specialization.Recipe;
 
+import com.minecraftcivilizations.specialization.CustomItem.CustomItem;
+import com.minecraftcivilizations.specialization.CustomItem.CustomItemRegistry;
 import com.minecraftcivilizations.specialization.Specialization;
-import minecraftcivilizations.com.minecraftCivilizationsCore.Item.CustomItem;
-import minecraftcivilizations.com.minecraftCivilizationsCore.Item.CustomItemRegistry;
 import org.bukkit.*;
 import org.bukkit.entity.Item;
 import org.bukkit.inventory.*;
@@ -48,7 +48,7 @@ public class Recipes {
             }
 
             try {
-                Bukkit.addRecipe(new ShapelessRecipe(key, customItem.getItem()), true);
+                Bukkit.addRecipe(new ShapelessRecipe(key, customItem.getItem()));
                 successCount++;
             } catch (Exception e) {
                 failedExceptions.add(key.getKey() + " (" + e.getMessage() + ")");
@@ -63,7 +63,7 @@ public class Recipes {
         stringRecipe.addIngredient(Material.SHEARS);
         if (!recipeExists(stringRecipeKEY, stringRecipe.getResult())) {
             try {
-                Bukkit.addRecipe(stringRecipe, true);
+                Bukkit.addRecipe(stringRecipe);
                 successCount++;
             } catch (Exception e) {
                 failedExceptions.add("wool_to_string_recipe (" + e.getMessage() + ")");
@@ -79,7 +79,7 @@ public class Recipes {
         rail.setIngredient('S', Material.STICK);
         if (!recipeExists(railKey, rail.getResult())) {
             try {
-                Bukkit.addRecipe(rail, true);
+                Bukkit.addRecipe(rail);
                 successCount++;
             } catch (Exception e) {
                 failedExceptions.add("rail_alt (" + e.getMessage() + ")");
@@ -121,7 +121,7 @@ public class Recipes {
         netheriteUpgrade.addIngredient(6, Material.DIAMOND);
         netheriteUpgrade.addIngredient(1, Material.NETHER_WART_BLOCK);
         if (!recipeExists(netheriteKey, netheriteUpgrade.getResult())) {
-            try { Bukkit.addRecipe(netheriteUpgrade, true); count++; }
+            try { Bukkit.addRecipe(netheriteUpgrade); count++; }
             catch (Exception e) { failedExceptions.add("netherite_upgrade (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
@@ -132,7 +132,7 @@ public class Recipes {
         blazeRod.addIngredient(1, Material.CRIMSON_NYLIUM);
         blazeRod.addIngredient(1, Material.WARPED_NYLIUM);
         if (!recipeExists(blazeRodKey, blazeRod.getResult())) {
-            try { Bukkit.addRecipe(blazeRod, true); count++; }
+            try { Bukkit.addRecipe(blazeRod); count++; }
             catch (Exception e) { failedExceptions.add("blaze_rod (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
@@ -143,7 +143,7 @@ public class Recipes {
         netherWart.setIngredient('D', Material.COARSE_DIRT);
         netherWart.setIngredient('B', Material.BLAZE_POWDER);
         if (!recipeExists(netherWartKey, netherWart.getResult())) {
-            try { Bukkit.addRecipe(netherWart, true); count++; }
+            try { Bukkit.addRecipe(netherWart); count++; }
             catch (Exception e) { failedExceptions.add("nether_wart (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
@@ -158,7 +158,7 @@ public class Recipes {
         catEgg.setIngredient('E', Material.EGG);
         catEgg.setIngredient('D', Material.DIAMOND);
         if (!recipeExists(catEggKey, catEgg.getResult())) {
-            try { Bukkit.addRecipe(catEgg, true); }
+            try { Bukkit.addRecipe(catEgg); }
             catch (Exception e) { failedExceptions.add("cat_spawn_egg (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
@@ -168,7 +168,7 @@ public class Recipes {
         bell.setIngredient('W', new RecipeChoice.MaterialChoice(Tag.PLANKS));
         bell.setIngredient('G', Material.GOLD_INGOT);
         if (!recipeExists(bellKey, bell.getResult())) {
-            try { Bukkit.addRecipe(bell, true); }
+            try { Bukkit.addRecipe(bell); }
             catch (Exception e) { failedExceptions.add("bell (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
@@ -177,29 +177,29 @@ public class Recipes {
         cobweb.shape("SSS", "SSS", "SSS");
         cobweb.setIngredient('S', Material.STRING);
         if (!recipeExists(cobwebKey, cobweb.getResult())) {
-            try { Bukkit.addRecipe(cobweb, true); }
+            try { Bukkit.addRecipe(cobweb); }
             catch (Exception e) { failedExceptions.add("cobweb (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
     }
 
     public static void addArmorTrims(List<String> failedExceptions, int skippedDuplicateCount) {
         NamespacedKey boltTrim = new NamespacedKey(Specialization.getInstance(), "bolt_trim");
-        ShapedRecipe bolt = new ShapedRecipe(boltTrim, new ItemStack(Material.BOLT_ARMOR_TRIM_SMITHING_TEMPLATE));
+        ShapedRecipe bolt = new ShapedRecipe(boltTrim, new ItemStack(Material.COAST_ARMOR_TRIM_SMITHING_TEMPLATE));
         bolt.shape("ABA", "BBB", "AAA");
         bolt.setIngredient('A', Material.LIGHT_BLUE_DYE);
         bolt.setIngredient('B', Material.COPPER_BLOCK);
         if (!recipeExists(boltTrim, bolt.getResult())) {
-            try { Bukkit.addRecipe(bolt, true); }
+            try { Bukkit.addRecipe(bolt); }
             catch (Exception e) { failedExceptions.add("bolt_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
         NamespacedKey flowTrim = new NamespacedKey(Specialization.getInstance(), "flow_trim");
-        ShapedRecipe flow = new ShapedRecipe(flowTrim, new ItemStack(Material.FLOW_ARMOR_TRIM_SMITHING_TEMPLATE));
+        ShapedRecipe flow = new ShapedRecipe(flowTrim, new ItemStack(Material.TIDE_ARMOR_TRIM_SMITHING_TEMPLATE));
         flow.shape("ABA", "BBA", "ABB");
         flow.setIngredient('A', Material.LIGHT_BLUE_DYE);
         flow.setIngredient('B', Material.LIGHT_BLUE_TERRACOTTA);
         if (!recipeExists(flowTrim, flow.getResult())) {
-            try { Bukkit.addRecipe(flow, true); }
+            try { Bukkit.addRecipe(flow); }
             catch (Exception e) { failedExceptions.add("flow_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
@@ -209,7 +209,7 @@ public class Recipes {
         tide.setIngredient('A', Material.DEAD_BRAIN_CORAL_BLOCK);
         tide.setIngredient('B', Material.LIGHT_BLUE_TERRACOTTA);
         if (!recipeExists(tideTrim, tide.getResult())) {
-            try { Bukkit.addRecipe(tide, true); }
+            try { Bukkit.addRecipe(tide); }
             catch (Exception e) { failedExceptions.add("tide_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
@@ -220,7 +220,7 @@ public class Recipes {
         silence.setIngredient('B', Material.LIGHT_BLUE_DYE);
         silence.setIngredient('C', Material.SCULK);
         if (!recipeExists(silenceTrim, silence.getResult())) {
-            try { Bukkit.addRecipe(silence, true); }
+            try { Bukkit.addRecipe(silence); }
             catch (Exception e) { failedExceptions.add("silence_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
@@ -230,7 +230,7 @@ public class Recipes {
         ward.setIngredient('A', Material.LIGHT_BLUE_DYE);
         ward.setIngredient('B', Material.DEEPSLATE);
         if (!recipeExists(wardTrim, ward.getResult())) {
-            try { Bukkit.addRecipe(ward, true); }
+            try { Bukkit.addRecipe(ward); }
             catch (Exception e) { failedExceptions.add("ward_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
@@ -240,7 +240,7 @@ public class Recipes {
         snout.setIngredient('A', Material.BLACKSTONE);
         snout.setIngredient('B', Material.LIGHT_BLUE_DYE);
         if (!recipeExists(snoutTrim, snout.getResult())) {
-            try { Bukkit.addRecipe(snout, true); }
+            try { Bukkit.addRecipe(snout); }
             catch (Exception e) { failedExceptions.add("snout_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
@@ -250,7 +250,7 @@ public class Recipes {
         raiser.setIngredient('A', Material.LIGHT_BLUE_DYE);
         raiser.setIngredient('B', Material.TERRACOTTA);
         if (!recipeExists(raiserTrim, raiser.getResult())) {
-            try { Bukkit.addRecipe(raiser, true); }
+            try { Bukkit.addRecipe(raiser); }
             catch (Exception e) { failedExceptions.add("raiser_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
@@ -260,7 +260,7 @@ public class Recipes {
         shaper.setIngredient('A', Material.TERRACOTTA);
         shaper.setIngredient('B', Material.LIGHT_BLUE_DYE);
         if (!recipeExists(shaperTrim, shaper.getResult())) {
-            try { Bukkit.addRecipe(shaper, true); }
+            try { Bukkit.addRecipe(shaper); }
             catch (Exception e) { failedExceptions.add("shaper_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
@@ -270,7 +270,7 @@ public class Recipes {
         host.setIngredient('A', Material.TERRACOTTA);
         host.setIngredient('B', Material.LIGHT_BLUE_DYE);
         if (!recipeExists(hostTrim, host.getResult())) {
-            try { Bukkit.addRecipe(host, true); }
+            try { Bukkit.addRecipe(host); }
             catch (Exception e) { failedExceptions.add("host_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
@@ -280,7 +280,7 @@ public class Recipes {
         wild.setIngredient('A', Material.MOSSY_COBBLESTONE);
         wild.setIngredient('B', Material.LIGHT_BLUE_DYE);
         if (!recipeExists(wildTrim, wild.getResult())) {
-            try { Bukkit.addRecipe(wild, true); }
+            try { Bukkit.addRecipe(wild); }
             catch (Exception e) { failedExceptions.add("wild_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
@@ -291,7 +291,7 @@ public class Recipes {
         coast.setIngredient('B', Material.DEAD_TUBE_CORAL);
         coast.setIngredient('C', Material.COBBLED_DEEPSLATE);
         if (!recipeExists(coastTrim, coast.getResult())) {
-            try { Bukkit.addRecipe(coast, true); }
+            try { Bukkit.addRecipe(coast); }
             catch (Exception e) { failedExceptions.add("coast_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
@@ -301,7 +301,7 @@ public class Recipes {
         dune.setIngredient('A', Material.LIGHT_BLUE_DYE);
         dune.setIngredient('B', Material.SANDSTONE);
         if (!recipeExists(duneTrim, dune.getResult())) {
-            try { Bukkit.addRecipe(dune, true); }
+            try { Bukkit.addRecipe(dune); }
             catch (Exception e) { failedExceptions.add("dune_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
@@ -311,7 +311,7 @@ public class Recipes {
         eye.setIngredient('A', Material.SANDSTONE);
         eye.setIngredient('B', Material.LIGHT_BLUE_DYE);
         if (!recipeExists(eyeTrim, eye.getResult())) {
-            try { Bukkit.addRecipe(eye, true); }
+            try { Bukkit.addRecipe(eye); }
             catch (Exception e) { failedExceptions.add("eye_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
@@ -321,7 +321,7 @@ public class Recipes {
         sentry.setIngredient('A', Material.COBBLESTONE);
         sentry.setIngredient('B', Material.LIGHT_BLUE_DYE);
         if (!recipeExists(sentryTrim, sentry.getResult())) {
-            try { Bukkit.addRecipe(sentry, true); }
+            try { Bukkit.addRecipe(sentry); }
             catch (Exception e) { failedExceptions.add("sentry_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
@@ -331,7 +331,7 @@ public class Recipes {
         vex.setIngredient('A', Material.LIGHT_BLUE_DYE);
         vex.setIngredient('B', Material.COBBLESTONE);
         if (!recipeExists(vexTrim, vex.getResult())) {
-            try { Bukkit.addRecipe(vex, true); }
+            try { Bukkit.addRecipe(vex); }
             catch (Exception e) { failedExceptions.add("vex_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
@@ -341,7 +341,7 @@ public class Recipes {
         wayfinder.setIngredient('A', Material.TERRACOTTA);
         wayfinder.setIngredient('B', Material.LIGHT_BLUE_DYE);
         if (!recipeExists(wayfinderTrim, wayfinder.getResult())) {
-            try { Bukkit.addRecipe(wayfinder, true); }
+            try { Bukkit.addRecipe(wayfinder); }
             catch (Exception e) { failedExceptions.add("wayfinder_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
@@ -351,7 +351,7 @@ public class Recipes {
         spire.setIngredient('A', Material.PINK_CONCRETE);
         spire.setIngredient('B', Material.LIGHT_BLUE_DYE);
         if (!recipeExists(spireTrim, spire.getResult())) {
-            try { Bukkit.addRecipe(spire, true); }
+            try { Bukkit.addRecipe(spire); }
             catch (Exception e) { failedExceptions.add("spire_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
     }
@@ -533,7 +533,7 @@ public class Recipes {
         StonecuttingRecipe recipe = new StonecuttingRecipe(key, new ItemStack(output, amount), input);
         if (!recipeExists(key, recipe.getResult())) {
             try {
-                Bukkit.addRecipe(recipe, true);
+                Bukkit.addRecipe(recipe);
                 return 1;
             } catch (Exception e) {
                 failedExceptions.add(keyName + " (" + e.getMessage() + ")");

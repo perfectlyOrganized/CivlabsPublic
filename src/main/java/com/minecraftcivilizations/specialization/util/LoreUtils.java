@@ -5,9 +5,12 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.Style;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class LoreUtils {
 
@@ -53,8 +56,22 @@ public class LoreUtils {
         return Component.text(text).style(Style.style(NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
     }
 
-    public static Component createLoreLine(String text, TextColor color) {
+    public static Component createLoreLine(String text, NamedTextColor color) {
         return Component.text(text).style(Style.style(color).decoration(TextDecoration.ITALIC, false));
+    }
+    private static final LegacyComponentSerializer LEGACY_SERIALIZER =
+            LegacyComponentSerializer.legacySection();
+
+    public static void setItemDisplayName(ItemMeta meta, Component component) {
+        String legacyText = LEGACY_SERIALIZER.serialize(component);
+        meta.setDisplayName(legacyText);
+    }
+    public static void setLore(ItemMeta meta, List<Component> loreComponents) {
+        List<String> loreStrings = loreComponents.stream()
+                .map(LEGACY_SERIALIZER::serialize)
+                .collect(Collectors.toList());
+
+        meta.setLore(loreStrings);
     }
 
 }

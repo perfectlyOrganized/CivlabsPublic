@@ -4,14 +4,13 @@ import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.Skill;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
+import com.minecraftcivilizations.specialization.Skill.SkillType;
+import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.util.CoreUtil;
-import minecraftcivilizations.com.minecraftCivilizationsCore.GUI.GUI;
-import minecraftcivilizations.com.minecraftCivilizationsCore.GUI.GUIItem;
-import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
-import minecraftcivilizations.com.minecraftCivilizationsCore.Player.CustomPlayerManager;
+import com.minecraftcivilizations.specialization.util.ItemStackUtils;
+import com.minecraftcivilizations.specialization.util.LoreUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -24,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.minecraftcivilizations.specialization.Skill.SkillType.getDisplayName;
 
 public class ClassGUI extends GUI {
 
@@ -54,38 +52,38 @@ public class ClassGUI extends GUI {
     }
 
     private GUIItem makeSettingsItem(Player player){
-        ItemStack settings = ItemStack.of(Material.BOOK);
+        ItemStack settings = new ItemStack(Material.BOOK);
         ItemMeta settingsItemMeta = settings.getItemMeta();
         settingsItemMeta.addItemFlags(ItemFlag.values());
-        settingsItemMeta.displayName(Component.text("Settings").decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
+        LoreUtils.setItemDisplayName(settingsItemMeta,Component.text("Settings").decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
         settings.setItemMeta(settingsItemMeta);
         return new GUIItem(settings, () -> new SettingsGUI().setParentGUI(this).open(player));
     }
 
     private GUIItem makeRecipesItem(Player player){
-        ItemStack recipes = ItemStack.of(Material.KNOWLEDGE_BOOK);
+        ItemStack recipes = new ItemStack(Material.KNOWLEDGE_BOOK);
         ItemMeta recipesItemMeta = recipes.getItemMeta();
         recipesItemMeta.addItemFlags(ItemFlag.values());
-        recipesItemMeta.displayName(Component.text("Recipes").decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
+        LoreUtils.setItemDisplayName(recipesItemMeta,Component.text("Recipes").decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
         recipes.setItemMeta(recipesItemMeta);
-        return new GUIItem(recipes, () -> new RecipesGUI((CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(player.getUniqueId()), null).open(player));
+        return new GUIItem(recipes, () -> new RecipesGUI(Specialization.customPlayerManager.getCustomPlayer(player.getUniqueId()), null).open(player));
     }
 
     private GUIItem makeUserItem(Component name){
-        ItemStack user = ItemStack.of(Material.EMERALD);
+        ItemStack user = new ItemStack(Material.EMERALD);
         ItemMeta userItemMeta = user.getItemMeta();
         userItemMeta.addItemFlags(ItemFlag.values());
-        userItemMeta.displayName(name.decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
+        LoreUtils.setItemDisplayName(userItemMeta,name.decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
         user.setItemMeta(userItemMeta);
         return new GUIItem(user, null);
     }
 
     private GUIItem makeGlassDistributionPaneAdvanced(String name, Material material, double percent) {
-        ItemStack itemStack = ItemStack.of(material);
+        ItemStack itemStack = new ItemStack(material);
         ItemMeta itemMeta = itemStack.getItemMeta();
         itemMeta.addItemFlags(ItemFlag.values());
-        itemMeta.displayName(Component.text(name).decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
-        itemMeta.lore(new ArrayList<>() {
+        LoreUtils.setItemDisplayName(itemMeta,Component.text(name).decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
+        LoreUtils.setLore(itemMeta, new ArrayList<>() {
             {
                 add(Component.text("Holds " + Math.round(percent * 100) / 100 + "% of your total xp").decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
                 add(Component.empty());
@@ -97,11 +95,11 @@ public class ClassGUI extends GUI {
     }
 
     private GUIItem makeGlassDistributionPaneSimple(String name, Material material, double percent) {
-        ItemStack itemStack = ItemStack.of(material);
+        ItemStack itemStack = new ItemStack(material);
         ItemMeta itemMeta = itemStack.getItemMeta();
         itemMeta.addItemFlags(ItemFlag.values());
-        itemMeta.displayName(Component.text(name).decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
-        itemMeta.lore(new ArrayList<>() {
+        LoreUtils.setItemDisplayName(itemMeta,Component.text(name).decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
+        LoreUtils.setLore(itemMeta,new ArrayList<>() {
             {
                 add(Component.text("You are " + Math.round(percent * 100) / 100 + "% progressed through this tier").decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
                 add(Component.empty());
@@ -139,15 +137,15 @@ public class ClassGUI extends GUI {
                 double diff = customPlayer.getGUIDistributionOfTotalSkills(skill.getSkillType()) - score;
 
                 if (diff >= 1) {
-                    this.getItems().put(temp-=9, makeGlassDistributionPaneAdvanced(getDisplayName(skill.getSkillType()), Material.GREEN_STAINED_GLASS_PANE, customPlayer.getPercentOfTotal(skill.getSkillType())));
+                    this.getItems().put(temp-=9, makeGlassDistributionPaneAdvanced(SkillType.getDisplayName(skill.getSkillType()), Material.GREEN_STAINED_GLASS_PANE, customPlayer.getPercentOfTotal(skill.getSkillType())));
                 } else if (diff >= 0.75) {
-                    this.getItems().put(temp-=9, makeGlassDistributionPaneAdvanced(getDisplayName(skill.getSkillType()), Material.LIME_STAINED_GLASS_PANE, customPlayer.getPercentOfTotal(skill.getSkillType())));
+                    this.getItems().put(temp-=9, makeGlassDistributionPaneAdvanced(SkillType.getDisplayName(skill.getSkillType()), Material.LIME_STAINED_GLASS_PANE, customPlayer.getPercentOfTotal(skill.getSkillType())));
                 } else if (diff >= 0.5) {
-                    this.getItems().put(temp-=9, makeGlassDistributionPaneAdvanced(getDisplayName(skill.getSkillType()), Material.YELLOW_STAINED_GLASS_PANE, customPlayer.getPercentOfTotal(skill.getSkillType())));
+                    this.getItems().put(temp-=9, makeGlassDistributionPaneAdvanced(SkillType.getDisplayName(skill.getSkillType()), Material.YELLOW_STAINED_GLASS_PANE, customPlayer.getPercentOfTotal(skill.getSkillType())));
                 } else if (diff >= 0.25) {
-                    this.getItems().put(temp-=9, makeGlassDistributionPaneAdvanced(getDisplayName(skill.getSkillType()), Material.ORANGE_STAINED_GLASS_PANE, customPlayer.getPercentOfTotal(skill.getSkillType())));
+                    this.getItems().put(temp-=9, makeGlassDistributionPaneAdvanced(SkillType.getDisplayName(skill.getSkillType()), Material.ORANGE_STAINED_GLASS_PANE, customPlayer.getPercentOfTotal(skill.getSkillType())));
                 } else {
-                    this.getItems().put(temp-=9, makeGlassDistributionPaneAdvanced(getDisplayName(skill.getSkillType()), Material.RED_STAINED_GLASS_PANE, customPlayer.getPercentOfTotal(skill.getSkillType())));
+                    this.getItems().put(temp-=9, makeGlassDistributionPaneAdvanced(SkillType.getDisplayName(skill.getSkillType()), Material.RED_STAINED_GLASS_PANE, customPlayer.getPercentOfTotal(skill.getSkillType())));
                 }
             }
 
@@ -160,13 +158,13 @@ public class ClassGUI extends GUI {
                         SpecializationConfig.getSkillRequirementsConfig().getDouble(
                                 skill.getSkillType() + "_" + SkillLevel.getSkillLevelFromInt(currentSkillLevel + 1) + "_REQUIREMENT") * 100) / 100D;
 
-                ItemStack itemStack = ItemStack.of(skill.getSkillType().getSkillWorkstation());
+                ItemStack itemStack = new ItemStack(skill.getSkillType().getSkillWorkstation());
                 ItemMeta itemMeta = itemStack.getItemMeta();
                 itemMeta.addItemFlags(ItemFlag.values());
-                itemMeta.displayName(Component.text(getDisplayName(skill.getSkillType()))
+                LoreUtils.setItemDisplayName(itemMeta,Component.text(SkillType.getDisplayName(skill.getSkillType()))
                         .decoration(TextDecoration.ITALIC, false)
                         .color(NamedTextColor.WHITE));
-                itemMeta.lore(new ArrayList<>() {
+                LoreUtils.setLore(itemMeta,new ArrayList<>() {
                     {
                         add(Component.text(SkillLevel.getDisplayName(currentSkillLevel))
                                 .decoration(TextDecoration.ITALIC, false)
@@ -202,14 +200,13 @@ public class ClassGUI extends GUI {
                 }));
             } else if (currentSkillLevel == SkillLevel.values().length) {
                 double currentXp = Math.round(skill.getXp() * 100) / 100D;
-                ItemStack itemStack = ItemStack.of(skill.getSkillType().getSkillWorkstation());
+                ItemStack itemStack = new ItemStack(skill.getSkillType().getSkillWorkstation());
                 ItemMeta itemMeta = itemStack.getItemMeta();
-                itemMeta.setEnchantmentGlintOverride(true);
                 itemMeta.addItemFlags(ItemFlag.values());
-                itemMeta.displayName(Component.text(getDisplayName(skill.getSkillType()))
+                LoreUtils.setItemDisplayName(itemMeta,Component.text(SkillType.getDisplayName(skill.getSkillType()))
                         .decoration(TextDecoration.ITALIC, false)
                         .color(NamedTextColor.WHITE));
-                itemMeta.lore(new ArrayList<>() {
+                LoreUtils.setLore(itemMeta,new ArrayList<>() {
                     {
                         add(Component.text("A").decorations(Map.of(TextDecoration.OBFUSCATED, TextDecoration.State.TRUE, TextDecoration.ITALIC, TextDecoration.State.FALSE, TextDecoration.BOLD, TextDecoration.State.TRUE))
                                 .color(NamedTextColor.WHITE)
@@ -244,7 +241,7 @@ public class ClassGUI extends GUI {
             for (int score = 0; score < 3; score++) {
                 if((distribution * .03 - score) < 0 ) break;
                 int type = Math.min((int) (distribution * .09 - score * 3), 2);
-                this.getItems().put(temp-=9, makeGlassDistributionPaneSimple(getDisplayName(skill.getSkillType()), getPaneMaterial(currentSkillLevel, type), distribution));
+                this.getItems().put(temp-=9, makeGlassDistributionPaneSimple(SkillType.getDisplayName(skill.getSkillType()), getPaneMaterial(currentSkillLevel, type), distribution));
             }
 
             double currentXp = Math.round(skill.getXp() * 100) / 100D;
@@ -254,13 +251,13 @@ public class ClassGUI extends GUI {
                     Math.round((percentOfTotalForNextLevel / 100 * customPlayer.getTotalXp() - currentXp) / (1.0 - percentOfTotalForNextLevel / 100))
             );
 
-            ItemStack itemStack = ItemStack.of(skill.getSkillType().getSkillWorkstation());
+            ItemStack itemStack = new ItemStack(skill.getSkillType().getSkillWorkstation());
             ItemMeta itemMeta = itemStack.getItemMeta();
             itemMeta.addItemFlags(ItemFlag.values());
-            itemMeta.displayName(Component.text(getDisplayName(skill.getSkillType()))
+            LoreUtils.setItemDisplayName(itemMeta,Component.text(SkillType.getDisplayName(skill.getSkillType()))
                     .decoration(TextDecoration.ITALIC, false)
                     .color(NamedTextColor.WHITE));
-            itemMeta.lore(new ArrayList<>() {
+            LoreUtils.setLore(itemMeta,new ArrayList<>() {
                 {
                     add(Component.text(SkillLevel.getDisplayName(currentSkillLevel))
                             .decoration(TextDecoration.ITALIC, false)

@@ -2,7 +2,6 @@ package com.minecraftcivilizations.specialization.Listener.Blocks;
 
 import com.minecraftcivilizations.specialization.Reinforcement.ReinforcementManager;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
-import io.papermc.paper.event.block.BlockBreakProgressUpdateEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;

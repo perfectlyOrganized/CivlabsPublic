@@ -4,8 +4,10 @@ import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.minecraftcivilizations.specialization.util.CoreUtil;
+import com.minecraftcivilizations.specialization.util.ItemStackUtils;
 import org.bukkit.*;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Damageable;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -13,6 +15,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.EnumMap;
 import java.util.HashSet;
@@ -76,15 +79,15 @@ public class ArmorBreakSystem {
                 if (event.getDamage(BLOCKING) < -0.1) {
                     boolean shield_break = false;
                     if (equipment.getItemInOffHand().getType() == Material.SHIELD) {
-                        equipment.getItemInOffHand().damage(break_stats.shield_break, attacker);
+                        ItemStackUtils.damageItem( equipment.getItemInOffHand(), 1, attacker);
                         shield_break = true;
                     }else if (equipment.getItemInMainHand().getType() == Material.SHIELD) {
-                        equipment.getItemInMainHand().damage(break_stats.shield_break, attacker);
+                        ItemStackUtils.damageItem( equipment.getItemInMainHand(), 1, attacker);
                         shield_break = true;
                     }
                     if (shield_break) {
                         w.playSound(victim.getLocation(), Sound.ENTITY_ZOMBIE_ATTACK_WOODEN_DOOR, SoundCategory.PLAYERS, 0.895f, 1.1f + ThreadLocalRandom.current().nextFloat(0.2f));
-                        w.spawnParticle(Particle.BLOCK, victim.getLocation().add(0, 1, 0), (int) break_stats.shield_break, 0.25, 0.25, 0.25, 0, Material.PISTON_HEAD.createBlockData(), true);
+                        w.spawnParticle(Particle.BLOCK_DUST, victim.getLocation().add(0, 1, 0), (int) break_stats.shield_break, 0.25, 0.25, 0.25, 0, Material.PISTON_HEAD.createBlockData(), true);
                         return "[🛡" + break_stats.shield_break + "]";
                     }
                 }
@@ -107,7 +110,7 @@ public class ArmorBreakSystem {
                     map.put(slot, m);
                     if (item.getType().getMaxDurability() > 0) {
                         // Paper automatically breaks items at 0 durability and plays effects
-                        int unbreaking = item.getEnchantmentLevel(Enchantment.UNBREAKING);
+                        int unbreaking = item.getEnchantmentLevel(Enchantment.DURABILITY);
                         double scale = 1.0;
                         switch (unbreaking){
                             case 1:
@@ -124,7 +127,13 @@ public class ArmorBreakSystem {
                             scale *= 2.0;
                         }
                         int current_damage_amount = (int) (armor_damage * scale);
-                        item.damage(current_damage_amount, attacker);
+                        ItemMeta meta = item.getItemMeta();
+                        if (meta instanceof org.bukkit.inventory.meta.Damageable damageable) {
+                            // Get current damage and add to it
+                            int currentDamage = damageable.getDamage();
+                            damageable.setDamage(currentDamage + current_damage_amount);
+                        }
+                        item.setItemMeta(meta);
                         total_extra_penetration += current_damage_amount;
 //                        if(attacker instanceof Player px) {
 //                            Debug.message(px, "armor", "<white>" + slot.name() + "</white> broke by <light_purple>" + current_damage_amount);
@@ -149,16 +158,10 @@ public class ArmorBreakSystem {
                             sound = Sound.BLOCK_NETHER_BRICKS_BREAK;
                         }else if(mat==Material.CHAIN){
                             sound = Sound.BLOCK_CHAIN_BREAK;
-                        }else{
-                            if(ThreadLocalRandom.current().nextBoolean()) {
-                                sound = Sound.BLOCK_COPPER_GRATE_HIT;
-                            }else{
-                                sound = Sound.BLOCK_COPPER_GRATE_HIT;
-                            }
                         }
                     }
                     double y = ArmorStats.getArmorHeight(slot.getKey());
-                    w.spawnParticle(Particle.BLOCK, victim.getLocation().add(0, y, 0), (int)total_extra_penetration, 0.125, 0.125, 0.125, 0, mat.createBlockData(), true);
+                    w.spawnParticle(Particle.BLOCK_DUST, victim.getLocation().add(0, y, 0), (int)total_extra_penetration, 0.125, 0.125, 0.125, 0, mat.createBlockData(), true);
                 }
                 if(sound!=null) {
                     w.playSound(victim.getLocation(), sound, SoundCategory.PLAYERS, 0.95f, 1.2f + ThreadLocalRandom.current().nextFloat(0.2f));

@@ -4,7 +4,6 @@ import com.minecraftcivilizations.specialization.Listener.Player.Inventories.Spe
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.Specialization;
-import com.minecraftcivilizations.specialization.util.CoreUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -14,14 +13,12 @@ import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.components.UseCooldownComponent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public class BlessedFood extends CustomItem {
+public class BlessedFood extends CustomItemBase {
 
     private final List<Material> craftingIngredients; // null or empty = not craftable
     protected PotionEffectType effectType;
@@ -29,7 +26,7 @@ public class BlessedFood extends CustomItem {
     protected int amplifier;
     protected int xpReward;
 
-    public BlessedFood(String id, String displayName, Material material,
+    public BlessedFood(int id, String displayName, Material material,
                        PotionEffectType effectType, int durationTicks,
                        int amplifier, int xpReward, List<Material> craftingIngredients) {
 
@@ -45,7 +42,7 @@ public class BlessedFood extends CustomItem {
     public void init() {
         // Register shapeless recipe if ingredients exist
         if (craftingIngredients != null && !craftingIngredients.isEmpty()) {
-            NamespacedKey key = new NamespacedKey(Specialization.getInstance(), getId());
+            NamespacedKey key = new NamespacedKey(Specialization.getInstance(), String.valueOf(getId()));
             ShapelessRecipe recipe = new ShapelessRecipe(key, createItemStack());
             craftingIngredients.forEach(recipe::addIngredient);
             Bukkit.addRecipe(recipe);
@@ -64,7 +61,6 @@ public class BlessedFood extends CustomItem {
                 "§7A divine meal blessed by celestial hands.",
                 "§fRestores both body and spirit."
         ));
-        meta.setEnchantmentGlintOverride(true);
         itemStack.setItemMeta(meta);
     }
 

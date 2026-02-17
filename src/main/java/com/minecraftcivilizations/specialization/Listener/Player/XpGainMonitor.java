@@ -3,6 +3,7 @@ package com.minecraftcivilizations.specialization.Listener.Player;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
@@ -163,7 +164,7 @@ public final class XpGainMonitor {
 
                     Byte visibility = p.getPersistentDataContainer().get(XpGainMonitor.XP_MONITOR_KEY, PersistentDataType.BYTE);
                     if (visibility != null && visibility == 1) {
-                        p.sendMessage(msg);
+                        PlayerUtil.sendMessage(p,msg);
                     }
                 }
             }

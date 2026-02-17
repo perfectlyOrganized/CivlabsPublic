@@ -7,12 +7,8 @@ import com.minecraftcivilizations.specialization.Recipe.RecipeBlocker;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
+import com.minecraftcivilizations.specialization.util.ItemStackUtils;
 import com.minecraftcivilizations.specialization.util.LoreUtils;
-import minecraftcivilizations.com.minecraftCivilizationsCore.GUI.GUI;
-import minecraftcivilizations.com.minecraftCivilizationsCore.GUI.GUIItem;
-import minecraftcivilizations.com.minecraftCivilizationsCore.GUI.ListGUI;
-import minecraftcivilizations.com.minecraftCivilizationsCore.Item.ItemUtils;
-import minecraftcivilizations.com.minecraftCivilizationsCore.Options.GUIPlaceOption;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
@@ -34,7 +30,7 @@ public class RecipesGUI extends GUI {
     public RecipesGUI(CustomPlayer customPlayer, SkillType skillType) {
         super(Component.text(skillType != null ? "Unlocked Recipes in " + SkillType.getDisplayName(skillType) : "Choose Recipe SkillTree To View").color(NamedTextColor.BLACK), 54, new HashMap<>() {
             {
-                put(45, new GUIItem(ItemUtils.makeItemGUIItem(ItemStack.of(Material.ARROW), "Back to Class Menu").getItem(), () -> {
+                put(45, new GUIItem(ItemStackUtils.makeItemGUIItem(new ItemStack(Material.ARROW), "Back to Class Menu").getItem(), () -> {
                     new ClassGUI().open(Bukkit.getPlayer(customPlayer.getUuid()));
                 }));
             }
@@ -52,15 +48,16 @@ public class RecipesGUI extends GUI {
     public void open(Player player) {
         for (int i = 0; i < SkillType.values().length; i++) {
             SkillType skillType1 = SkillType.values()[i];
-            GUIItem put = new GUIItem(ItemUtils.makeItemGUIItem(ItemStack.of(skillType1.getSkillWorkstation()), SkillType.getDisplayName(skillType1)).getItem(), () -> {
+            GUIItem put = new GUIItem(ItemStackUtils.makeItemGUIItem(new ItemStack(skillType1.getSkillWorkstation()), SkillType.getDisplayName(skillType1)).getItem(), () -> {
                 if (skillType == skillType1) {
                     return;
                 }
                 new RecipesGUI(customPlayer, skillType1).setParentGUI(RecipesGUI.this).open(Bukkit.getPlayer(customPlayer.getUuid()));
             });
-            put.getItem().editMeta(itemMeta -> {
-                itemMeta.lore(LoreUtils.createDescriptionLoreLine(skillType1.getSkillDescription()));
-            });
+            ItemMeta meta = put.getItem().getItemMeta();
+            if (meta != null) {
+                LoreUtils.setLore(meta, LoreUtils.createDescriptionLoreLine(skillType1.getSkillDescription()));
+            }
             getItems().put(i + 1, put);
         }
         if (skillType == null) {
@@ -68,17 +65,18 @@ public class RecipesGUI extends GUI {
             return;
         }
         for (int i = 9; i < 18; i++) {
-            getItems().put(i, ItemUtils.makeItemGUIItem(ItemStack.of(Material.YELLOW_STAINED_GLASS_PANE), "Your path"));
+            getItems().put(i, ItemStackUtils.makeItemGUIItem(new ItemStack(Material.YELLOW_STAINED_GLASS_PANE), "Your path"));
         }
-        GUIItem guiItem = ItemUtils.makeGUIItemOfType(skillType.getSkillWorkstation(), SkillType.getDisplayName(skillType));
-        guiItem.getItem().editMeta(itemMeta -> {
-            itemMeta.lore(LoreUtils.createDescriptionLoreLine(skillType.getSkillDescription()));
-        });
+        GUIItem guiItem = ItemStackUtils.makeGUIItemOfType(skillType.getSkillWorkstation(), SkillType.getDisplayName(skillType));
+        ItemMeta meta = guiItem.getItem().getItemMeta();
+        if (meta != null) {
+            LoreUtils.setLore(meta, LoreUtils.createDescriptionLoreLine(skillType.getSkillDescription()));
+        }
         getItems().put(13, guiItem);
         if (!customPlayer.isNewRecipeGUIIteration()) {
-            getItems().put(21, ItemUtils.makeItemGUIItem(ItemStack.of(Material.YELLOW_STAINED_GLASS_PANE), "Your path"));
-            getItems().put(22, ItemUtils.makeItemGUIItem(ItemStack.of(Material.YELLOW_STAINED_GLASS_PANE), "Your path"));
-            getItems().put(23, ItemUtils.makeItemGUIItem(ItemStack.of(Material.YELLOW_STAINED_GLASS_PANE), "Your path"));
+            getItems().put(21, ItemStackUtils.makeItemGUIItem(new ItemStack(Material.YELLOW_STAINED_GLASS_PANE), "Your path"));
+            getItems().put(22, ItemStackUtils.makeItemGUIItem(new ItemStack(Material.YELLOW_STAINED_GLASS_PANE), "Your path"));
+            getItems().put(23, ItemStackUtils.makeItemGUIItem(new ItemStack(Material.YELLOW_STAINED_GLASS_PANE), "Your path"));
         }
 
         getItems().put(18, recipeItem(1));
@@ -106,9 +104,9 @@ public class RecipesGUI extends GUI {
 
     public GUIItem recipeItem(int level) {
         if (customPlayer.getSkillLevel(skillType) >= level) {
-            return ItemUtils.makeItemGUIItem(ItemStack.of(Material.LIME_STAINED_GLASS_PANE), SkillLevel.getDisplayName(level) + " Unlocked");
+            return ItemStackUtils.makeItemGUIItem(new ItemStack(Material.LIME_STAINED_GLASS_PANE), SkillLevel.getDisplayName(level) + " Unlocked");
         }
-        return ItemUtils.makeItemGUIItem(ItemStack.of(Material.RED_STAINED_GLASS_PANE), SkillLevel.getDisplayName(level) + " Not Unlocked");
+        return ItemStackUtils.makeItemGUIItem(new ItemStack(Material.RED_STAINED_GLASS_PANE), SkillLevel.getDisplayName(level) + " Not Unlocked");
     }
 
     public GUIItem viewRecipesItem(int requiredLevel) {
@@ -122,16 +120,18 @@ public class RecipesGUI extends GUI {
 //        }
 
         if (customPlayer.getSkillLevel(skillType) < requiredLevel - 1) {
-            guiItem = ItemUtils.makeItemGUIItem(ItemStack.of(Material.BOOK), SkillLevel.getDisplayName(requiredLevel) + " Not Unlocked");
-            guiItem.getItem().editMeta(itemMeta -> {
-                itemMeta.lore(LoreUtils.createDescriptionLoreLine("You can't view recipes yet, you'll be able to see it once you're one level under the requirement (" + (requiredLevel - 1) + ")"));
-            });
+            guiItem = ItemStackUtils.makeItemGUIItem(new ItemStack(Material.BOOK), SkillLevel.getDisplayName(requiredLevel) + " Not Unlocked");
+            ItemMeta meta = guiItem.getItem().getItemMeta();
+            if (meta != null) {
+                LoreUtils.setLore(meta, LoreUtils.createDescriptionLoreLine("You can't view recipes yet, you'll be able to see it once you're one level under the requirement (" + (requiredLevel - 1) + ")"));
+            }
             return guiItem;
         } else if (customPlayer.getSkillLevel(skillType) == requiredLevel - 1) {
-            guiItem = ItemUtils.makeItemGUIItem(ItemStack.of(Material.BOOK), SkillLevel.getDisplayName(requiredLevel) + " Not Unlocked");
-            guiItem.getItem().editMeta(itemMeta -> {
-                itemMeta.lore(LoreUtils.createDescriptionLoreLine("Click to view recipes you'll unlock"));
-            });
+            guiItem = ItemStackUtils.makeItemGUIItem(new ItemStack(Material.BOOK), SkillLevel.getDisplayName(requiredLevel) + " Not Unlocked");
+            ItemMeta meta = guiItem.getItem().getItemMeta();
+            if (meta != null) {
+                LoreUtils.setLore(meta, LoreUtils.createDescriptionLoreLine("Click to view recipes you'll unlock"));
+            }
             guiItem.setOnClick(() -> {
                 Set<NamespacedKey> stringHashSetPair = RecipeBlocker.getRecipes(skillType, requiredLevel);
                 ArrayList<ItemStack> itemStacks = new ArrayList<>(0);
@@ -139,7 +139,7 @@ public class RecipesGUI extends GUI {
                     for (NamespacedKey namespacedKey : stringHashSetPair) {
                         Material material = Registry.MATERIAL.get(namespacedKey);
                         if(material!=null) {
-                            itemStacks.add(ItemStack.of(material));
+                            itemStacks.add(new ItemStack(material));
                         }
                     }
                     HashMap<GUIPlaceOption, Boolean> map = new HashMap<>(0);
@@ -150,18 +150,19 @@ public class RecipesGUI extends GUI {
             });
             return guiItem;
         }
-        guiItem = ItemUtils.makeItemGUIItem(ItemStack.of(Material.WRITABLE_BOOK), SkillLevel.getDisplayName(requiredLevel) + " Unlocked");
-        guiItem.getItem().editMeta(itemMeta -> {
-            itemMeta.lore(LoreUtils.createDescriptionLoreLine("Click to view recipes you've unlocked"));
-        });
+        guiItem = ItemStackUtils.makeItemGUIItem(new ItemStack(Material.WRITABLE_BOOK), SkillLevel.getDisplayName(requiredLevel) + " Unlocked");
+        ItemMeta meta = guiItem.getItem().getItemMeta();
+        if (meta != null) {
+            LoreUtils.setLore(meta, LoreUtils.createDescriptionLoreLine("Click to view recipes you've unlocked"));
+        }
         guiItem.setOnClick(() -> {
             Set<NamespacedKey> stringHashSetPair = RecipeBlocker.getRecipes(skillType, requiredLevel);
             ArrayList<ItemStack> itemStacks = new ArrayList<>(0);
             if (stringHashSetPair != null) {
                 for (NamespacedKey namespacedKey : stringHashSetPair) {
-                    Recipe recipe = Bukkit.getRecipe(namespacedKey);
-                    if (recipe != null) {
-                        itemStacks.add(recipe.getResult().clone());
+                    ItemStack item = ItemStackUtils.getItemStack(namespacedKey);
+                    if (item != null) {
+                        itemStacks.add(item);
                     } else {
                         // fallback for weird cases
                         ItemStack stack = recipe_exceptions.get(namespacedKey.getKey());
@@ -185,7 +186,7 @@ public class RecipesGUI extends GUI {
         Map<String, ItemStack> recipemap = new HashMap<>();
         ItemStack mapitem = new ItemStack(Material.MAP);
         ItemMeta meta = mapitem.getItemMeta();
-        meta.displayName(Component.text("Empty Map").color(NamedTextColor.WHITE));
+        LoreUtils.setItemDisplayName(meta,Component.text("Empty Map").color(NamedTextColor.WHITE));
         mapitem.setItemMeta(meta);
         recipemap.put("empty_map", mapitem);
 
@@ -207,14 +208,14 @@ public class RecipesGUI extends GUI {
         shield_meta.setBlockState(shield_banner);
 
 // set the visible item name for the shield (standard white text)
-        shield_meta.displayName(Component.text("Decorated Shield").color(NamedTextColor.WHITE));
+        LoreUtils.setItemDisplayName(shield_meta,Component.text("Decorated Shield").color(NamedTextColor.WHITE));
         shield_item.setItemMeta(shield_meta);
         recipemap.put("shield_decoration", shield_item);
 
 // plain black banner (no patterns) with a white display name
         ItemStack banner_item = new ItemStack(Material.BLACK_BANNER);
         BannerMeta banner_meta = (BannerMeta) banner_item.getItemMeta();
-        banner_meta.displayName(Component.text("Black Banner").color(NamedTextColor.WHITE));
+        LoreUtils.setItemDisplayName(banner_meta,Component.text("Black Banner").color(NamedTextColor.WHITE));
         banner_item.setItemMeta(banner_meta);
         recipemap.put("banner_duplicate", banner_item);
 

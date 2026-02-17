@@ -1,18 +1,15 @@
 package com.minecraftcivilizations.specialization.Listener.Player.Interactions;
 
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
+import com.minecraftcivilizations.specialization.CustomItem.CustomItem;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.util.CoreUtil;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
-import minecraftcivilizations.com.minecraftCivilizationsCore.Item.CustomItem;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.momirealms.craftengine.bukkit.api.CraftEngineItems;
-import net.momirealms.craftengine.core.plugin.locale.TranslationManager;
-import net.momirealms.craftengine.core.util.Key;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -20,6 +17,7 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.ItemStack;
@@ -49,7 +47,8 @@ public class FoodInteractionListener implements Listener {
         ItemStack item = event.getItem();
         CustomPlayer customPlayer = CoreUtil.getPlayer(player.getUniqueId());
         if (customPlayer == null) return;
-        if (event.getAction().isRightClick()) {
+        Action action = event.getAction();
+        if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
             if (item == null) return;
             if (item.getType().isEdible() && player.isSneaking()) {
                 if (customPlayer.getSkillLevel(SkillType.HEALER) > SkillLevel.APPRENTICE.getLevel()) {
@@ -166,7 +165,7 @@ public class FoodInteractionListener implements Listener {
 
     private void giveGoldenAppleEffects(Player player){
         if(new Random().nextDouble() < .2) {
-            player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 20 * 60, 2));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 20 * 60, 2));
             PlayerUtil.message(player,"<#dbae32>You feel solidified by the golden nature of the apple.");
         }
     }
@@ -175,14 +174,9 @@ public class FoodInteractionListener implements Listener {
         String itemname = getItemName(item);
         CustomItem customItem = null;
 
-        if (CraftEngineItems.isCustomItem(item)) {
-            customItem = new CustomItem(item,
-                    Component.text("Blessed " + itemname).color(NamedTextColor.GOLD));
-        } else {
 
             customItem = new CustomItem(item.getType(),
                     Component.text("Blessed " + itemname).color(NamedTextColor.GOLD));
-        }
 
             String effectSummary;
             if (healerLevel >= SkillLevel.GRANDMASTER.getLevel()) {
@@ -202,7 +196,6 @@ public class FoodInteractionListener implements Listener {
                     Component.text(effectSummary).color(NamedTextColor.GRAY)
             ));
             ItemMeta meta = customItem.getItem().getItemMeta();
-            meta.setEnchantmentGlintOverride(true); //glowing food
             meta.getPersistentDataContainer().set(BLESSED_FOOD_KEY, PersistentDataType.BOOLEAN, true);
             item.setItemMeta(meta);
         }
@@ -260,13 +253,13 @@ public class FoodInteractionListener implements Listener {
 
         // Keep your existing “restore max health if below normal” behavior
         if (SpecializationConfig.getHealthConfig().getBoolean("HEALTH_ENABLED")) {
-            double currentMaxHealth = Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).getValue();
+            double currentMaxHealth = Objects.requireNonNull(player.getAttribute(Attribute.GENERIC_MAX_HEALTH)).getValue();
             double normalMaxHealth = SpecializationConfig.getHealthConfig().getDouble("MAX_HEALTH");
             double healthRestoreAmount = SpecializationConfig.getHealthConfig().getDouble("BLESSED_FOOD_HEALTH_RESTORE_AMOUNT");
 
             if (currentMaxHealth < normalMaxHealth) {
                 double newMaxHealth = Math.min(normalMaxHealth, currentMaxHealth + healthRestoreAmount);
-                Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(newMaxHealth);
+                Objects.requireNonNull(player.getAttribute(Attribute.GENERIC_MAX_HEALTH)).setBaseValue(newMaxHealth);
                 PlayerUtil.message(player,ChatColor.GREEN + "You feel your vitality returning! Max health restored to " + (int) newMaxHealth);
             }
         }
@@ -275,19 +268,15 @@ public class FoodInteractionListener implements Listener {
 
     private int getBlessedFoodLevel(ItemStack item) {
         if (item == null || item.getItemMeta() == null) return 0;
-        List<Component> lore = item.getItemMeta().lore();
+        List<String> lore = item.getItemMeta().getLore();
         if (lore == null) return 0;
-        for (Component component : lore) {
-            String line = component.toString();
+        for (String line : lore) {
             if (line.contains("Healer Level: ")) {
-                String plainText = ((net.kyori.adventure.text.TextComponent) component).content();
-                if (plainText.startsWith("Healer Level: ")) {
-                    String levelStr = plainText.replace("Healer Level: ", "");
-                    try {
-                        return Integer.parseInt(levelStr);
-                    } catch (NumberFormatException e) {
-                        return 0;
-                    }
+                String levelStr = line.replace("Healer Level: ", "");
+                try {
+                    return Integer.parseInt(levelStr);
+                } catch (NumberFormatException e) {
+                    return 0;
                 }
             }
         }
@@ -315,13 +304,7 @@ public class FoodInteractionListener implements Listener {
         String[] words = materialName.toLowerCase().split("_");
         StringBuilder result = new StringBuilder();
 
-        if (CraftEngineItems.isCustomItem(item)) {
-            Key itemId = CraftEngineItems.getCustomItemId(item);
-            if (itemId != null) {
-                String translationKey = "item." + itemId.value();
-                return TranslationManager.instance().miniMessageTranslation(translationKey);
-            }
-        }
+
         for (String word : words) {
             if (result.length() > 0) result.append(" ");
             result.append(word.substring(0, 1).toUpperCase()).append(word.substring(1));

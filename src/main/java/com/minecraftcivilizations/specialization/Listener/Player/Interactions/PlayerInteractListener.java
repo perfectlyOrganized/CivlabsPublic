@@ -9,17 +9,9 @@ import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.util.CoreUtil;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import com.typesafe.config.Config;
-import io.papermc.paper.datacomponent.DataComponentTypes;
-import io.papermc.paper.datacomponent.item.ItemLore;
-import io.papermc.paper.registry.RegistryAccess;
-import io.papermc.paper.registry.RegistryKey;
-import minecraftcivilizations.com.minecraftCivilizationsCore.Options.Pair;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Ageable;
@@ -32,17 +24,15 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockPhysicsEvent;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.view.AnvilView;
 
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class PlayerInteractListener implements Listener {
 
@@ -104,10 +94,12 @@ public class PlayerInteractListener implements Listener {
             }
         }
     }
-
+    private static final LegacyComponentSerializer LEGACY_SERIALIZER =
+            LegacyComponentSerializer.legacySection();
     @EventHandler
     public void onLibrarianEnchantItem(PlayerInteractEvent e) {
-        if (!e.getAction().isRightClick() || !e.getPlayer().isSneaking() || e.getItem() == null || e.getHand().equals(EquipmentSlot.OFF_HAND))
+        Action action = e.getAction();
+        if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK || !e.getPlayer().isSneaking() || e.getItem() == null || e.getHand().equals(EquipmentSlot.OFF_HAND))
             return;
         if (!e.getPlayer().getInventory().getItemInOffHand().getType().equals(Material.BOOK))
             return;
@@ -134,9 +126,7 @@ public class PlayerInteractListener implements Listener {
         List<NamespacedKey> bannedBlessEnchants =
                 SpecializationConfig.getLibrarianConfig().getStringList("BANNED_BLESS_ENCHANTS").stream().map(NamespacedKey::fromString).toList();
 
-        List<Enchantment> validEnchants = RegistryAccess.registryAccess()
-                .getRegistry(RegistryKey.ENCHANTMENT)
-                .stream()
+        List<Enchantment> validEnchants = Registry.ENCHANTMENT.stream()
                 .filter(enchant -> {
                     if (bannedBlessEnchants.contains(enchant.getKey())) return false;
                     if (!enchant.canEnchantItem(e.getItem())) return false;
@@ -145,7 +135,7 @@ public class PlayerInteractListener implements Listener {
                     }
                     return true;
                 })
-                .toList();
+                .collect(Collectors.toList());
 
         if (validEnchants.isEmpty()) {
             PlayerUtil.message(e.getPlayer(), ChatColor.RED + "This item cannot be blessed further.");
@@ -159,12 +149,23 @@ public class PlayerInteractListener implements Listener {
 
         meta.addEnchant(enchant, finalLevel, false);
 
-        List<Component> lore = meta.hasLore() ? new ArrayList<>(Objects.requireNonNull(meta.lore())) : new ArrayList<>();
+        List<Component> loreComponents = new ArrayList<>();
+        if (meta.hasLore()) {
+            for (String line : meta.getLore()) {
+                loreComponents.add(LEGACY_SERIALIZER.deserialize(line));
+            }
+        }
+
         String enchantDisplay = capitalizeWords(enchant.getKey().getKey().replace("_", " "));
         String levelRoman = toRoman(finalLevel);
-        lore.add(Component.text(ChatColor.GOLD + "Blessed with " + ChatColor.YELLOW + enchantDisplay + " " + levelRoman + ChatColor.GOLD + " by " + ChatColor.AQUA + e.getPlayer().getName()));
-        meta.lore(lore);
-        e.getItem().setItemMeta(meta);
+        String newLine = ChatColor.GOLD + "Blessed with " + ChatColor.YELLOW + enchantDisplay + " " + levelRoman + ChatColor.GOLD + " by " + ChatColor.AQUA + e.getPlayer().getName();
+        loreComponents.add(LEGACY_SERIALIZER.deserialize(newLine));
+
+// Convert back to Strings and set lore
+        List<String> loreStrings = loreComponents.stream()
+                .map(LEGACY_SERIALIZER::serialize)
+                .collect(Collectors.toList());
+        meta.setLore(loreStrings);
 
         e.getPlayer().setLevel(e.getPlayer().getLevel() - xpLevelAmount);
         e.getPlayer().getInventory().getItemInOffHand()
@@ -253,7 +254,8 @@ public class PlayerInteractListener implements Listener {
 
     @EventHandler
     public void onHarvestGlowBerries(PlayerInteractEvent e) {
-        if (!e.getAction().isRightClick() || e.getHand() == EquipmentSlot.OFF_HAND) return;
+        Action action = e.getAction();
+        if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK || e.getHand() == EquipmentSlot.OFF_HAND) return;
         Block clicked = e.getClickedBlock();
         if (clicked == null) return;
 
@@ -290,47 +292,8 @@ public class PlayerInteractListener implements Listener {
         );
     }
 
-    @EventHandler
-    public void onAnvilFinish(InventoryClickEvent e) {
-        if (e.getView() instanceof AnvilView view) {
-            String renameText = view.getRenameText();
-            if (renameText != null && renameText.matches("^\\[lore [0-9]].*")) {
-                CustomPlayer player = CoreUtil.getPlayer(e.getWhoClicked());
-                int level = SpecializationConfig.getLibrarianConfig().getInteger("ITEM_LORE_LIBRARIAN_LEVEL");
-                if (player.getSkillLevel(SkillType.LIBRARIAN) < level) return;
 
-                int number = Integer.parseInt(String.valueOf(renameText.charAt(6)));
-                ItemStack result = view.getTopInventory().getResult();
-                if (result == null) return;
-                ItemStack oldItem = view.getTopInventory().getFirstItem();
-                if (oldItem.hasData(DataComponentTypes.CUSTOM_NAME))
-                    result.setData(DataComponentTypes.CUSTOM_NAME, view.getTopInventory().getFirstItem().getData(DataComponentTypes.CUSTOM_NAME));
-                else {
-                    result.unsetData(DataComponentTypes.CUSTOM_NAME);
-                }
-                ArrayList<Component> lines = new ArrayList<>(result.getData(DataComponentTypes.LORE).lines());
-                if (lines.size() < number) {
-                    for (int i = 0; i < number - lines.size() + 1; i++) lines.add(Component.empty());
-                }
-                lines.set(number - 1, Component.text(renameText.substring(8).trim()));
 
-                result.setData(DataComponentTypes.LORE, ItemLore.lore(lines));
-            }
-        }
-    }
-
-    @EventHandler
-    public void anvilRenameEvent(InventoryClickEvent e) {
-        if (e.getView() instanceof AnvilView view) {
-            String renameText = view.getRenameText();
-            if (renameText != null && renameText.matches("^\\[lore [0-9]]")) {
-                int number = renameText.charAt(7);
-                ItemStack result = view.getTopInventory().getResult();
-                result.unsetData(DataComponentTypes.CUSTOM_NAME);
-                result.getData(DataComponentTypes.LORE).lines().add(number + 1, Component.text(renameText.substring(8)));
-            }
-        }
-    }
 
     @EventHandler
     public void onBucketEmpty(PlayerBucketEmptyEvent e) {

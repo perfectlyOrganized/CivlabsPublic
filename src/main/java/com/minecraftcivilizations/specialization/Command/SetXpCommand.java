@@ -7,6 +7,7 @@ import co.aikar.commands.annotation.Default;
 import co.aikar.commands.annotation.Subcommand;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
+import com.minecraftcivilizations.specialization.Specialization;
 import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -18,7 +19,7 @@ public class SetXpCommand extends BaseCommand {
     @Default
     @CommandPermission("specialization.setxp.self")
     public void onSetXP(@NotNull Player player, @NotNull SkillType type, double amount) {
-        CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
+        CustomPlayer customPlayer = Specialization.customPlayerManager.getCustomPlayer(player.getUniqueId());
         
         if (customPlayer == null) {
             player.sendMessage("§cError: Could not find your player data.");
@@ -43,7 +44,7 @@ public class SetXpCommand extends BaseCommand {
             return;
         }
         
-        CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(target.getUniqueId());
+        CustomPlayer customPlayer = Specialization.customPlayerManager.getCustomPlayer(target.getUniqueId());
         
         if (customPlayer == null) {
             sender.sendMessage("§cError: Could not find player data for " + target.getName() + ".");
@@ -73,7 +74,7 @@ public class SetXpCommand extends BaseCommand {
             return;
         }
         
-        CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(target.getUniqueId());
+        CustomPlayer customPlayer = Specialization.customPlayerManager.getCustomPlayer(target.getUniqueId());
         
         if (customPlayer == null) {
             sender.sendMessage("§cError: Could not find player data for " + target.getName() + ".");

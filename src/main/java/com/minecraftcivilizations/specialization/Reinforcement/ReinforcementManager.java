@@ -6,6 +6,7 @@ import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.util.CoreUtil;
+import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -161,7 +162,7 @@ public class ReinforcementManager {
 
 
             // REDSTONE particle with no gravity and slight drift
-            player.spawnParticle(Particle.DUST, loc, 1, 0, 0, 0, 0, dust, true);
+            player.spawnParticle(Particle.BLOCK_DUST, loc, 1);
         }
     }
 
@@ -204,8 +205,8 @@ public class ReinforcementManager {
         cachedReinforcements.put(chunk, blocks);
         cacheTime.put(chunk, System.currentTimeMillis());
 
-        Player target = player != null ? player : block.getWorld().getNearbyPlayers(block.getLocation(), 4.0)
-                .stream().findFirst().orElse(null);
+        Player target = player != null ? player :
+                PlayerUtil.getNearestPlayer(block.getLocation(), 4.0);
         if (target != null) {
             CustomPlayer cp = CoreUtil.getPlayer(target.getUniqueId());
             if (cp != null) cp.addSkillXp(SkillType.BUILDER, isHeavy ? 15.0 : 5.0);
@@ -305,7 +306,7 @@ public class ReinforcementManager {
             cacheTime.put(chunk, System.currentTimeMillis());
             return cachedReinforcements.get(chunk);
         }
-        if (!chunk.getPersistentDataContainer().has(namespacedKey)) return null;
+        if (!chunk.getPersistentDataContainer().has(namespacedKey, PersistentDataType.STRING)) return null;
         String s = chunk.getPersistentDataContainer().get(namespacedKey, PersistentDataType.STRING);
         Set<Reinforcement> set = new Gson().fromJson(s, new TypeToken<Set<Reinforcement>>() {}.getType());
         if (set != null && !set.isEmpty()) {

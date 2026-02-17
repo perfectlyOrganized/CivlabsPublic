@@ -1,6 +1,5 @@
 package com.minecraftcivilizations.specialization.Player;
 
-import com.destroystokyo.paper.profile.PlayerProfile;
 import com.minecraftcivilizations.specialization.Specialization;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
@@ -14,12 +13,6 @@ import java.util.List;
 import java.util.UUID;
 
 public class PreJoinEventListener implements Listener {
-    @EventHandler
-    public void onPreJoin(AsyncPlayerPreLoginEvent event) {
-        onPreLogin(event.getPlayerProfile(), event.getUniqueId());
-    }
-    private void onPreLogin(PlayerProfile playerProfile, UUID uuid){
-    }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {

@@ -4,6 +4,8 @@ import co.aikar.commands.BaseCommand;
 import co.aikar.commands.annotation.*;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
+import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.JoinConfiguration;
@@ -32,15 +34,15 @@ public class XPLeaderboardCommand extends BaseCommand {
     // --- Default: overall XP leaderboard ---
     @Default
     public void showOverallLeaderboard(Player sender) {
-        sender.sendMessage(Component.text("testo", NamedTextColor.GREEN));
+        PlayerUtil.sendMessage(sender, Component.text("testo", NamedTextColor.GREEN));
         if (!sender.hasPermission("civlabs.xpleaderboard")) {
-            sender.sendMessage(Component.text("You do not have permission.", NamedTextColor.RED));
+            PlayerUtil.sendMessage(sender, Component.text("You do not have permission.", NamedTextColor.RED));
             return;
         }
 
         List<CustomPlayer> customPlayers = getOnlineCustomPlayers();
         if (customPlayers.isEmpty()) {
-            sender.sendMessage(Component.text("No players online to display XP leaderboard.", NamedTextColor.RED));
+            PlayerUtil.sendMessage(sender, Component.text("No players online to display XP leaderboard.", NamedTextColor.RED));
             return;
         }
 
@@ -62,7 +64,7 @@ public class XPLeaderboardCommand extends BaseCommand {
                     return totalXp + " XP - Top Skill: " + skillInfo;
                 }, null);
 
-        sender.sendMessage(message); // Send only to the command sender
+        PlayerUtil.sendMessage(sender, message); // Send only to the command sender
     }
 
     // --- Per-class leaderboard ---
@@ -70,7 +72,7 @@ public class XPLeaderboardCommand extends BaseCommand {
     @CommandCompletion("@classes")
     public void showClassLeaderboard(Player sender, @NotNull String className) {
         if (!sender.hasPermission("civlabs.xpleaderboard")) {
-            sender.sendMessage(Component.text("You do not have permission.", NamedTextColor.RED));
+            PlayerUtil.sendMessage(sender, Component.text("You do not have permission.", NamedTextColor.RED));
             return;
         }
 
@@ -78,7 +80,7 @@ public class XPLeaderboardCommand extends BaseCommand {
         try {
             type = SkillType.valueOf(className.toUpperCase());
         } catch (IllegalArgumentException e) {
-            sender.sendMessage(Component.text("Invalid class name: " + className, NamedTextColor.RED));
+            PlayerUtil.sendMessage(sender, Component.text("Invalid class name: " + className, NamedTextColor.RED));
             return;
         }
 
@@ -87,7 +89,7 @@ public class XPLeaderboardCommand extends BaseCommand {
                 .collect(Collectors.toList());
 
         if (customPlayers.isEmpty()) {
-            sender.sendMessage(Component.text("No players online for class " + type.name(), NamedTextColor.RED));
+            PlayerUtil.sendMessage(sender, Component.text("No players online for class " + type.name(), NamedTextColor.RED));
             return;
         }
 
@@ -97,15 +99,14 @@ public class XPLeaderboardCommand extends BaseCommand {
                     String tier = cp.getSkillLevelEnum(type).name();
                     return xp + " XP (" + tier + ")";
                 }, type);
-
-        sender.sendMessage(message);
+        PlayerUtil.sendMessage(sender, message);
     }
 
     // --- All-classes breakdown ---
     @Subcommand("allclasses")
     public void showAllClassesLeaderboard(Player sender) {
         if (!sender.hasPermission("civlabs.xpleaderboard")) {
-            sender.sendMessage(Component.text("You do not have permission.", NamedTextColor.RED));
+            PlayerUtil.sendMessage(sender, Component.text("You do not have permission.", NamedTextColor.RED));
             return;
         }
 
@@ -121,7 +122,7 @@ public class XPLeaderboardCommand extends BaseCommand {
                             String tier = cp.getSkillLevelEnum(type).name();
                             return xp + " XP (" + tier + ")";
                         }, type);
-                sender.sendMessage(message);
+                PlayerUtil.sendMessage(sender, message);
             }
         }
     }
@@ -131,15 +132,13 @@ public class XPLeaderboardCommand extends BaseCommand {
         return Bukkit.getOnlinePlayers().stream()
                 .map(p -> {
                     try {
-                        return MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().load(p.getUniqueId());
+                        return Specialization.customPlayerManager.load(p.getUniqueId());
                     } catch (FileNotFoundException e) {
-                        MinecraftCivilizationsCore.getInstance().getLogger().severe(String.format("Can't load player %s",p.name()));
+                        MinecraftCivilizationsCore.getInstance().getLogger().severe(String.format("Can't load player %s",p.getName()));
                     }
                     return null;
                 })
                 .filter(Objects::nonNull)
-                .filter(cp -> cp instanceof CustomPlayer)
-                .map(cp -> (CustomPlayer) cp)
                 .collect(Collectors.toList());
     }
 

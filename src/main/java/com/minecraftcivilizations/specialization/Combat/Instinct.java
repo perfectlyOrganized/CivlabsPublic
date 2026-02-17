@@ -3,7 +3,6 @@ package com.minecraftcivilizations.specialization.Combat;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.util.LocatorBarManager;
 import com.minecraftcivilizations.specialization.util.CoreUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.LivingEntity;
@@ -75,10 +74,7 @@ public class Instinct {
 
         int detectionDuration = SpecializationConfig.getInstinctConfig().getInteger("INSTINCT_GLOW_DURATION_TICKS");
 
-        LocatorBarManager locatorBarManager = LocatorBarManager.getInstance();
-        if (locatorBarManager != null) {
-            locatorBarManager.grantTemporaryVisibility(guardsman, mob, detectionDuration);
-        }
+
         
         Bukkit.getScheduler().runTaskLater(Objects.requireNonNull(Bukkit.getPluginManager().getPlugin("Specialization")), () -> {
             lastDetectionTime.remove(mobId);

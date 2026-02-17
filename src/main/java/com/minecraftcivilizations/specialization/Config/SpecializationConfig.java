@@ -103,7 +103,7 @@ public class SpecializationConfig {
     private static ConfigFile locatorBarConfig;
     @Getter
     private static ConfigFile grindConfig;
-    private static final List<EntityType> BREEDABLE =  List.of(EntityType.AXOLOTL, EntityType.CAMEL, EntityType.CAT, EntityType.CHICKEN, EntityType.COD, EntityType.COW, EntityType.DONKEY, EntityType.FOX, EntityType.FROG, EntityType.GOAT, EntityType.HOGLIN, EntityType.HORSE, EntityType.LLAMA, EntityType.MOOSHROOM, EntityType.OCELOT, EntityType.PANDA, EntityType.PARROT, EntityType.PIG, EntityType.RABBIT, EntityType.SHEEP, EntityType.STRIDER, EntityType.TADPOLE, EntityType.TURTLE, EntityType.WOLF);
+    private static final List<EntityType> BREEDABLE =  List.of(EntityType.AXOLOTL, EntityType.CAMEL, EntityType.CAT, EntityType.CHICKEN, EntityType.COD, EntityType.COW, EntityType.DONKEY, EntityType.FOX, EntityType.FROG, EntityType.GOAT, EntityType.HOGLIN, EntityType.HORSE, EntityType.LLAMA, EntityType.MUSHROOM_COW, EntityType.OCELOT, EntityType.PANDA, EntityType.PARROT, EntityType.PIG, EntityType.RABBIT, EntityType.SHEEP, EntityType.STRIDER, EntityType.TADPOLE, EntityType.TURTLE, EntityType.WOLF);
     public static final List<EntityType> TAMEABLE = List.of(EntityType.WOLF, EntityType.OCELOT, EntityType.CAT, EntityType.PARROT, EntityType.HORSE, EntityType.DONKEY, EntityType.MULE, EntityType.LLAMA, EntityType.TRADER_LLAMA);
 
 
@@ -196,7 +196,7 @@ public class SpecializationConfig {
             Map<String, Object> skillType = data.get(SkillType.BLACKSMITH.name());
             for (Material inputMaterial : Material.values()) {
                 if (inputMaterial.isItem() && inputMaterial != Material.AIR) {
-                    skillType.put(inputMaterial.key().value().toUpperCase(Locale.ROOT), 1D);
+                    skillType.put(inputMaterial.getKey().getKey().toUpperCase(Locale.ROOT), 1D);
                 }
             }
             return data;
@@ -234,7 +234,7 @@ public class SpecializationConfig {
                 if (inputMaterial.isItem() && inputMaterial != Material.AIR) {
                     Bukkit.recipeIterator().forEachRemaining((recipe) -> {
                         if (recipe instanceof StonecuttingRecipe stonecuttingRecipe) {
-                            if (stonecuttingRecipe.getResult().equals(ItemStack.of(inputMaterial))) {
+                            if (stonecuttingRecipe.getResult().equals(new ItemStack(inputMaterial))) {
                                 skillType.put(inputMaterial.name(), 1);
                             }
                         }
@@ -280,7 +280,7 @@ public class SpecializationConfig {
             Map<String, Double> data = new HashMap<>();
             for (Material inputMaterial : Material.values()) {
                 if (inputMaterial.isItem() && inputMaterial != Material.AIR) {
-                    data.put(inputMaterial.key().value().toUpperCase(Locale.ROOT), 1D);
+                    data.put(inputMaterial.getKey().getKey().toUpperCase(Locale.ROOT), 1D);
                 }
             }
             return data;
@@ -291,7 +291,7 @@ public class SpecializationConfig {
             Map<String, Integer> data = new HashMap<>();
             for (Material inputMaterial : Material.values()) {
                 if (inputMaterial.isEdible() && inputMaterial != Material.AIR) {
-                    data.put(inputMaterial.key().value().toUpperCase(Locale.ROOT), 24);
+                    data.put(inputMaterial.getKey().getKey().toUpperCase(Locale.ROOT), 24);
                 }
             }
             return data;
@@ -381,7 +381,7 @@ public class SpecializationConfig {
 
         Supplier<Map<String,Object>> berserkDefaults = () -> {
             List<Map<String,Object>> list = new ArrayList<>();
-            list.add(Map.of(PotionEffectType.ABSORPTION.key().value().toUpperCase(Locale.ROOT), new PotionEffectData(0, 0).toMap()));
+            list.add(Map.of(PotionEffectType.ABSORPTION.getKey().getKey().toUpperCase(Locale.ROOT), new PotionEffectData(0, 0).toMap()));
             return Map.of("berserk_effect",list);
         };
         berserkConfig = new ConfigFile(Specialization.getInstance(), "berserkConfig", berserkDefaults);
@@ -396,7 +396,7 @@ public class SpecializationConfig {
                 if (inputMaterial.isItem() && inputMaterial != Material.AIR) {
                     Bukkit.recipeIterator().forEachRemaining((recipe) -> {
                         if (recipe instanceof BlastingRecipe blastingRecipe) {
-                            if (blastingRecipe.getResult().equals(ItemStack.of(inputMaterial))) {
+                            if (blastingRecipe.getResult().equals(new ItemStack(inputMaterial))) {
                                 skillType.put(inputMaterial.name(), 0);
                             }
                         }
@@ -419,7 +419,7 @@ public class SpecializationConfig {
                 if (inputMaterial.isItem() && inputMaterial != Material.AIR) {
                     Bukkit.recipeIterator().forEachRemaining((recipe) -> {
                         if (recipe instanceof FurnaceRecipe furnaceRecipe) {
-                            if (furnaceRecipe.getResult().equals(ItemStack.of(inputMaterial))) {
+                            if (furnaceRecipe.getResult().equals(new ItemStack(inputMaterial))) {
                                 skillType.put(inputMaterial.name(), 0);
                             }
                         }
@@ -440,7 +440,7 @@ public class SpecializationConfig {
                 if (inputMaterial.isItem() && inputMaterial != Material.AIR) {
                     Bukkit.recipeIterator().forEachRemaining((recipe) -> {
                         if (recipe instanceof SmokingRecipe smokingRecipe) {
-                            if (smokingRecipe.getResult().equals(ItemStack.of(inputMaterial))) {
+                            if (smokingRecipe.getResult().equals(new ItemStack(inputMaterial))) {
                                 skillType.put(inputMaterial.name(), 0);
                             }
                         }
@@ -459,7 +459,7 @@ public class SpecializationConfig {
             Map<String, Double> skillType = data.get(SkillType.FARMER.name());
             for (Material inputMaterial : Material.values()) {
                 if (inputMaterial.isBlock()) {
-                    skillType.put(inputMaterial.key().value().toUpperCase(Locale.ROOT), 0.0);
+                    skillType.put(inputMaterial.getKey().getKey().toUpperCase(Locale.ROOT), 0.0);
                 }
             }
             return data;
@@ -478,7 +478,7 @@ public class SpecializationConfig {
             Map<String, Object> skillType = data.get(SkillType.BUILDER.name());
             for (Material material : Material.values()) {
                 if (material.isBlock()) {
-                    skillType.put(material.key().value().toUpperCase(Locale.ROOT), 0.0);
+                    skillType.put(material.getKey().getKey().toUpperCase(Locale.ROOT), 0.0);
                 }
             }
             return data;
@@ -544,7 +544,7 @@ public class SpecializationConfig {
             Map<String, Double> data = new HashMap<>();
             for (Material material : Material.values()) {
                 if (material.isBlock() && !material.isAir()) {
-                    data.put(material.key().value().toUpperCase(Locale.ROOT), 1.0);
+                    data.put(material.getKey().getKey().toUpperCase(Locale.ROOT), 1.0);
                 }
             }
             return data;
@@ -616,7 +616,7 @@ public class SpecializationConfig {
         Supplier<Map<String, Object>> skillsDefaults = () -> {
             Map<String, Object> data = new HashMap<>();
             for (SkillType skillType : SkillType.values()) {
-                data.put(skillType + "_WORKSTATION", Material.COMPOSTER.key().value().toUpperCase(Locale.ROOT));
+                data.put(skillType + "_WORKSTATION", Material.COMPOSTER.getKey().getKey().toUpperCase(Locale.ROOT));
                 data.put(skillType + "_DESCRIPTION", "Description");
                 data.put(skillType + "_XP_MULTIPLIER", 1.0);
             }
@@ -649,7 +649,7 @@ public class SpecializationConfig {
             Map<String, Object> data = new HashMap<>();
             data.put("ENCHANTABLE_TOOL_REGEX", "^(?i)(?:(wooden|stone|iron|diamond|golden|netherite)_(?:(pickaxe|axe|shovel|sword|hoe))|(leather|chainmail|iron|diamond|golden|netherite)_(?:(helmet|chestplate|leggings|boots))|fishing_rod|shears|flint_and_steel|bow|crossbow|trident|mace|elytra|book|shield)");
             data.put("BLUEPRINT_ITEM_RECIPES", "^(?i)(?:(wooden|stone|iron|diamond|golden|netherite)_(?:(pickaxe|axe|shovel|sword|hoe))|(leather|chainmail|iron|diamond|golden|netherite)_(?:(helmet|chestplate|leggings|boots))|fishing_rod|shears|flint_and_steel|bow|crossbow|trident|mace|elytra|book|shield)");
-            data.put("BANNED_BLESS_ENCHANTS", List.of(Enchantment.MENDING.getKey().value()));
+            data.put("BANNED_BLESS_ENCHANTS", List.of(Enchantment.MENDING.getKey().getKey()));
             data.put("BLESS_ITEM_LIBRARIAN_LEVEL", 2);
             data.put("BLESS_ITEM_XP_LEVEL_REQUIREMENT", 3);
             data.put("ITEM_LORE_LIBRARIAN_LEVEL", 3);

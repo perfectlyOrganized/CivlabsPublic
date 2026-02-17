@@ -1,10 +1,8 @@
 package com.minecraftcivilizations.specialization.GUI;
 
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
-import minecraftcivilizations.com.minecraftCivilizationsCore.GUI.GUI;
-import minecraftcivilizations.com.minecraftCivilizationsCore.GUI.GUIItem;
-import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
-import minecraftcivilizations.com.minecraftCivilizationsCore.Options.GUIPlaceOption;
+import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.util.LoreUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -27,15 +25,15 @@ public class SettingsGUI extends GUI {
     @Override
     public void open(Player player) {
         ItemStack settings;
-        CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
+        CustomPlayer customPlayer = Specialization.customPlayerManager.getCustomPlayer(player.getUniqueId());
         if (customPlayer.isAdvancedClassesGUIEnabled()) {
-            settings = ItemStack.of(Material.GREEN_DYE);
+            settings = new ItemStack(Material.GREEN_DYE);
         } else {
-            settings = ItemStack.of(Material.RED_DYE);
+            settings = new ItemStack(Material.RED_DYE);
         }
         ItemMeta settingsItemMeta = settings.getItemMeta();
         settingsItemMeta.addItemFlags(ItemFlag.values());
-        settingsItemMeta.displayName(Component.text("Enable/Disable Advanced Class GUI").decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
+        LoreUtils.setItemDisplayName(settingsItemMeta,Component.text("Enable/Disable Advanced Class GUI").decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
         settings.setItemMeta(settingsItemMeta);
         this.getItems().put(10, new GUIItem(settings, () -> {
             customPlayer.setAdvancedClassesGUIEnabled(!customPlayer.isAdvancedClassesGUIEnabled());
@@ -44,13 +42,13 @@ public class SettingsGUI extends GUI {
         }));
 
         if (customPlayer.isNewRecipeGUIIteration()) {
-            settings = ItemStack.of(Material.GREEN_DYE);
+            settings = new ItemStack(Material.GREEN_DYE);
         } else {
-            settings = ItemStack.of(Material.RED_DYE);
+            settings = new ItemStack(Material.RED_DYE);
         }
         settingsItemMeta = settings.getItemMeta();
         settingsItemMeta.addItemFlags(ItemFlag.values());
-        settingsItemMeta.displayName(Component.text("Enable/Disable The Different Recipes GUI").decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
+        LoreUtils.setItemDisplayName(settingsItemMeta,(Component.text("Enable/Disable The Different Recipes GUI").decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE)));
         settings.setItemMeta(settingsItemMeta);
         this.getItems().put(11, new GUIItem(settings, () -> {
             customPlayer.setNewRecipeGUIIteration(!customPlayer.isNewRecipeGUIIteration());
@@ -59,13 +57,13 @@ public class SettingsGUI extends GUI {
         }));
 
         if (customPlayer.isSoundEnabled()) {
-            settings = ItemStack.of(Material.GREEN_DYE);
+            settings = new ItemStack(Material.GREEN_DYE);
         } else {
-            settings = ItemStack.of(Material.RED_DYE);
+            settings = new ItemStack(Material.RED_DYE);
         }
         settingsItemMeta = settings.getItemMeta();
         settingsItemMeta.addItemFlags(ItemFlag.values());
-        settingsItemMeta.displayName(Component.text("Enable/Disable XP gain sound").decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
+        LoreUtils.setItemDisplayName(settingsItemMeta, Component.text("Enable/Disable XP gain sound").decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
         settings.setItemMeta(settingsItemMeta);
         this.getItems().put(12, new GUIItem(settings, () -> {
             customPlayer.setSoundEnabled(!customPlayer.isSoundEnabled());

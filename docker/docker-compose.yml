@@ -1,0 +1,12 @@
+services:
+  arclight-server:
+    build: .
+    container_name: arclight-1.20.1
+    ports:
+      - "25565:25565"
+    volumes:
+      - ./data:/data
+      - ./../build/libs:/transfer:ro
+    restart: unless-stopped
+    stdin_open: true # Allows for console interaction
+    tty: true        # Required for the Minecraft console

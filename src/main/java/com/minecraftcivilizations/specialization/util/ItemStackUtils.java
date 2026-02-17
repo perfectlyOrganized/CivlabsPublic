@@ -1,17 +1,83 @@
 package com.minecraftcivilizations.specialization.util;
 
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
+import com.minecraftcivilizations.specialization.CustomItem.CustomItemBase;
+import com.minecraftcivilizations.specialization.GUI.GUIItem;
+import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.StaffTools.Debug;
+import io.izzel.arclight.api.Arclight;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.bukkit.*;
+import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.Recipe;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ItemStackUtils {
+    private static final Map<String, ItemStack> itemCache = new ConcurrentHashMap<>();
+    /**
+     * Cache an item for future lookups
+     */
+    private static void cacheItem(String key, ItemStack item) {
+        if (item != null) {
+            itemCache.put(key, item.clone());
+        }
+    }
+    public static ItemStack getItemStack(NamespacedKey key) {
+        if (key == null) return null;
+
+        String keyString = key.toString();
+
+        // Check cache first
+        if (itemCache.containsKey(keyString)) {
+            return itemCache.get(keyString).clone();
+        }
+
+        ItemStack result = null;
+
+        // Try each method in order
+        result = getFromBukkitRecipe(key);
+        if (result != null) {
+            cacheItem(keyString, result);
+            return result.clone();
+        }
+
+        Material material = Material.matchMaterial(keyString);
+
+        if (material != null) {
+            result = new ItemStack(material);
+            cacheItem(keyString, result);
+            return result.clone();
+        }
+
+        throw new NullPointerException(keyString+ " not found! Maybe typo?");
+    }
+    private static ItemStack getFromBukkitRecipe(NamespacedKey key) {
+        try {
+            Recipe recipe = Bukkit.getRecipe(key);
+            if (recipe != null && recipe.getResult() != null) {
+                return recipe.getResult().clone();
+            }
+        } catch (Exception e) {
+            Debug.broadcast("item", "Bukkit recipe lookup failed for " + key + ": " + e.getMessage());
+        }
+        return null;
+    }
 
     /**
      * Returns true if the item has a non-empty lore line at the given index.
@@ -109,6 +175,50 @@ public class ItemStackUtils {
         item_stack.setItemMeta(meta);
     }
 
+    public static boolean damageItem(ItemStack item, int amount, Entity breaker) {
+        if (item == null || item.getType() == Material.AIR) return false;
+        if (item.getType().getMaxDurability() == 0) return false; // Unbreakable items
+
+        if (item instanceof Damageable) {
+            Damageable damageable = (Damageable) item;
+
+            int currentDamage = damageable.getDamage();
+            int maxDurability = item.getType().getMaxDurability();
+
+            // Apply unbreaking enchantment
+            int unbreaking = item.getEnchantmentLevel(Enchantment.DURABILITY);
+            int damageToApply = amount;
+
+            if (unbreaking > 0) {
+                damageToApply = 0;
+                for (int i = 0; i < amount; i++) {
+                    // Chance to ignore damage: 1/(unbreaking+1)
+                    if (Math.random() > 1.0 / (unbreaking + 1.0)) {
+                        damageToApply++;
+                    }
+                }
+            }
+
+            if (damageToApply <= 0) return false;
+
+            // Apply damage
+            int newDamage = currentDamage + damageToApply;
+            damageable.setDamage(newDamage);
+
+            // Check if item broke
+            if (newDamage >= maxDurability) {
+                // Item breaks
+                if (breaker != null) {
+                    breaker.getWorld().playSound(breaker.getLocation(),
+                            Sound.ENTITY_ITEM_BREAK, 1.0f, 1.0f);
+                }
+                return true; // Item broke
+            }
+        }
+
+        return false; // Item damaged but didn't break
+    }
+
     // Returns hunger points (food "nutrition") restored by one unit of the given Material.
 // Values sourced from the Minecraft Wiki "Food" table (Java Edition values).
     public static int getFoodNutrition(Material food_type) {
@@ -179,4 +289,41 @@ public class ItemStackUtils {
         }
     }
 
+    public static boolean isGUIItemWithSpecificName(ItemStack item, String name) {
+        if(item.getItemMeta() == null || !item.getItemMeta().hasDisplayName()) return false;
+        ItemMeta meta = item.getItemMeta();
+        return meta.getDisplayName().equals(name);
+    }
+
+    public static GUIItem makeItemGUIItem(ItemStack item, String name) {
+        if(item == null || item.getItemMeta() == null) return null;
+        ItemMeta meta = item.getItemMeta();
+        if(name!=null){
+            LoreUtils.setItemDisplayName(meta, Component.text(name).color(TextColor.fromHexString("#ffffff")).decoration(TextDecoration.ITALIC, false));
+        }
+        meta.addItemFlags(ItemFlag.values());
+        meta.setLore(new ArrayList<>());
+        item.setItemMeta(meta);
+        return new GUIItem(item, null);
+    }
+
+    public static GUIItem makeGUIItemOfType(Material material, String name) {
+        return makeItemGUIItem(new ItemStack(material), name);
+    }
+
+    public static GUIItem makeGUIItemOfType(Material material) {
+        return makeItemGUIItem(new ItemStack(material), getFriendlyName(material));
+    }
+
+    public static String getFriendlyName(Material material) {
+        if (material == null) return null;
+        // Split the enum name by underscores, capitalize each word, and join them
+        String[] words = material.name().toLowerCase().split("_");
+        StringBuilder friendlyName = new StringBuilder();
+        for (String word : words) {
+            friendlyName.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1)).append(" ");
+        }
+        return friendlyName.toString().trim(); // Remove trailing space
+    }
 }
+

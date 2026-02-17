@@ -48,8 +48,6 @@ public class BlacksmithArmorTrim {
         TRIM_PATTERNS.add(RIB);
         TRIM_PATTERNS.add(EYE);
         TRIM_PATTERNS.add(SPIRE);
-        TRIM_PATTERNS.add(FLOW);
-        TRIM_PATTERNS.add(BOLT);
 
         TRIM_MATERIALS.add(TrimMaterial.AMETHYST);
         TRIM_MATERIALS.add(TrimMaterial.COPPER);
@@ -61,7 +59,6 @@ public class BlacksmithArmorTrim {
         TRIM_MATERIALS.add(TrimMaterial.QUARTZ);
         TRIM_MATERIALS.add(TrimMaterial.NETHERITE);
         TRIM_MATERIALS.add(TrimMaterial.REDSTONE);
-        TRIM_MATERIALS.add(TrimMaterial.RESIN);
 //        populateNameMappings();
     }
 
@@ -198,8 +195,6 @@ public class BlacksmithArmorTrim {
             case "rib":         return TrimPattern.RIB;
             case "eye":         return TrimPattern.EYE;
             case "spire":       return TrimPattern.SPIRE;
-            case "flow":        return TrimPattern.FLOW;
-            case "bolt":        return TrimPattern.BOLT;
             default:            return null;
         }
     }
@@ -218,7 +213,6 @@ public class BlacksmithArmorTrim {
             case "quartz":      return TrimMaterial.QUARTZ;
             case "netherite":   return TrimMaterial.NETHERITE;
             case "redstone":    return TrimMaterial.REDSTONE;
-            case "resin":       return TrimMaterial.RESIN;
             default:            return null;
         }
     }
@@ -241,7 +235,6 @@ public class BlacksmithArmorTrim {
         if (mat == TrimMaterial.QUARTZ)     return "#E3D4C4";
         if (mat == TrimMaterial.NETHERITE)  return "#625859";
         if (mat == TrimMaterial.REDSTONE)   return "#971607";
-        if (mat == TrimMaterial.RESIN)      return "#FC7812";
 
         return "#CCCCCC";
     }

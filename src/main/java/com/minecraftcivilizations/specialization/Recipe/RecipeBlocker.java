@@ -3,6 +3,7 @@ package com.minecraftcivilizations.specialization.Recipe;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
+import com.minecraftcivilizations.specialization.Specialization;
 import org.bukkit.NamespacedKey;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -31,6 +32,7 @@ public class RecipeBlocker implements Listener {
         if (recipe instanceof Keyed keyedRecipe) {
             if (BLOCKED_RECIPES.contains(keyedRecipe.getKey())) {
                 e.getInventory().setResult(null);
+                Specialization.logger.info("blocked recipe");
             }
         }
     }

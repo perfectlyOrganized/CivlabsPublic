@@ -2,7 +2,6 @@ package com.minecraftcivilizations.specialization.Command;
 
 import co.aikar.commands.BaseCommand;
 import co.aikar.commands.annotation.*;
-import com.minecraftcivilizations.specialization.Recipe.Blueprints;
 import com.minecraftcivilizations.specialization.Recipe.Recipes;
 import com.minecraftcivilizations.specialization.Specialization;
 import org.bukkit.Bukkit;
@@ -27,7 +26,6 @@ public class RecipeRefreshCommand extends BaseCommand {
     @CommandPermission("specialization.recipe.refresh")
     public void onRefresh(CommandSender sender) {
         Recipes.init();
-        Blueprints.init();
         Specialization.getInstance().getLogger().info("Custom recipes/blueprints have been refreshed.");
 
         sender.sendMessage("§aCustom recipes have been re-initialized.");
@@ -51,7 +49,6 @@ public class RecipeRefreshCommand extends BaseCommand {
                     JavaPlugin.getPlugin(Specialization.class),
                     () -> {
                         Recipes.init();
-                        Blueprints.init();
                         Specialization.getInstance().getLogger().info("Custom recipes/blueprints have been refreshed.");
                     },
                     0L, // initial delay

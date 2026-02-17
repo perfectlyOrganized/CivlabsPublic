@@ -2,7 +2,7 @@ package com.minecraftcivilizations.specialization.Command;
 
 import co.aikar.commands.BaseCommand;
 import co.aikar.commands.annotation.*;
-import com.minecraftcivilizations.specialization.CustomItem.CustomItem;
+import com.minecraftcivilizations.specialization.CustomItem.CustomItemBase;
 import com.minecraftcivilizations.specialization.CustomItem.CustomItemManager;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.entity.Player;
@@ -22,7 +22,7 @@ public class CustomItemCommand extends BaseCommand {
     @CommandPermission("civlabs.customitem")
     @CommandCompletion("@customitems")
     public void onGive(Player sender, String id, int amount) {
-        CustomItem item = customItemManager.getCustomItem(id);
+        CustomItemBase item = customItemManager.getCustomItem(id);
 
         if (item == null) {
             sender.sendMessage("§cNo custom item found with ID: " + id);
@@ -73,7 +73,7 @@ public class CustomItemCommand extends BaseCommand {
         if(id == null ){
             customItemManager.initializeCustomItems(); //this should run when spelling /customitem refresh (without arguments)
         }
-        CustomItem item = customItemManager.getCustomItem(id);
+        CustomItemBase item = customItemManager.getCustomItem(id);
         if (item == null) {
             sender.sendMessage("§cCustom item not found: " + id);
             return;
@@ -90,7 +90,7 @@ public class CustomItemCommand extends BaseCommand {
     public void onList(Player sender) {
         sender.sendMessage("§7==== §eCustom Items §7====");
 
-        for (CustomItem item : customItemManager.getCustomItems()) {
+        for (CustomItemBase item : customItemManager.getCustomItemBas()) {
             boolean enabled = item.isEnabled();
             // Use a colored bullet/emoji to indicate status
             String icon = enabled ? "§a●" : "§8●"; // green for enabled, gray for disabled

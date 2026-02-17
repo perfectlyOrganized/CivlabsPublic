@@ -3,6 +3,7 @@ package com.minecraftcivilizations.specialization.Listener.Player.Inventories;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
+import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Options.Pair;
@@ -52,8 +53,7 @@ public class StonecutterListener implements Listener {
         // Check if it's a woodcutting recipe (log, wood, stripped log, stripped wood, or planks input)
         if (isWoodcuttingInput(input.getType())) {
             // Check builder level BEFORE allowing the craft
-            CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance()
-                    .getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
+            CustomPlayer customPlayer = Specialization.customPlayerManager.getCustomPlayer(player.getUniqueId());
 
             int lvl = (customPlayer != null) ? customPlayer.getSkillLevel(SkillType.BUILDER) : 0;
             if (lvl < 2) {
@@ -114,8 +114,7 @@ public class StonecutterListener implements Listener {
                 return;
             }
 
-            CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance()
-                    .getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
+            CustomPlayer customPlayer = Specialization.customPlayerManager.getCustomPlayer(player.getUniqueId());
             customPlayer.addSkillXp(pair.key(), xpToGive);
             LOGGER.fine("Gave " + xpToGive + " XP to " + player.getName()
                     + " for stonecutting " + amount + "x " + result.getType());
@@ -127,7 +126,6 @@ public class StonecutterListener implements Listener {
                material == Material.BIRCH_LOG || material == Material.JUNGLE_LOG ||
                material == Material.ACACIA_LOG || material == Material.DARK_OAK_LOG ||
                material == Material.MANGROVE_LOG || material == Material.CHERRY_LOG ||
-               material == Material.PALE_OAK_LOG ||
                material == Material.CRIMSON_STEM || material == Material.WARPED_STEM ||
                material == Material.BAMBOO_BLOCK;
     }
@@ -137,7 +135,6 @@ public class StonecutterListener implements Listener {
                material == Material.BIRCH_WOOD || material == Material.JUNGLE_WOOD ||
                material == Material.ACACIA_WOOD || material == Material.DARK_OAK_WOOD ||
                material == Material.MANGROVE_WOOD || material == Material.CHERRY_WOOD ||
-               material == Material.PALE_OAK_WOOD ||
                material == Material.CRIMSON_HYPHAE || material == Material.WARPED_HYPHAE;
     }
 
@@ -146,7 +143,6 @@ public class StonecutterListener implements Listener {
                material == Material.STRIPPED_BIRCH_LOG || material == Material.STRIPPED_JUNGLE_LOG ||
                material == Material.STRIPPED_ACACIA_LOG || material == Material.STRIPPED_DARK_OAK_LOG ||
                material == Material.STRIPPED_MANGROVE_LOG || material == Material.STRIPPED_CHERRY_LOG ||
-               material == Material.STRIPPED_PALE_OAK_LOG ||
                material == Material.STRIPPED_CRIMSON_STEM || material == Material.STRIPPED_WARPED_STEM ||
                material == Material.STRIPPED_BAMBOO_BLOCK;
     }
@@ -156,7 +152,6 @@ public class StonecutterListener implements Listener {
                material == Material.STRIPPED_BIRCH_WOOD || material == Material.STRIPPED_JUNGLE_WOOD ||
                material == Material.STRIPPED_ACACIA_WOOD || material == Material.STRIPPED_DARK_OAK_WOOD ||
                material == Material.STRIPPED_MANGROVE_WOOD || material == Material.STRIPPED_CHERRY_WOOD ||
-               material == Material.STRIPPED_PALE_OAK_WOOD ||
                material == Material.STRIPPED_CRIMSON_HYPHAE || material == Material.STRIPPED_WARPED_HYPHAE;
     }
 
@@ -165,7 +160,6 @@ public class StonecutterListener implements Listener {
                material == Material.BIRCH_PLANKS || material == Material.JUNGLE_PLANKS ||
                material == Material.ACACIA_PLANKS || material == Material.DARK_OAK_PLANKS ||
                material == Material.MANGROVE_PLANKS || material == Material.CHERRY_PLANKS ||
-               material == Material.PALE_OAK_PLANKS ||
                material == Material.CRIMSON_PLANKS || material == Material.WARPED_PLANKS ||
                material == Material.BAMBOO_PLANKS;
     }

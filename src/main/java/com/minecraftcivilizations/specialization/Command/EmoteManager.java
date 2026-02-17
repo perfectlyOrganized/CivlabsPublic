@@ -5,33 +5,27 @@ import co.aikar.commands.annotation.CommandAlias;
 import co.aikar.commands.annotation.Description;
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
-import com.minecraftcivilizations.specialization.CustomItem.CustomItem;
 import com.minecraftcivilizations.specialization.CustomItem.CustomItemManager;
-import com.minecraftcivilizations.specialization.CustomItem.EmoteItem;
+
 import com.minecraftcivilizations.specialization.CustomItem.PacketListener;
-import com.minecraftcivilizations.specialization.Listener.Player.LocalChat;
 import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import org.bukkit.*;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.type.Slab;
 import org.bukkit.block.data.type.Stairs;
-import org.bukkit.entity.ArmorStand;
-import org.bukkit.entity.Interaction;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPhysicsEvent;
-import org.bukkit.event.entity.EntityDismountEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
-import org.bukkit.inventory.ItemStack;
+import org.bukkit.event.vehicle.VehicleExitEvent;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -56,8 +50,6 @@ public class EmoteManager extends BaseCommand implements Listener {
     private final Map<UUID, ArmorStand> sittingStands = new HashMap<>();
     // Track running cannonball tasks
     private final Map<UUID, Integer> cannonTasks = new HashMap<>();
-    public EmoteItem clap_item = new EmoteItem("clap_crossbow", "§bClap", EmoteItem.EmoteType.CLAP, "clap", this);
-    public EmoteItem point_item = new EmoteItem("point_crossbow", "§bPoint", EmoteItem.EmoteType.POINT, "point", this);
 
     public EmoteManager(CustomItemManager customItemManager, JavaPlugin plugin) {
         this.plugin = plugin;
@@ -69,57 +61,8 @@ public class EmoteManager extends BaseCommand implements Listener {
         return silenced_players;
     }
 
-    private void giveEmote(Player player, CustomItem emoteItem, String successMsg) {
-        ItemStack hand = player.getInventory().getItemInMainHand();
 
-        if (hand.getType().isAir()) {
-            player.getInventory().setItemInMainHand(emoteItem.createItemStack(1, player));
-            PlayerUtil.message(player, successMsg);
-            return;
-        }
 
-        CustomItem current = CustomItemManager.getInstance().getCustomItem(hand);
-        if (current instanceof EmoteItem) {
-            player.getInventory().setItemInMainHand(emoteItem.createItemStack(1, player));
-            PlayerUtil.message(player, successMsg);
-            return;
-        }
-
-        PlayerUtil.message(player, "Main hand must be empty to emote");
-    }
-
-    @CommandAlias("emotes|e")
-    @Description("Lists all emote-type custom items")
-    public void onList(Player sender) {
-        PlayerUtil.message(sender, "§7==== §eAvailable Emotes §7====");
-        PlayerUtil.message(sender, "§9● §b Sit");
-        PlayerUtil.message(sender, "§9● §b Cannonball");
-        PlayerUtil.message(sender, "§9● §b Fart");
-        for (CustomItem item : CustomItemManager.getInstance().getCustomItems()) {
-            if (!(item instanceof EmoteItem)) continue;
-            boolean enabled = item.isEnabled();
-            String icon = enabled ? "§9●" : "§8●";
-            PlayerUtil.message(sender, icon + " §f" + " §7" + item.getDisplayName());
-        }
-    }
-
-    @CommandAlias("point|p")
-    public void givePoint(Player player) {
-        if (CustomItemManager.getInstance().getCustomItem("point_crossbow").isEnabled()) {
-            giveEmote(player, point_item, "You are now pointing...");
-        } else {
-            PlayerUtil.message(player, "§cEmote is disabled");
-        }
-    }
-
-    @CommandAlias("clap|c")
-    public void giveClap(Player player) {
-        if (CustomItemManager.getInstance().getCustomItem("clap_crossbow").isEnabled()) {
-            giveEmote(player, clap_item, "§9You can now clap... (Tap Right-Click)");
-        } else {
-            PlayerUtil.message(player, "§cEmote is disabled");
-        }
-    }
 
     // --- Right-click sit logic ---
     @EventHandler
@@ -270,9 +213,9 @@ public class EmoteManager extends BaseCommand implements Listener {
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
-        cancelSeat(event.getPlayer());
-        cancelRide(event.getPlayer());
-        if (event.getPlayer().isInsideVehicle()) event.getPlayer().leaveVehicle();
+        cancelSeat(event.getEntity());
+        cancelRide(event.getEntity());
+        if (event.getEntity().isInsideVehicle()) event.getEntity().leaveVehicle();
     }
 
     private Location getSeatLocation(Block block) {
@@ -363,7 +306,6 @@ public class EmoteManager extends BaseCommand implements Listener {
             as.setBasePlate(false);
             as.setSmall(true);
             as.setArms(false);
-            as.getAttribute(Attribute.SCALE).setBaseValue(0.01);
 
             // mark with PDC
             as.getPersistentDataContainer().set(sitKey, PersistentDataType.BYTE, (byte) 1);
@@ -546,9 +488,11 @@ public class EmoteManager extends BaseCommand implements Listener {
 
 
     @EventHandler
-    public void onDismount(EntityDismountEvent event) {
-        if (!(event.getEntity() instanceof Player p)) return;
-        if (!(event.getDismounted() instanceof ArmorStand seat)) return;
+    public void onVehicleExit(VehicleExitEvent event) {
+        LivingEntity entity = event.getExited();
+        Vehicle vehicle = event.getVehicle();
+        if (!(entity instanceof Player p)) return;
+        if (!(vehicle instanceof ArmorStand seat)) return;
 
         Byte flag = seat.getPersistentDataContainer().get(sitKey, PersistentDataType.BYTE);
         if (flag == null || flag != (byte) 1) return;
@@ -594,7 +538,7 @@ public class EmoteManager extends BaseCommand implements Listener {
             loc.add(loc.getDirection().multiply(-0.5));
 
             player.getWorld().spawnParticle(
-                    Particle.DUST,
+                    Particle.BLOCK_DUST,
                     loc,
                     20,
                     0.1, 0.1, 0.1,
