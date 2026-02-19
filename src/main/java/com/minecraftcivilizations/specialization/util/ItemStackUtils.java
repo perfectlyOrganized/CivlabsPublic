@@ -22,10 +22,7 @@ import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ItemStackUtils {
@@ -38,10 +35,10 @@ public class ItemStackUtils {
             itemCache.put(key, item.clone());
         }
     }
-    public static ItemStack getItemStack(NamespacedKey key) {
-        if (key == null) return null;
+    public static ItemStack getItemStack(NamespacedKey namespace) {
+        if (namespace == null) return null;
 
-        String keyString = key.toString();
+        String keyString = namespace.toString();
 
         // Check cache first
         if (itemCache.containsKey(keyString)) {
@@ -50,14 +47,21 @@ public class ItemStackUtils {
 
         ItemStack result = null;
 
-        // Try each method in order
-        result = getFromBukkitRecipe(key);
+        if (namespace == null) return null;
+
+        Material minecraftMaterial = Registry.MATERIAL.get(namespace);
+
+        if (minecraftMaterial != null && !minecraftMaterial.isAir()) {
+            return new ItemStack(minecraftMaterial);
+        }
+
+        result = getFromBukkitRecipe(namespace);
         if (result != null) {
             cacheItem(keyString, result);
             return result.clone();
         }
 
-        Material material = Material.matchMaterial(keyString);
+        Material material = Material.matchMaterial(keyString.toUpperCase(Locale.ROOT).replace(":", "_"));
 
         if (material != null) {
             result = new ItemStack(material);

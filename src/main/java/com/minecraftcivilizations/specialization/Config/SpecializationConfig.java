@@ -62,6 +62,8 @@ public class SpecializationConfig {
     @Getter
     private static ConfigFile canUseBlockConfig;
     @Getter
+    private static ConfigFile canUseItemConfig;
+    @Getter
     private static ConfigFile xpGainFromRepairingConfig;
     @Getter
     private static ConfigFile combatConfig;
@@ -488,6 +490,23 @@ public class SpecializationConfig {
                 "xpGainFromPlacing",
                 xpGainFromPlacingDefaults
         );
+        Supplier<Map<String, List<String>>> canUseItemDefaults = () -> {
+            Map<String, List<String>> data = new HashMap<>();
+            data.put("blacklist", List.of());
+            data.put("mod_blacklist", List.of());
+            for (SkillType skillType : SkillType.values()) {
+                for (SkillLevel skillLevel : SkillLevel.values()) {
+                    data.put(skillType + "_" + skillLevel, new ArrayList<>());
+                }
+            }
+            return data;
+        };
+
+        canUseItemConfig = new ConfigFile(
+                Specialization.getInstance(),
+                "canUseItem",
+                canUseItemDefaults
+        );
 
         Supplier<Map<String, List<String>>> canUseBlockDefaults = () -> {
             Map<String, List<String>> data = new HashMap<>();
@@ -499,6 +518,7 @@ public class SpecializationConfig {
             }
             return data;
         };
+
         canUseBlockConfig = new ConfigFile(
                 Specialization.getInstance(),
                 "canUseBlock",

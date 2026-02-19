@@ -36,7 +36,6 @@ public class CustomPlayerBase {
     }
 
     public void setName(Component name) {
-        assert name != null;
         this.name = GsonComponentSerializer.gson().serialize(name);
     }
 

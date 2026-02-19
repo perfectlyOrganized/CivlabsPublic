@@ -9,11 +9,14 @@ import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.util.CoreUtil;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import com.typesafe.config.Config;
+import io.izzel.arclight.api.Arclight;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.Chest;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
@@ -28,6 +31,8 @@ import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.*;
@@ -39,29 +44,63 @@ public class PlayerInteractListener implements Listener {
     private final Set<UUID> cascadingSugarcane = new HashSet<>();
 
     @EventHandler
-    public void onOpenBlockInventory(InventoryOpenEvent e) {
-        InventoryType type = e.getInventory().getType();
-        List<String> defaultAllow = SpecializationConfig.getCanUseBlockConfig().getStringList("default");
-        if (defaultAllow.contains(type.toString())) return;
-
-        CustomPlayer player = CoreUtil.getPlayer(e.getPlayer());
-        for (Skill skill : player.getSkills()) {
-            SkillType skillType = skill.getSkillType();
-            int playerSkillLevel = player.getSkillLevel(skillType);
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+            Block block = event.getClickedBlock();
+            if (block == null) return;
+            boolean typeClassLocked = false;
+            String type = block.getType().toString();
+            CustomPlayer player = CoreUtil.getPlayer(event.getPlayer());
+            for (Skill skill : player.getSkills()) {
+                SkillType skillType = skill.getSkillType();
+                int playerSkillLevel = player.getSkillLevel(skillType);
 
             for (SkillLevel skillLevel : SkillLevel.values()) {
-                if (skillLevel.getLevel() <= playerSkillLevel) {
                     String configKey = skillType + "_" + skillLevel;
                     List<String> types = SpecializationConfig.getCanUseBlockConfig().getStringList(configKey);
-                    if (types != null && types.contains(type.toString())) {
+                    if (types == null) continue;
+                    if (!types.contains(type)) continue;
+
+                    if (playerSkillLevel >= skillLevel.getLevel()) {
                         return;
+                    } else {
+                        typeClassLocked = true;
                     }
                 }
             }
+            if (typeClassLocked) {
+                event.getPlayer().sendMessage("You are unable to access: "+ type + ", report if this is a bug.");
+                event.setCancelled(true);
+            }
         }
-        e.getPlayer().sendMessage("You are unable to access: "+ type.toString() + ", report if this is a bug.");
-        e.setCancelled(true);
     }
+
+
+//    @EventHandler
+//    public void onOpenBlockInventory(InventoryOpenEvent e) {
+//        InventoryType type = e.getInventory().getType();
+//
+//        List<String> defaultAllow = SpecializationConfig.getCanUseBlockConfig().getStringList("default");
+//        if (defaultAllow.contains(type.toString())) return;
+//
+//        CustomPlayer player = CoreUtil.getPlayer(e.getPlayer());
+//        for (Skill skill : player.getSkills()) {
+//            SkillType skillType = skill.getSkillType();
+//            int playerSkillLevel = player.getSkillLevel(skillType);
+//
+//            for (SkillLevel skillLevel : SkillLevel.values()) {
+//                if (skillLevel.getLevel() <= playerSkillLevel) {
+//                    String configKey = skillType + "_" + skillLevel;
+//                    List<String> types = SpecializationConfig.getCanUseBlockConfig().getStringList(configKey);
+//                    if (types != null && types.contains(type.toString())) {
+//                        return;
+//                    }
+//                }
+//            }
+//        }
+//        e.getPlayer().sendMessage("You are unable to access: "+ type + ", report if this is a bug.");
+//        e.setCancelled(true);
+//    }
 
     @EventHandler
     public void onWaterSmushCrop(BlockFromToEvent e) {

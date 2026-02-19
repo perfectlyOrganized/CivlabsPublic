@@ -1,8 +1,11 @@
 package com.minecraftcivilizations.specialization.Listener.Player;
 
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
+import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
+import com.minecraftcivilizations.specialization.util.ComponentUtils;
+import com.minecraftcivilizations.specialization.util.LoreUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -70,6 +73,7 @@ public class LocalChat implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onChat(AsyncPlayerChatEvent e) {
         Player p = e.getPlayer();
+        CustomPlayer customPlayer = CustomPlayer.getCustomPlayer(p);
         String raw = MiniMessage.miniMessage().stripTags(e.getMessage().trim());
 
         // Global debug / announcement channel
@@ -91,16 +95,18 @@ public class LocalChat implements Listener {
                 .getChatConfig()
                 .getString("DEFAULT_FORMAT");
 
+        String nameString = ComponentUtils.serializeComponentAsString(customPlayer.getName()).replaceAll("§[0-9a-fklmnor]", "");;
+        Specialization.logger.info(nameString);
         Bukkit.getScheduler().runTask(Specialization.getInstance(), () -> {
             for (Player near : getNearbyPlayers(p)) {
-                PlayerUtil.sendRichMessage(near,fmt.formatted(p.getName(), raw));
+                PlayerUtil.sendMessage(near,fmt.formatted(nameString, raw));
             }
-            PlayerUtil.sendRichMessage(p, fmt.formatted(p.getName(), raw));
+            PlayerUtil.sendMessage(p, fmt.formatted(nameString, raw));
         });
 
         Debug.broadcast(
                 "globalchat",
-                "<gray>" + p.getName() + " » </gray>" + e.getMessage()
+                "<gray>" + customPlayer.getName() + " » </gray>" + e.getMessage()
         );
     }
 
