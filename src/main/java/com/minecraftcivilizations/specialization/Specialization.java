@@ -1,10 +1,16 @@
 package com.minecraftcivilizations.specialization;
 
+import com.comphenix.protocol.ProtocolManager;
+import com.comphenix.protocol.events.ListenerPriority;
+import com.comphenix.protocol.events.PacketAdapter;
+import com.comphenix.protocol.events.PacketEvent;
 import com.minecraftcivilizations.specialization.Combat.Mobs.HuntPlayerMobGoal;
 import com.minecraftcivilizations.specialization.GUI.GUIManager;
 import com.minecraftcivilizations.specialization.Player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.ComponentUtils;
 import com.mojang.authlib.GameProfile;
+import net.kyori.adventure.platform.AudienceProvider;
+import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import org.bukkit.Difficulty;
 import co.aikar.commands.PaperCommandManager;
@@ -55,6 +61,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.GameRule;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.FileNotFoundException;
@@ -76,6 +83,7 @@ public final class Specialization extends JavaPlugin {
     public static LocalNameGenerator localNameGenerator;
     private Debug debug;
     private PhantomRideListener phantomRideListener;
+    public static AudienceProvider adventure;
     //    private EmoteListener emoteListener;
     @Getter
     public LocalChat localChat;
@@ -133,6 +141,8 @@ public final class Specialization extends JavaPlugin {
         SpecializationConfig.initialize();
         // TODO PDC-xp-hotfix
         //  Skill.InitializeSkillKeys(this);
+
+        adventure = BukkitAudiences.create(this);
 
         guiManager = new GUIManager();
         playerClickListener = new PlayerClickListener();
@@ -235,7 +245,6 @@ public final class Specialization extends JavaPlugin {
 
         DataManager.startSaver(this);
         ReinforcementManager.startReinforcement();
-
     }
 
     @Override
@@ -304,92 +313,27 @@ public final class Specialization extends JavaPlugin {
 
 
     public void applyCustomName(Player player, Component name) {
-        CustomPlayer customPlayer = customPlayerManager.getCustomPlayer(player.getUniqueId());
+        CustomPlayer customPlayer = Specialization.customPlayerManager
+                .getCustomPlayer(player.getUniqueId());
 
         // Update the CustomPlayer's stored name
         customPlayer.setName(name);
 
-        // Create the packet with display name only
-        PacketContainer packet = createChangeNamePacket(player.getUniqueId(), name);
+        // JUST use Bukkit methods - they work on Arclight
+        String displayName = ComponentUtils.serializeComponentAsString(name);
+        player.setDisplayName(displayName);
+        player.setPlayerListName(displayName);
 
-        if (packet == null) {
-            return; // Packet creation failed
-        }
+        player.setMetadata("nickname", new FixedMetadataValue(
+                Specialization.getInstance(), displayName));
 
-        // Send to all online players
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            try {
-                ProtocolLibrary.getProtocolManager().sendServerPacket(p, packet);
-
-                // Also send each other player's custom name to the target player
-                CustomPlayer otherPlayer = customPlayerManager.getCustomPlayer(p.getUniqueId());
-                if (otherPlayer != null && !p.equals(player)) {
-                    PacketContainer otherPacket = createChangeNamePacket(p.getUniqueId(), otherPlayer.getName());
-                    if (otherPacket != null) {
-                        ProtocolLibrary.getProtocolManager().sendServerPacket(player, otherPacket);
-                    }
-                }
-            } catch (Exception e) {
-                Specialization.logger.warning("Failed to send name packet to " + p.getName() + ": " + e.getMessage());
+        // Force client refresh - this updates name tags
+        Bukkit.getScheduler().runTask(Specialization.getInstance(), () -> {
+            for (Player all : Bukkit.getOnlinePlayers()) {
+                all.hidePlayer(Specialization.getInstance(), player);
+                all.showPlayer(Specialization.getInstance(), player);
             }
-        }
-    }
-
-    private void changeGameProfile(Player player, String newName) {
-        try {
-            Object craftPlayer = player.getClass().getMethod("getHandle").invoke(player);
-            Field gameProfileField = craftPlayer.getClass().getDeclaredField("bK"); // Version dependent!
-            gameProfileField.setAccessible(true);
-
-            GameProfile profile = (GameProfile) gameProfileField.get(craftPlayer);
-
-            Field nameField = profile.getClass().getDeclaredField("name");
-            nameField.setAccessible(true);
-            nameField.set(profile, newName);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-    private PacketContainer createChangeNamePacket(UUID uuid, Component name) {
-        PacketContainer packet = ProtocolLibrary.getProtocolManager().createPacket(PacketType.Play.Server.PLAYER_INFO);
-
-        try {
-            // Get the actual player to use their real username
-            Player player = Bukkit.getPlayer(uuid);
-            String realUsername = player != null ? player.getName() : "Player";
-
-            // Create profile with REAL username, not the display name
-            WrappedGameProfile profile = new WrappedGameProfile(uuid, realUsername);
-
-            // Convert Component to JSON safely
-            String jsonName;
-            try {
-                // Try JSON serializer first
-                jsonName = GsonComponentSerializer.gson().serialize(name);
-            } catch (NoSuchMethodError e) {
-                // Fallback to legacy formatting
-                jsonName = "{\"text\":\"" + ComponentUtils.serializeComponentAsString(name) + "\"}";
-            }
-
-            WrappedChatComponent nameComponent = WrappedChatComponent.fromJson(jsonName);
-
-            // Set player info action
-            packet.getPlayerInfoActions().write(0,
-                    Collections.singleton(EnumWrappers.PlayerInfoAction.UPDATE_DISPLAY_NAME));
-
-            // Create player info data
-            List<PlayerInfoData> playerInfoData = List.of(
-                    new PlayerInfoData(profile, 0, EnumWrappers.NativeGameMode.SURVIVAL, nameComponent)
-            );
-            packet.getPlayerInfoDataLists().write(1, playerInfoData);
-
-        } catch (Exception e) {
-            // Log the error but don't crash
-            Specialization.logger.warning("Failed to create name change packet: " + e.getMessage());
-            return null;
-        }
-
-        return packet;
+        });
     }
 
     public Debug getDebugUtils() {

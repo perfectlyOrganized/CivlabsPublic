@@ -116,7 +116,7 @@ public class CustomPlayerManager implements Listener {
         } catch (FileNotFoundException ignored) {}
         if (customPlayer == null) {
             customPlayer = addCustomPlayer(new CustomPlayer( player.getUniqueId() ));
-            customPlayer.setName(Component.text(player.getName()));
+            customPlayer.setName(Component.text(Specialization.localNameGenerator.nextName()));
         }
         if (customPlayer == null) { // should never happen
             Specialization.logger.severe(String.format("%s was not able to be processed??? (null shit! \uD83D\uDC80\uD83D\uDC80\uD83D\uDC80)", player.getUniqueId()));

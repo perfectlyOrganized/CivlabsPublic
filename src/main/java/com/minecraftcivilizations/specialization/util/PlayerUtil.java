@@ -1,6 +1,8 @@
 package com.minecraftcivilizations.specialization.util;
 
 import com.minecraftcivilizations.specialization.Specialization;
+import net.kyori.adventure.audience.Audience;
+import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -13,6 +15,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -39,20 +42,17 @@ public class PlayerUtil {
 
     public static void sendRichMessage(Player player, String miniMessage) {
         Component component = MINI_MESSAGE.deserialize(miniMessage);
-        String legacyMessage = LEGACY_SERIALIZER.serialize(component);
-        player.sendMessage(legacyMessage);
+        sendMessage(player, component);
     }
 
-    public static void sendComponent(Player player, Component component) {
-        player.sendMessage(LEGACY_SERIALIZER.serialize(component));
-    }
     public static void sendMessage(Player player, Component message) {
-        player.sendMessage(LEGACY_SERIALIZER.serialize(message));
+        Audience audience = Specialization.adventure.player(player.getUniqueId());
+        audience.sendMessage(message);
     }
 
     public static void sendMessage(Player player, String miniMessage) {
         Component component = MiniMessage.miniMessage().deserialize(miniMessage);
-        player.sendMessage(LEGACY_SERIALIZER.serialize(component));
+        sendMessage(player, component);
     }
 
     public static void sendActionBar(Player player, Component component) {

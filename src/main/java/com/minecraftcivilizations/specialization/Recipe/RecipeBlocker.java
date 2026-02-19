@@ -12,6 +12,7 @@ import org.bukkit.inventory.Recipe;
 import org.bukkit.Keyed;
 
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -41,6 +42,6 @@ public class RecipeBlocker implements Listener {
                 .getStringList(skillType + "_" + SkillLevel.getSkillLevelFromInt(level))
                 .stream()
                 .map(NamespacedKey::fromString)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 }
