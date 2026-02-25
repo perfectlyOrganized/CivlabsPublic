@@ -1,26 +1,18 @@
 package com.minecraftcivilizations.specialization;
+import com.minecraftcivilizations.specialization.Listener.Player.Blocks.Mining.MinerTressureChance;
+import com.mojang.authlib.GameProfile;
+import net.minecraft.network.chat.IChatBaseComponent;
+import net.minecraft.server.level.EntityPlayer;
+import org.bukkit.craftbukkit.v1_20_R1.entity.CraftPlayer;
 
-import com.comphenix.protocol.ProtocolManager;
-import com.comphenix.protocol.events.ListenerPriority;
-import com.comphenix.protocol.events.PacketAdapter;
-import com.comphenix.protocol.events.PacketEvent;
 import com.minecraftcivilizations.specialization.Combat.Mobs.HuntPlayerMobGoal;
 import com.minecraftcivilizations.specialization.GUI.GUIManager;
-import com.minecraftcivilizations.specialization.Player.CustomPlayerManager;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.ComponentUtils;
-import com.mojang.authlib.GameProfile;
 import net.kyori.adventure.platform.AudienceProvider;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
-import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import org.bukkit.Difficulty;
 import co.aikar.commands.PaperCommandManager;
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.wrappers.EnumWrappers;
-import com.comphenix.protocol.wrappers.PlayerInfoData;
-import com.comphenix.protocol.wrappers.WrappedChatComponent;
-import com.comphenix.protocol.wrappers.WrappedGameProfile;
 import com.minecraftcivilizations.specialization.Combat.*;
 import com.minecraftcivilizations.specialization.Command.*;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
@@ -39,9 +31,9 @@ import com.minecraftcivilizations.specialization.Listener.Player.Inventories.Sto
 import com.minecraftcivilizations.specialization.Listener.RepairingListener;
 import com.minecraftcivilizations.specialization.Listener.TimeSyncListener;
 import com.minecraftcivilizations.specialization.Listener.XpTransferBookListener;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
-import com.minecraftcivilizations.specialization.Player.LocalNameGenerator;
-import com.minecraftcivilizations.specialization.Player.PreJoinEventListener;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
+import com.minecraftcivilizations.specialization.player.LocalNameGenerator;
+import com.minecraftcivilizations.specialization.player.PreJoinEventListener;
 import com.minecraftcivilizations.specialization.Recipe.RecipeBlocker;
 import com.minecraftcivilizations.specialization.Recipe.Recipes;
 import com.minecraftcivilizations.specialization.Reinforcement.ReinforcementManager;
@@ -53,11 +45,7 @@ import com.minecraftcivilizations.specialization.StaffTools.DebugListenCommand;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.serializer.json.JSONComponentSerializer;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.GameRule;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -71,7 +59,7 @@ import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public final class Specialization extends JavaPlugin {
+public final class OpenLab extends JavaPlugin {
 
     public final static String TITLE = "<#334422>[<#445533>CivLabs</#445533>]";
     public static Logger logger;
@@ -109,8 +97,6 @@ public final class Specialization extends JavaPlugin {
     private RecipeBlocker recipeBlocker;
     private EmoteManager emoteManager;
     @Getter
-    public static CustomPlayerManager customPlayerManager;
-    @Getter
     private PlayerClickListener playerClickListener;
     @Getter
     public static GUIManager guiManager;
@@ -127,8 +113,8 @@ public final class Specialization extends JavaPlugin {
     }
 
 
-    public static Specialization getInstance() {
-        return getPlugin(Specialization.class);
+    public static OpenLab getInstance() {
+        return getPlugin(OpenLab.class);
     }
 
     @Override
@@ -146,7 +132,6 @@ public final class Specialization extends JavaPlugin {
 
         guiManager = new GUIManager();
         playerClickListener = new PlayerClickListener();
-        customPlayerManager = new CustomPlayerManager();
         localChat = new LocalChat();
         playerDownedListener = new PlayerDownedListener(this);
         reviveListener = new ReviveListener(playerDownedListener);
@@ -167,18 +152,19 @@ public final class Specialization extends JavaPlugin {
 
         //commands registered here
         setupCommands();
+        getServer().getPluginManager().registerEvents(CustomPlayerManager.INSTANCE, this);
         getServer().getPluginManager().registerEvents(guiManager, this);
         getServer().getPluginManager().registerEvents(playerClickListener, this);
-        getServer().getPluginManager().registerEvents(customPlayerManager, this);
         getServer().getPluginManager().registerEvents(new PlayerMineListener(), this);
         getServer().getPluginManager().registerEvents(new BreakBlockListener(), this);
         getServer().getPluginManager().registerEvents(new PlaceBlockListener(), this);
         getServer().getPluginManager().registerEvents(new RightClickListener(), this);
+        getServer().getPluginManager().registerEvents(new MinerTressureChance(), this);
+
         getServer().getPluginManager().registerEvents(new BurnListener(), this);
         getServer().getPluginManager().registerEvents(new ExplodeListener(), this);
         getServer().getPluginManager().registerEvents(new PlayerInteractListener(), this);
         getServer().getPluginManager().registerEvents(new PlayerInteractEntityListener(), this);
-        getServer().getPluginManager().registerEvents(new FishingListener(), this);
         combatManager = new CombatManager(this); // Guardsman Damage Output
         new FoodInteractionListener(this);
         getServer().getPluginManager().registerEvents(new HungerSystem(this, emoteManager), this);
@@ -206,7 +192,6 @@ public final class Specialization extends JavaPlugin {
         //TownManager.scanAllPlayersForTownsAsync();
 
         //overworld game rules
-        World overworld = Bukkit.getWorlds().get(0);
 //        World nether = Bukkit.getWorlds().get(1);
 
         for(World world : Bukkit.getWorlds()) {
@@ -218,6 +203,7 @@ public final class Specialization extends JavaPlugin {
             world.setGameRule(GameRule.SHOW_DEATH_MESSAGES, false);
             world.setGameRule(GameRule.WATER_SOURCE_CONVERSION, false);
             world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
+            world.setGameRule(GameRule.DO_LIMITED_CRAFTING, true);
         }
 
         //global game rules
@@ -230,14 +216,9 @@ public final class Specialization extends JavaPlugin {
         //Bukkit.updateRecipes();
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            CustomPlayer loadedPlayer = null;
-            try {
-                loadedPlayer =   customPlayerManager.load(player.getUniqueId());
-            } catch (FileNotFoundException e) {
-                Specialization.getInstance().getLogger().severe(String.format("Couldn't load player %s", player.getName()));
-            }
-            if (loadedPlayer != null) {
-                customPlayerManager.addCustomPlayer(loadedPlayer);
+            UUID uuid = player.getUniqueId();
+            if (CustomPlayerManager.INSTANCE.hasCustomPlayer(uuid)) {
+                CustomPlayerManager.INSTANCE.load(player.getUniqueId());
             }
         }
 
@@ -256,7 +237,7 @@ public final class Specialization extends JavaPlugin {
         emoteManager.shutdown();
         smart_entity_manager.shutdown();
         DataManager.getScheduler().shutdown();
-        customPlayerManager.saveAll();
+        CustomPlayerManager.INSTANCE.saveAll();
         XpGainMonitor.saveConfigToDisk();
     }
 
@@ -306,6 +287,7 @@ public final class Specialization extends JavaPlugin {
         commandManager.registerCommand(new XPMonitoringCommand());
         commandManager.registerCommand(new RecipeRefreshCommand());
         commandManager.registerCommand(emoteManager);
+        commandManager.registerCommand(new ReloadConfigExecutor());
         new DebugListenCommand(commandManager);
 
 
@@ -313,25 +295,44 @@ public final class Specialization extends JavaPlugin {
 
 
     public void applyCustomName(Player player, Component name) {
-        CustomPlayer customPlayer = Specialization.customPlayerManager
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE
                 .getCustomPlayer(player.getUniqueId());
 
         // Update the CustomPlayer's stored name
         customPlayer.setName(name);
 
         // JUST use Bukkit methods - they work on Arclight
-        String displayName = ComponentUtils.serializeComponentAsString(name);
+        String displayName = ComponentUtils.serializeComponentAsStringWithStrip(name);
         player.setDisplayName(displayName);
         player.setPlayerListName(displayName);
 
         player.setMetadata("nickname", new FixedMetadataValue(
-                Specialization.getInstance(), displayName));
+                OpenLab.getInstance(), displayName));
 
         // Force client refresh - this updates name tags
-        Bukkit.getScheduler().runTask(Specialization.getInstance(), () -> {
+
+
+        try {
+            EntityPlayer entityPlayer = ((CraftPlayer) player).getHandle();
+
+            // Update GameProfile (risky but works)
+            GameProfile profile = ((CraftPlayer) player).getProfile();
+            Field nameField = GameProfile.class.getDeclaredField("name");
+            nameField.setAccessible(true);
+            nameField.set(profile, displayName);
+            // Update NMS listName properly
+            IChatBaseComponent listComponent = IChatBaseComponent.ChatSerializer.a(
+                    "{\"text\":\"" + displayName + "\"}"
+            );
+            entityPlayer.listName = listComponent;
+        } catch (Exception e) {
+            // Log but don't crash - Bukkit methods already did the main work
+            getLogger().warning("Failed to update NMS name fields: " + e.getMessage());
+        }
+        Bukkit.getScheduler().runTask(OpenLab.getInstance(), () -> {
             for (Player all : Bukkit.getOnlinePlayers()) {
-                all.hidePlayer(Specialization.getInstance(), player);
-                all.showPlayer(Specialization.getInstance(), player);
+                all.hidePlayer(OpenLab.getInstance(), player);
+                all.showPlayer(OpenLab.getInstance(), player);
             }
         });
     }

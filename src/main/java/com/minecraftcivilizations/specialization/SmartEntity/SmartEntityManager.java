@@ -1,7 +1,7 @@
 package com.minecraftcivilizations.specialization.SmartEntity;
 
 
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.OpenLab;
 import org.bukkit.event.Listener;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -14,7 +14,7 @@ import java.util.List;
  */
 public class SmartEntityManager implements Listener{
 
-    Specialization specialization;
+    OpenLab specialization;
 
     public final List<SmartEntity> entities = new ArrayList<SmartEntity>();
     public final List<SmartEntity> entities_to_add = new ArrayList<SmartEntity>();
@@ -23,7 +23,7 @@ public class SmartEntityManager implements Listener{
     boolean entities_exist;
     boolean dirty; // requires cleaning
 
-    public SmartEntityManager(Specialization specialization){
+    public SmartEntityManager(OpenLab specialization){
         SmartEntity.manager = this;
         this.specialization = specialization;
         this.specialization.getServer().getPluginManager().registerEvents(this, specialization);

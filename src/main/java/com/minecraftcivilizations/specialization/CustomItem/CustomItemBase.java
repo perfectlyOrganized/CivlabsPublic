@@ -1,7 +1,7 @@
 package com.minecraftcivilizations.specialization.CustomItem;
 
 import com.minecraftcivilizations.specialization.Listener.Player.Inventories.SpecializationCraftItemEvent;
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import lombok.Getter;
 import lombok.Setter;
@@ -74,7 +74,7 @@ public abstract class CustomItemBase {
         this.enabled = enabled;
         this.cooldownKey = new NamespacedKey("civlabs", "cooldown_" + id);
         this.usesCooldownComponent = uses_cooldown;
-        Specialization.getInstance().getCustomItemManager().registerItem(this);
+        OpenLab.getInstance().getCustomItemManager().registerItem(this);
     }
 
     /**
@@ -240,12 +240,12 @@ public abstract class CustomItemBase {
 
     public final void setEnabled(boolean b) {
         this.enabled = b;
-        Specialization.getInstance().getLogger().info("Custom Item: "+id+ " has been "+ (b?"ENABLED":"DISABLED"));
+        OpenLab.getInstance().getLogger().info("Custom Item: "+id+ " has been "+ (b?"ENABLED":"DISABLED"));
     }
 
 
     public static CustomItemManager getManager(){
-        return Specialization.getInstance().getCustomItemManager();
+        return OpenLab.getInstance().getCustomItemManager();
     }
 
 

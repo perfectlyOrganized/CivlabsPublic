@@ -1,7 +1,7 @@
 package com.minecraftcivilizations.specialization.CustomItem;
 
 import com.minecraftcivilizations.specialization.Listener.Player.Inventories.SpecializationCraftItemEvent;
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import lombok.Getter;
 import net.md_5.bungee.api.ChatColor;
@@ -47,12 +47,12 @@ public class CustomItemManager implements Listener {
     @Getter
     private List<Integer> customItemIds = new ArrayList<Integer>();
 
-    Specialization plugin;
+    OpenLab plugin;
 
     // items are defined and referenced here
     public DefineCustomItems definitions;
 
-    public CustomItemManager(Specialization plugin ){
+    public CustomItemManager(OpenLab plugin ){
         this.plugin = plugin;
 
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
@@ -68,14 +68,14 @@ public class CustomItemManager implements Listener {
     }
 
     public static CustomItemManager getInstance() {
-        return Specialization.getInstance().getCustomItemManager();
+        return OpenLab.getInstance().getCustomItemManager();
     }
 
     public static DefineCustomItems getDefinitions(){ return getInstance().definitions;}
 
 
     void registerItem(CustomItemBase custom_item) {
-        Specialization.getInstance().getLogger().info("Registering Custom Item: "+custom_item.getId());
+        OpenLab.getInstance().getLogger().info("Registering Custom Item: "+custom_item.getId());
 //        custom_items_to_register.add(customItem);
         custom_items_loaded.put(custom_item.getId(), custom_item); //used for event lookup
         customItemBas.add(custom_item); //used by commands (for item reference)
@@ -207,7 +207,7 @@ public class CustomItemManager implements Listener {
         item.init();
 
         // Invalidate or rebuild ItemStack model data if needed.
-        Specialization.getInstance().getLogger().info("Refreshed custom item: " + id);
+        OpenLab.getInstance().getLogger().info("Refreshed custom item: " + id);
     }
 
     @EventHandler

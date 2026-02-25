@@ -1,13 +1,12 @@
 package com.minecraftcivilizations.specialization.Combat;
 
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
-import com.minecraftcivilizations.specialization.util.CoreUtil;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.ItemStackUtils;
 import org.bukkit.*;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.Damageable;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -61,7 +60,7 @@ public class ArmorBreakSystem {
         int armor_rolls = 3;//1+ ThreadLocalRandom.current().nextInt(3);
         ArmorBreakStats break_stats = getItemArmorBreakStats(itemInMainHand.getType());
         double armor_damage = (double) break_stats.armor_break;
-        CustomPlayer customPlayer = CoreUtil.getPlayer(attacker);
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(attacker);
         if(customPlayer!=null){
             armor_damage = armor_damage + break_stats.getSkillBonus(customPlayer);
             if(attacker.getAttackCooldown()<1){

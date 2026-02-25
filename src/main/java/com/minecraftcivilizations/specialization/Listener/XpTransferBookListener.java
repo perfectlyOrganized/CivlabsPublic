@@ -1,11 +1,11 @@
 package com.minecraftcivilizations.specialization.Listener;
 
+import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.SmartEntity.SmartEntity;
-import com.minecraftcivilizations.specialization.Specialization;
-import com.minecraftcivilizations.specialization.util.CoreUtil;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import org.bukkit.*;
 import org.bukkit.entity.Entity;
@@ -40,8 +40,8 @@ public class XpTransferBookListener implements Listener {
     private static final float PITCH_VARIANCE = 0.1f;
 
     private static final Map<UUID, Long> lastSignTime = new HashMap<>();
-    private static final NamespacedKey XP_BLESSED_KEY = new NamespacedKey(Specialization.getInstance(), "xp_blessed_book");
-    private static final NamespacedKey XP_AMOUNT_KEY = new NamespacedKey(Specialization.getInstance(), "xp_amount");
+    private static final NamespacedKey XP_BLESSED_KEY = new NamespacedKey(OpenLab.getInstance(), "xp_blessed_book");
+    private static final NamespacedKey XP_AMOUNT_KEY = new NamespacedKey(OpenLab.getInstance(), "xp_amount");
 
     private String book_contents;
 
@@ -83,7 +83,7 @@ public class XpTransferBookListener implements Listener {
                 }
             }
 
-            CustomPlayer cp = CoreUtil.getPlayer(player.getUniqueId());
+            CustomPlayer cp = CustomPlayerManager.INSTANCE.getCustomPlayer(player.getUniqueId());
             if (cp.getSkillLevel(SkillType.LIBRARIAN) < 3) {
                 PlayerUtil.message(player, "You must be a Librarian level 3 to bless XP books.");
                 return;
@@ -112,7 +112,7 @@ public class XpTransferBookListener implements Listener {
             player.getWorld().playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, SoundCategory.AMBIENT, VOLUME, PITCH +random(-PITCH_VARIANCE, PITCH_VARIANCE));
             PlayerUtil.message(player,ChatColor.GREEN + "Book blessed successfully!");
 
-            Bukkit.getScheduler().runTask(Specialization.getInstance(), new Runnable() {
+            Bukkit.getScheduler().runTask(OpenLab.getInstance(), new Runnable() {
                 @Override
                 public void run() {
                     player.closeInventory();
@@ -214,7 +214,7 @@ public class XpTransferBookListener implements Listener {
         player.setLevel(playerLevel - requestedLevels);
         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.AMBIENT, 0.1f, PITCH +-0.4f +random(-PITCH_VARIANCE, PITCH_VARIANCE));
         // --- Replace writable book with enchanted XP book (one tick later) ---
-        Bukkit.getScheduler().runTask(Specialization.getInstance(), () -> {
+        Bukkit.getScheduler().runTask(OpenLab.getInstance(), () -> {
             finalizeBook(meta, totalXp, player);
         });
     }

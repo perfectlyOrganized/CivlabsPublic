@@ -1,13 +1,12 @@
 package com.minecraftcivilizations.specialization.Combat.Mobs;
 
 import com.minecraftcivilizations.specialization.Combat.Instinct;
+import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.Reinforcement.ReinforcementManager;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
-import com.minecraftcivilizations.specialization.StaffTools.Debug;
-import com.minecraftcivilizations.specialization.util.CoreUtil;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.MathUtils;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -15,7 +14,6 @@ import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityTargetEvent;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
@@ -25,16 +23,18 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static com.minecraftcivilizations.specialization.util.MathUtils.random;
+
 /**
  * Arclight/Spigot compatible version - no Paper/Destroystokyo APIs
  * This uses BukkitRunnable instead of a custom Goal system
  */
 public class HuntPlayerMobGoal implements Listener {
 
-    private final Specialization plugin;
+    private final OpenLab plugin;
     private final Map<UUID, HuntData> huntingMobs = new HashMap<>();
 
-    public HuntPlayerMobGoal(Specialization plugin) {
+    public HuntPlayerMobGoal(OpenLab plugin) {
         this.plugin = plugin;
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
 
@@ -114,8 +114,9 @@ public class HuntPlayerMobGoal implements Listener {
         private final float breakScalar;
 
         private Entity lastTarget = null;
+        @Deprecated
         private int tick = 0;
-        private int reacquireTick = 0;
+        private long lastBreakTime = 0;
 
         // Block breaking fields
         private Block block = null;
@@ -134,7 +135,7 @@ public class HuntPlayerMobGoal implements Listener {
             tick++;
 
             // Handle target acquisition every second (20 ticks)
-            if (tick % 20 == 0) {
+            if (tick % 120 == 0) {
                 acquireTarget();
             }
 
@@ -187,6 +188,9 @@ public class HuntPlayerMobGoal implements Listener {
                     .filter(p -> p.getLocation().distance(mob.getLocation()) <= followRange)
                     .filter(p -> {
                         // Vertical check for non-spiders
+                        if (!mob.hasLineOfSight(p)) {
+                            return false;
+                        }
                         if (mob.getType() == EntityType.SPIDER || mob.getType() == EntityType.CAVE_SPIDER) {
                             return true;
                         }
@@ -205,7 +209,7 @@ public class HuntPlayerMobGoal implements Listener {
             double bestScore = Double.MAX_VALUE;
 
             for (Player player : nearby) {
-                CustomPlayer cp = CoreUtil.getPlayer(player);
+                CustomPlayer cp = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
                 if (cp == null) continue;
 
                 int guardsmanLevel = cp.getSkillLevel(SkillType.GUARDSMAN);
@@ -322,6 +326,15 @@ public class HuntPlayerMobGoal implements Listener {
 
         private void breakBlock(Entity target, double reachDistance) {
             // Check if block is still valid
+            long currentTime = System.currentTimeMillis();
+            if (lastBreakTime == 0) {
+                lastBreakTime = currentTime;
+                return;
+            }
+            float timeDelta = (currentTime - lastBreakTime) / 1000.0f;
+            lastBreakTime = currentTime;
+            timeDelta = Math.min(timeDelta, 0.1f);
+
             if (block.getType() == Material.AIR ||
                     block.getLocation().distance(mob.getLocation()) > reachDistance) {
 
@@ -339,37 +352,48 @@ public class HuntPlayerMobGoal implements Listener {
             float blockModifier = getBlockModifier(block);
             if (blockModifier == 0) {
                 block = null;
+                lastBreakTime = 0;
                 return;
             }
 
-            float breakPerTick = 5f; // Base speed
+
+            float breakPerSecond = 0.9f; // Base speed
 
             // Check reinforcement
             if (ReinforcementManager.isReinforced(block)) {
                 if (ReinforcementManager.isLightlyReinforced(block)) {
-                    breakPerTick = 0.5f;
+                    breakPerSecond = 0.5f;
                 }
                 if (ReinforcementManager.isHeavilyReinforced(block)) {
                     block = null;
                     breakAmount = 0f;
                     nearbyPlayers = null;
+                    lastBreakTime = 0;
                     return;
                 }
             }
 
-            breakPerTick *= blockModifier;
-            breakPerTick *= breakScalar;
-            breakAmount += breakPerTick / 100f;
+            breakPerSecond *= blockModifier;
+            breakPerSecond *= breakScalar;
+            breakAmount += breakPerSecond * 0.2f * timeDelta;
 
             // Check if block is broken
             if (breakAmount >= 1.0f) {
                 if (block.getBlockData().getMaterial().getHardness() > 0) {
                     block.breakNaturally();
+                    block.getWorld().playSound(
+                            block.getLocation(),
+                            Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR,
+                            SoundCategory.BLOCKS,
+                            0.4f,
+                            1.0f + random(-0.1f, 0.1f)
+                    );
                 }
 
                 block = null;
                 breakAmount = 0f;
                 nearbyPlayers = null;
+                lastBreakTime = 0;
                 return;
             }
 
@@ -381,10 +405,9 @@ public class HuntPlayerMobGoal implements Listener {
 
         private float getBlockModifier(Block block) {
             Material type = block.getType();
-
             // Copy your existing getBlockModifier logic here
             // (The long switch statement from your original class)
-            if(type.name().contains("BRICK") || type.name().contains("_TILE")){
+            if(type.name().contains("BRICK") || type.name().contains("IRON") || type.name().contains("_TILE")){
                 return 0;
             }
             switch(type){
@@ -397,7 +420,6 @@ public class HuntPlayerMobGoal implements Listener {
                 case MYCELIUM:
                 case PODZOL:
                     return 2.0f;
-                // ... rest of your switch statement ...
                 default:
                     if(type.name().contains("_LEAVES")) return 2.5f;
                     if(type.name().contains("_LOGS")) return 0.75f;

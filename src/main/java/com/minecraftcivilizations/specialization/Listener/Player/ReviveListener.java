@@ -2,11 +2,12 @@ package com.minecraftcivilizations.specialization.Listener.Player;
 
 import com.minecraftcivilizations.specialization.CustomItem.CustomItemBase;
 import com.minecraftcivilizations.specialization.CustomItem.CustomItemManager;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.OpenLab;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
-import com.minecraftcivilizations.specialization.util.CoreUtil;
+import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -59,8 +60,8 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class ReviveListener implements Listener {
 
-    private static final NamespacedKey CARRY_SLOW_KEY = new NamespacedKey(Specialization.getInstance(), "carry_slowness");
-    private static final NamespacedKey INJURY_KEY = new NamespacedKey(Specialization.getInstance(), "revive_injury");
+    private static final NamespacedKey CARRY_SLOW_KEY = new NamespacedKey(OpenLab.getInstance(), "carry_slowness");
+    private static final NamespacedKey INJURY_KEY = new NamespacedKey(OpenLab.getInstance(), "revive_injury");
     private static final List<InjuryItem> INJURIES = List.of(
             new InjuryItem("Tumor", Material.SPIDER_EYE),
             new InjuryItem("Blood Clout", Material.REDSTONE),
@@ -241,7 +242,7 @@ public class ReviveListener implements Listener {
 
         //indirectly revives the player lol
         downed.getPersistentDataContainer().set(
-                new NamespacedKey(Specialization.getInstance(), "is_downed"),
+                new NamespacedKey(OpenLab.getInstance(), "is_downed"),
                 PersistentDataType.BYTE,
                 (byte) 0
         );
@@ -278,7 +279,7 @@ public class ReviveListener implements Listener {
 //            if (bar != null) bar.removeAll();
 
 
-            Specialization.message(healer, "You are too far away to revive");
+            OpenLab.message(healer, "You are too far away to revive");
             return;
         }
 
@@ -298,7 +299,7 @@ public class ReviveListener implements Listener {
         updateBossBarProgress(downed, inv);
 
         if (allInjuriesCleared(inv)) {
-            CustomPlayer cHealer = CoreUtil.getPlayer(healer.getUniqueId());
+            CustomPlayer cHealer = CustomPlayerManager.INSTANCE.getCustomPlayer(healer.getUniqueId());
             int skillLevel = cHealer.getSkillLevel(SkillType.HEALER);
             int hearts = skillLevel * 2;
 
@@ -309,7 +310,7 @@ public class ReviveListener implements Listener {
     }
 
 //    private boolean isHealer(Player player) {
-//        CustomPlayer cHealer = CoreUtil.getPlayer(player.getUniqueId());
+//        CustomPlayer cHealer = CustomPlayerManager.INSTANCE.getCustomPlayer(player.getUniqueId());
 //        int lvl = cHealer.getSkillLevel(SkillType.HEALER);
 //        if (lvl == 0) {
 //            player.sendMessage("§0[§0§6CivLabs§0]§8 » §7You are not skilled enough for that");
@@ -319,7 +320,7 @@ public class ReviveListener implements Listener {
 //    }
 
     private boolean isGuardsman(Player player) {
-        CustomPlayer cGuardsman  = CoreUtil.getPlayer(player.getUniqueId());
+        CustomPlayer cGuardsman = CustomPlayerManager.INSTANCE.getCustomPlayer(player.getUniqueId());
         int lvl = cGuardsman.getSkillLevel(SkillType.GUARDSMAN);
         if (lvl >= 4) {
 //            player.sendMessage("§0[§0§6CivLabs§0]§8 » §7You are not skilled enough for that");
@@ -377,9 +378,9 @@ public class ReviveListener implements Listener {
 
         if (!(target instanceof LivingEntity)) return; //must be a living entity
 
-        Byte targetdowned = target.getPersistentDataContainer().get(new NamespacedKey(Specialization.getInstance(), "is_downed"), PersistentDataType.BYTE);
+        Byte targetdowned = target.getPersistentDataContainer().get(new NamespacedKey(OpenLab.getInstance(), "is_downed"), PersistentDataType.BYTE);
         if ((targetdowned == null || targetdowned == 0)) return; //target must be down
-        Byte playerdowned = player.getPersistentDataContainer().get(new NamespacedKey(Specialization.getInstance(), "is_downed"), PersistentDataType.BYTE);
+        Byte playerdowned = player.getPersistentDataContainer().get(new NamespacedKey(OpenLab.getInstance(), "is_downed"), PersistentDataType.BYTE);
         if (!(playerdowned == null || playerdowned == 0)) return; //healer must NOT be downed
 
         if (!isGuardsman(player)) return; //must be guardsman
@@ -449,7 +450,7 @@ public class ReviveListener implements Listener {
 
             forceDismount(healer, player_pass);
             Byte downed = player_pass.getPersistentDataContainer().get(
-                    new NamespacedKey(Specialization.getInstance(), "is_downed"),
+                    new NamespacedKey(OpenLab.getInstance(), "is_downed"),
                     PersistentDataType.BYTE
             );
 
@@ -488,12 +489,12 @@ public class ReviveListener implements Listener {
         boolean forced = forcedDismount.remove(rider.getUniqueId());
 
         boolean isDowned = rider.getPersistentDataContainer().getOrDefault(
-                new NamespacedKey(Specialization.getInstance(), "is_downed"),
+                new NamespacedKey(OpenLab.getInstance(), "is_downed"),
                 PersistentDataType.BYTE, (byte)0) == 1; //default to not downed
 
         boolean isLeashed = false;
         if (rider.getVehicle() instanceof Sheep proxy) {
-            isLeashed = proxy.getPersistentDataContainer().has(new NamespacedKey(Specialization.getInstance(), "leash_proxy"), PersistentDataType.BOOLEAN);
+            isLeashed = proxy.getPersistentDataContainer().has(new NamespacedKey(OpenLab.getInstance(), "leash_proxy"), PersistentDataType.BOOLEAN);
 
         }
         // Identify plugin mounts (armor stand, interaction, Sheep)
@@ -533,6 +534,29 @@ public class ReviveListener implements Listener {
         }
     }
 
+    public static void startRevive(Player healer, Player target) {
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(healer.getUniqueId());
+        int level = customPlayer.getSkillLevel(SkillType.HEALER);
+
+        if (level <= 0){
+            PlayerUtil.message(healer,"You need to be a healer to use this", 5);
+            return;
+        }
+
+        Byte downed = target.getPersistentDataContainer().get(
+                new NamespacedKey(OpenLab.getInstance(), "is_downed"),
+                PersistentDataType.BYTE
+        );
+
+        boolean isDowned = downed != null && downed == 1;
+        if (isDowned) {
+            Entity vehicle = target.getVehicle();
+            if (!(vehicle instanceof Sheep) && !(vehicle instanceof Player)) {
+                OpenLab.getInstance().reviveListener.startRevive(healer, target, OpenLab.getInstance().reviveListener.createReviveInventory(target));
+            }
+        }
+
+    }
     // -------------------------------
 // PLAYER LEAVE / DEATH CLEANUP
 // -------------------------------

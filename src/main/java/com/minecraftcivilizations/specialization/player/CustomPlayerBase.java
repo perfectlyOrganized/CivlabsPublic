@@ -1,4 +1,4 @@
-package com.minecraftcivilizations.specialization.Player;
+package com.minecraftcivilizations.specialization.player;
 
 
 import lombok.Getter;
@@ -15,7 +15,7 @@ import java.util.UUID;
 public class CustomPlayerBase {
     @Getter
     @Setter
-    private UUID uuid;
+    protected UUID uuid;
     @Getter
     @Setter
     private UUID currentGUI;

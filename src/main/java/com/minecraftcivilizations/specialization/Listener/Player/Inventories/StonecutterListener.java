@@ -1,12 +1,12 @@
 package com.minecraftcivilizations.specialization.Listener.Player.Inventories;
 
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.Data.Pair;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.OpenLab;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
-import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
-import minecraftcivilizations.com.minecraftCivilizationsCore.Options.Pair;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -53,7 +53,7 @@ public class StonecutterListener implements Listener {
         // Check if it's a woodcutting recipe (log, wood, stripped log, stripped wood, or planks input)
         if (isWoodcuttingInput(input.getType())) {
             // Check builder level BEFORE allowing the craft
-            CustomPlayer customPlayer = Specialization.customPlayerManager.getCustomPlayer(player.getUniqueId());
+            CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player.getUniqueId());
 
             int lvl = (customPlayer != null) ? customPlayer.getSkillLevel(SkillType.BUILDER) : 0;
             if (lvl < 2) {
@@ -114,7 +114,7 @@ public class StonecutterListener implements Listener {
                 return;
             }
 
-            CustomPlayer customPlayer = Specialization.customPlayerManager.getCustomPlayer(player.getUniqueId());
+            CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player.getUniqueId());
             customPlayer.addSkillXp(pair.key(), xpToGive);
             LOGGER.fine("Gave " + xpToGive + " XP to " + player.getName()
                     + " for stonecutting " + amount + "x " + result.getType());

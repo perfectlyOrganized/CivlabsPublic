@@ -8,7 +8,7 @@ import com.comphenix.protocol.ProtocolManager;
 import com.minecraftcivilizations.specialization.CustomItem.CustomItemManager;
 
 import com.minecraftcivilizations.specialization.CustomItem.PacketListener;
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import org.bukkit.*;
@@ -45,7 +45,7 @@ public class EmoteManager extends BaseCommand implements Listener {
     private final Map<Block, Interaction> seatBlocks = new HashMap<>();
     private final JavaPlugin plugin;
     private final ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
-    private final NamespacedKey sitKey = new NamespacedKey(Specialization.getInstance(), "sitemote");
+    private final NamespacedKey sitKey = new NamespacedKey(OpenLab.getInstance(), "sitemote");
     private final Set<Player> silenced_players = new HashSet<>();
     private final Map<UUID, ArmorStand> sittingStands = new HashMap<>();
     // Track running cannonball tasks

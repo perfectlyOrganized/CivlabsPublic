@@ -1,8 +1,9 @@
-package com.minecraftcivilizations.specialization.Player;
+package com.minecraftcivilizations.specialization.player;
 
 import com.minecraftcivilizations.specialization.Combat.BlacksmithArmorTrim;
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
+import com.minecraftcivilizations.specialization.util.ComponentUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
@@ -12,10 +13,8 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
-import org.bukkit.Sound;
 import org.bukkit.Statistic;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -29,7 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
@@ -55,13 +53,13 @@ public class LocalNameGenerator implements Listener {
 
     BlacksmithArmorTrim blacksmithArmorTrim; //we'll reference this to access things like applyFirstName, etc.
 
-    public LocalNameGenerator(Specialization specialization) throws IOException {
+    public LocalNameGenerator(OpenLab specialization) throws IOException {
         if (specialization != null) {
             specialization.getServer().getPluginManager().registerEvents(this, specialization);
             blacksmithArmorTrim = specialization.getArmorTrimSystem();
         }
-        fnFile = new File(Specialization.getInstance().getDataFolder(), "first_names.txt");
-        lnFile = new File(Specialization.getInstance().getDataFolder(), "last_names.txt");
+        fnFile = new File(OpenLab.getInstance().getDataFolder(), "first_names.txt");
+        lnFile = new File(OpenLab.getInstance().getDataFolder(), "last_names.txt");
         firstNames = new ArrayList<>();
         lastNames = new ArrayList<>();
         for (String rawLine : Files.readAllLines(fnFile.toPath())) {
@@ -179,19 +177,19 @@ public class LocalNameGenerator implements Listener {
 //        for (Map.Entry<String, List<String>> entry : grouping.entrySet()) {
 //            Specialization.logger.info(entry.getKey() + ": " + entry.getValue());
 //        }
-        Specialization.logger.info("[LocalNameGenerator] Loaded " + firstNames.size() + " first names and " + lastNames.size() + " last names");
+        OpenLab.logger.info("[LocalNameGenerator] Loaded " + firstNames.size() + " first names and " + lastNames.size() + " last names");
 
         // Load existing names from world playerdata to prevent duplicates
         loadExistingNamesFromWorld();
         generateAllNameCombinations();
         loadTotalFromGeneratedFile();
 
-        Specialization.logger.info("[LocalNameGenerator] Initialization complete. " + usedNames.size() + " existing names loaded.");
+        OpenLab.logger.info("[LocalNameGenerator] Initialization complete. " + usedNames.size() + " existing names loaded.");
     }
     private void generateAllNameCombinations() {
-        File outputFile = new File(Specialization.getInstance().getDataFolder(), "GeneratedNames.txt");
+        File outputFile = new File(OpenLab.getInstance().getDataFolder(), "GeneratedNames.txt");
         if (outputFile.exists()) {
-            Specialization.logger.info("[LocalNameGenerator] GeneratedNames.txt already exists, skipping generation.");
+            OpenLab.logger.info("[LocalNameGenerator] GeneratedNames.txt already exists, skipping generation.");
             return;
         }
 
@@ -288,9 +286,9 @@ public class LocalNameGenerator implements Listener {
             allNames.add("Total names: " + totalCount);
             Files.write(path, allNames);
 
-            Specialization.logger.info("[LocalNameGenerator] Generated " + totalCount + " possible name combinations in " + outputFile.getName());
+            OpenLab.logger.info("[LocalNameGenerator] Generated " + totalCount + " possible name combinations in " + outputFile.getName());
         } catch (IOException e) {
-            Specialization.logger.severe("[LocalNameGenerator] Failed to generate all name combinations: " + e.getMessage());
+            OpenLab.logger.severe("[LocalNameGenerator] Failed to generate all name combinations: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -375,28 +373,28 @@ public class LocalNameGenerator implements Listener {
                 }
             }
         } catch (Exception e) {
-            Specialization.logger.warning("[LocalNameGenerator] Failed to load existing names from world playerdata: " + e.getMessage());
+            OpenLab.logger.warning("[LocalNameGenerator] Failed to load existing names from world playerdata: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
     /**
-     * Loads names from MinecraftCivilizationsCore directory by checking all UUID files
+     * Loads names from Specialization directory by checking all UUID files
      */
     private void loadNamesFromPlayerdata(File playerdataDir) {
         try {
-            // Look for MinecraftCivilizationsCore plugin directory
-            File pluginDataDir = new File(Bukkit.getWorldContainer(), "plugins/MinecraftCivilizationsCore");
+            // Look for Specialization plugin directory
+            File pluginDataDir = new File(Bukkit.getWorldContainer(), "plugins/Specialization");
 
             if (pluginDataDir.exists() && pluginDataDir.isDirectory()) {
-                Specialization.logger.info("[LocalNameGenerator] Scanning MinecraftCivilizationsCore directory: " + pluginDataDir.getAbsolutePath());
+                OpenLab.logger.info("[LocalNameGenerator] Scanning Specialization directory: " + pluginDataDir.getAbsolutePath());
 
                 // Get all files in the directory except db.properties
                 File[] allFiles = pluginDataDir.listFiles((dir, name) ->
                         !name.equals("db.properties") && !name.startsWith("."));
 
                 if (allFiles != null) {
-                    Specialization.logger.info("[LocalNameGenerator] Found " + allFiles.length + " files to scan");
+                    OpenLab.logger.info("[LocalNameGenerator] Found " + allFiles.length + " files to scan");
 
                     int filesProcessed = 0;
                     int namesFound = 0;
@@ -468,25 +466,25 @@ public class LocalNameGenerator implements Listener {
 
                                 filesProcessed++;
                                 if (namesInThisFile == 0) {
-                                    Specialization.logger.fine("[LocalNameGenerator] No names found in file: " + file.getName());
+                                    OpenLab.logger.fine("[LocalNameGenerator] No names found in file: " + file.getName());
                                 }
 
                             } catch (Exception e) {
-                                Specialization.logger.warning("[LocalNameGenerator] Failed to read file " + file.getName() + ": " + e.getMessage());
+                                OpenLab.logger.warning("[LocalNameGenerator] Failed to read file " + file.getName() + ": " + e.getMessage());
                             }
                         }
                     }
 
-                    Specialization.logger.info("[LocalNameGenerator] Scan complete - Processed " + filesProcessed + " files, found " + namesFound + " unique names");
+                    OpenLab.logger.info("[LocalNameGenerator] Scan complete - Processed " + filesProcessed + " files, found " + namesFound + " unique names");
 
                 } else {
-                    Specialization.logger.warning("[LocalNameGenerator] No files found in MinecraftCivilizationsCore directory");
+                    OpenLab.logger.warning("[LocalNameGenerator] No files found in Specialization directory");
                 }
             } else {
-                Specialization.logger.warning("[LocalNameGenerator] MinecraftCivilizationsCore directory not found: " + pluginDataDir.getAbsolutePath());
+                OpenLab.logger.warning("[LocalNameGenerator] Specialization directory not found: " + pluginDataDir.getAbsolutePath());
             }
         } catch (Exception e) {
-            Specialization.logger.warning("[LocalNameGenerator] Failed to load names from MinecraftCivilizationsCore: " + e.getMessage());
+            OpenLab.logger.warning("[LocalNameGenerator] Failed to load names from Specialization: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -520,11 +518,11 @@ public class LocalNameGenerator implements Listener {
                     return textValue;
                 }
 
-                Specialization.logger.warning("[LocalNameGenerator] No 'text' field found in JSON: " + jsonString);
+                OpenLab.logger.warning("[LocalNameGenerator] No 'text' field found in JSON: " + jsonString);
                 return null;
             }
         } catch (Exception e) {
-            Specialization.logger.warning("[LocalNameGenerator] Failed to extract text from JSON: " + jsonString + " - " + e.getMessage());
+            OpenLab.logger.warning("[LocalNameGenerator] Failed to extract text from JSON: " + jsonString + " - " + e.getMessage());
             return null;
         }
     }
@@ -537,7 +535,7 @@ public class LocalNameGenerator implements Listener {
      */
     private String extractInternalName(String displayName) {
         if (displayName == null || displayName.isEmpty()) {
-            Specialization.logger.warning("[LocalNameGenerator] Display name is null or empty");
+            OpenLab.logger.warning("[LocalNameGenerator] Display name is null or empty");
             return null;
         }
 
@@ -561,13 +559,13 @@ public class LocalNameGenerator implements Listener {
      * @return a randomly-picked "FirstName LastName"
      */
     public String nextName() throws NoSuchElementException {
-        Specialization.logger.info("[LocalNameGenerator] Generating new name...");
+        OpenLab.logger.info("[LocalNameGenerator] Generating new name...");
 
         int totalUpper = (totalPossible > 0) ? totalPossible : Math.max(1, firstNames.size() * lastNames.size());
 
 
         if (usedNames.size() >= totalUpper) {
-            Specialization.logger.severe("[LocalNameGenerator] All possible name combinations have been used (exact="
+            OpenLab.logger.severe("[LocalNameGenerator] All possible name combinations have been used (exact="
                     + (totalPossible > 0 ? totalPossible : "unknown") + ", used=" + usedNames.size() + ")!");
             throw new NoSuchElementException("All possible name combinations have been used");
         }
@@ -593,13 +591,13 @@ public class LocalNameGenerator implements Listener {
                 // duplicate -> continue
             } catch (NoSuchElementException e) {
                 // No valid candidate for this roll (exhausted candidate pool) — count attempt and continue
-                Specialization.logger.fine("[LocalNameGenerator] generateNameRoll failed on attempt " + attempts + ": " + e.getMessage());
+                OpenLab.logger.fine("[LocalNameGenerator] generateNameRoll failed on attempt " + attempts + ": " + e.getMessage());
             } catch (Exception e) {
-                Specialization.logger.warning("[LocalNameGenerator] Unexpected error generating name: " + e.getMessage());
+                OpenLab.logger.warning("[LocalNameGenerator] Unexpected error generating name: " + e.getMessage());
             }
         }
 
-        Specialization.logger.severe("[LocalNameGenerator] FAILED: Could not generate a unique valid name after " + maxAttempts + " attempts");
+        OpenLab.logger.severe("[LocalNameGenerator] FAILED: Could not generate a unique valid name after " + maxAttempts + " attempts");
         throw new NoSuchElementException("Could not generate a unique valid name after " + maxAttempts + " attempts");
     }
 
@@ -607,7 +605,7 @@ public class LocalNameGenerator implements Listener {
     private int totalPossible = -1;
 
     private void loadTotalFromGeneratedFile() {
-        File outputFile = new File(Specialization.getInstance().getDataFolder(), "GeneratedNames.txt");
+        File outputFile = new File(OpenLab.getInstance().getDataFolder(), "GeneratedNames.txt");
         if (!outputFile.exists()) return;
 
         try {
@@ -618,15 +616,15 @@ public class LocalNameGenerator implements Listener {
                     String num = line.replace("Total names:", "").trim();
                     try {
                         totalPossible = Integer.parseInt(num);
-                        Specialization.logger.info("[LocalNameGenerator] Total possible names loaded: " + totalPossible);
+                        OpenLab.logger.info("[LocalNameGenerator] Total possible names loaded: " + totalPossible);
                     } catch (NumberFormatException nfe) {
-                        Specialization.logger.warning("[LocalNameGenerator] Could not parse total from GeneratedNames.txt: '" + num + "'");
+                        OpenLab.logger.warning("[LocalNameGenerator] Could not parse total from GeneratedNames.txt: '" + num + "'");
                     }
                     break;
                 }
             }
         } catch (IOException e) {
-            Specialization.logger.warning("[LocalNameGenerator] Failed to read GeneratedNames.txt: " + e.getMessage());
+            OpenLab.logger.warning("[LocalNameGenerator] Failed to read GeneratedNames.txt: " + e.getMessage());
         }
     }
 
@@ -761,14 +759,14 @@ public class LocalNameGenerator implements Listener {
 
 
     // Key for permanent name selection
-    private final NamespacedKey PERMANENT_NAME_KEY = new NamespacedKey(Specialization.getInstance(), "permanent_name");
+    private final NamespacedKey PERMANENT_NAME_KEY = new NamespacedKey(OpenLab.getInstance(), "permanent_name");
 
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
-
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
         // Check PDC for permanent name
         boolean hasPermanentName = player.getPersistentDataContainer().has(PERMANENT_NAME_KEY, PersistentDataType.BYTE);
         if (hasPermanentName) return; // Already chosen → skip everything
@@ -777,8 +775,8 @@ public class LocalNameGenerator implements Listener {
         if (!canSelectTempName(player)) {
             return;
         }
-
-        Component mainTitle = MiniMessage.miniMessage().deserialize("Your name is: <gold>" + player.getName() + "</gold>");
+        String name = ComponentUtils.serializeComponentAsStringWithStrip(customPlayer.getName());
+        Component mainTitle = MiniMessage.miniMessage().deserialize("Your name is: <gold>" + name + "</gold>");
         Component subTitle = MiniMessage.miniMessage().deserialize("<gray>You have <red>" + getRemainingTime(player) + " </red>minutes to reroll name.</gray>");
 
 // Convert to legacy strings (with § color codes)
@@ -793,11 +791,11 @@ public class LocalNameGenerator implements Listener {
         List<String> names;
         if (data == null) {
             // First time or no temp data → assign new temp names
-            names = assignTempNames(uuid, player.getName());
+            names = assignTempNames(uuid, name);
         } else {
             // Reuse previous temp names
             names = new ArrayList<>();
-            names.add(data.initialName);
+            names.add(name);
             names.addAll(data.options);
         }
         PlayerUtil.message(player, MiniMessage.miniMessage().deserialize("<gradient:#0D1B2A:#1B263B>=====================================</gradient>"));

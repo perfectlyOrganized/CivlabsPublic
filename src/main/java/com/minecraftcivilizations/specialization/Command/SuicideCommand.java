@@ -6,7 +6,7 @@ import co.aikar.commands.annotation.CommandPermission;
 import co.aikar.commands.annotation.Default;
 import com.minecraftcivilizations.specialization.Combat.PVPManager;
 import com.minecraftcivilizations.specialization.Listener.Player.PlayerDownedListener;
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -49,7 +49,7 @@ public class SuicideCommand extends BaseCommand {
 
             // Riding a sheep leash proxy
             if (player.getVehicle() instanceof org.bukkit.entity.Sheep sheepLeashProxy) {
-                NamespacedKey leashKey = new NamespacedKey(Specialization.getInstance(), "leash_proxy");
+                NamespacedKey leashKey = new NamespacedKey(OpenLab.getInstance(), "leash_proxy");
 
                 if (sheepLeashProxy.getPersistentDataContainer().has(leashKey, PersistentDataType.BYTE)) {
                     Byte isLeashed = sheepLeashProxy.getPersistentDataContainer().get(leashKey, PersistentDataType.BYTE);
@@ -71,7 +71,7 @@ public class SuicideCommand extends BaseCommand {
         }
 
         Byte downed = player.getPersistentDataContainer()
-                .get(new NamespacedKey(Specialization.getInstance(), "is_downed"), PersistentDataType.BYTE);
+                .get(new NamespacedKey(OpenLab.getInstance(), "is_downed"), PersistentDataType.BYTE);
 
         if (downed == null || downed == 0) {
             PlayerUtil.message(player, Component.text("You can only use this command while downed.").color(NamedTextColor.RED));

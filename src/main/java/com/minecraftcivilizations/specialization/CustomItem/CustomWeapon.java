@@ -2,7 +2,7 @@ package com.minecraftcivilizations.specialization.CustomItem;
 
 import com.minecraftcivilizations.specialization.Combat.CombatManager;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.util.CoreUtil;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.ItemStackUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -98,7 +98,7 @@ public class CustomWeapon extends CustomItemBase {
     @Override
     public void onCreateItem(ItemStack itemStack, ItemMeta meta, Player player) {
         if(player!=null){
-            int lvl = CoreUtil.getPlayer(player.getUniqueId()).getSkillLevel(SkillType.BLACKSMITH);
+            int lvl = CustomPlayerManager.INSTANCE.getCustomPlayer(player.getUniqueId()).getSkillLevel(SkillType.BLACKSMITH);
             double craft_crit_chance = 0.0;
 
             boolean luck_enabled = player.hasPotionEffect(PotionEffectType.LUCK);
@@ -190,7 +190,7 @@ public class CustomWeapon extends CustomItemBase {
     @Override
     public void onItemSwitchTo(PlayerItemHeldEvent event, ItemStack oldItem, ItemStack newItem) {
         Player player = event.getPlayer();
-        int lvl = CoreUtil.getPlayer(player).getSkillLevel(SkillType.GUARDSMAN);
+        int lvl = CustomPlayerManager.INSTANCE.getCustomPlayer(player).getSkillLevel(SkillType.GUARDSMAN);
         if(isOnCooldown(player))return;
         PlayerUtil playerUtil = PlayerUtil.getPlayerUtil(player);
 

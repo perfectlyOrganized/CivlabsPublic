@@ -2,11 +2,11 @@ package com.minecraftcivilizations.specialization.Command;
 
 import co.aikar.commands.BaseCommand;
 import co.aikar.commands.annotation.*;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.OpenLab;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
-import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.JoinConfiguration;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -16,7 +16,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.FileNotFoundException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -40,7 +39,7 @@ public class XPLeaderboardCommand extends BaseCommand {
             return;
         }
 
-        List<CustomPlayer> customPlayers = getOnlineCustomPlayers();
+        List<CustomPlayer> customPlayers = CustomPlayerManager.INSTANCE.getPlayers();
         if (customPlayers.isEmpty()) {
             PlayerUtil.sendMessage(sender, Component.text("No players online to display XP leaderboard.", NamedTextColor.RED));
             return;
@@ -84,7 +83,7 @@ public class XPLeaderboardCommand extends BaseCommand {
             return;
         }
 
-        List<CustomPlayer> customPlayers = getOnlineCustomPlayers().stream()
+        List<CustomPlayer> customPlayers = CustomPlayerManager.INSTANCE.getPlayers().stream()
                 .sorted(Comparator.comparingDouble(cp -> -cp.getSkill(type).getXp()))
                 .collect(Collectors.toList());
 
@@ -111,7 +110,7 @@ public class XPLeaderboardCommand extends BaseCommand {
         }
 
         for (SkillType type : SkillType.values()) {
-            List<CustomPlayer> classPlayers = getOnlineCustomPlayers().stream()
+            List<CustomPlayer> classPlayers = CustomPlayerManager.INSTANCE.getPlayers().stream()
                     .sorted(Comparator.comparingDouble(cp -> -cp.getSkill(type).getXp()))
                     .collect(Collectors.toList());
 
@@ -127,20 +126,6 @@ public class XPLeaderboardCommand extends BaseCommand {
         }
     }
 
-    // --- Utility Methods ---
-    private List<CustomPlayer> getOnlineCustomPlayers() {
-        return Bukkit.getOnlinePlayers().stream()
-                .map(p -> {
-                    try {
-                        return Specialization.customPlayerManager.load(p.getUniqueId());
-                    } catch (FileNotFoundException e) {
-                        MinecraftCivilizationsCore.getInstance().getLogger().severe(String.format("Can't load player %s",p.getName()));
-                    }
-                    return null;
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-    }
 
     private NamedTextColor getClassColor(SkillType type) {
         if (type == null) return NamedTextColor.GOLD;

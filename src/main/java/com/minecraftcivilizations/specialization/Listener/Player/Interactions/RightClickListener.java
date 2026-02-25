@@ -1,63 +1,51 @@
 package com.minecraftcivilizations.specialization.Listener.Player.Interactions;
 
+import com.minecraftcivilizations.specialization.Config.ConfigFile;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
-import com.minecraftcivilizations.specialization.Listener.Player.LocalChat;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Reinforcement.ReinforcementManager;
 import com.minecraftcivilizations.specialization.Skill.Skill;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
-import com.minecraftcivilizations.specialization.util.CoreUtil;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
-import minecraftcivilizations.com.minecraftCivilizationsCore.Config.ConfigFile;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.Particle;
-import org.bukkit.Sound;
-import org.bukkit.SoundCategory;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.data.Ageable;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.block.data.Bisected;
 import org.bukkit.block.data.type.Bed;
 import org.bukkit.block.data.type.Door;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.entity.EntityInteractEvent;
-import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class RightClickListener implements Listener {
 
     @EventHandler
     public void onRightClick(PlayerInteractEvent event) {
         Player player = event.getPlayer();
-        CustomPlayer customPlayer = CustomPlayer.getCustomPlayer(player);
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
 
         Material mainType = player.getInventory().getItemInMainHand().getType();
         Material offType = player.getInventory().getItemInOffHand().getType();
         String mainKey = mainType.toString();
         String offKey = offType.toString();
 
+        boolean bypass = player.getPotionEffect(PotionEffectType.LUCK) != null && player.isOp();
         ConfigFile config = SpecializationConfig.getCanUseItemConfig();
         List<String> blacklist = SpecializationConfig.getCanUseItemConfig().getStringList("blacklist");
         List<String> modBlacklist = SpecializationConfig.getCanUseItemConfig().getStringList("mod_blacklist");
-        if (blacklist.contains(mainKey) ||
-                blacklist.contains(offKey)) {
+        if (!bypass && (blacklist.contains(mainKey) ||
+                blacklist.contains(offKey))) {
             PlayerUtil.sendActionBar(player, Component.text("You are unable to use "+ mainKey + " or " + offKey).color(NamedTextColor.RED) );
             event.setCancelled(true);
             return;
@@ -86,14 +74,14 @@ public class RightClickListener implements Listener {
             if (canUse) break; // Break outer loop
         }
 
-        if (!canUse && (modBlacklist.stream().anyMatch(mainKey::startsWith) && !player.hasCooldown(mainType)) ||
+        if (!canUse && !bypass && (modBlacklist.stream().anyMatch(mainKey::startsWith) && !player.hasCooldown(mainType)) ||
                 (modBlacklist.stream().anyMatch(offKey::startsWith) && !player.hasCooldown(offType))) {
             PlayerUtil.sendActionBar(player, Component.text("You are unable to use "+ mainKey + " or " + offKey).color(NamedTextColor.RED) );
             event.setCancelled(true);
             return;
         }
 
-        if (!canUse && hit) {
+        if (!canUse && hit && !bypass) {
             PlayerUtil.sendActionBar(player, Component.text("You are unable to use "+ mainKey + " or " + offKey).color(NamedTextColor.RED) );
             event.setCancelled(true);
         }
@@ -127,20 +115,17 @@ public class RightClickListener implements Listener {
 
         if (ReinforcementManager.isReinforced(clicked)) return;
 
-        CustomPlayer cPlayer = CoreUtil.getPlayer(player);
+        CustomPlayer cPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
         if(clicked.getBlockData() instanceof Ageable bush && cPlayer.getSkillLevel(SkillType.FARMER) < 2){
             if(bush.getAge() >= 3 && Math.random() < 0.2){
                 player.damage(1);
             }
         }
 
-        Material mainHand = player.getInventory().getItemInMainHand().getType();
-        Material offHand = player.getInventory().getItemInOffHand().getType();
-
         // Light reinforcement (copper ingot) - check main hand first, then off-hand
-        if (mainHand == Material.COPPER_INGOT || offHand == Material.COPPER_INGOT) {
-            boolean useOffHand = mainHand != Material.COPPER_INGOT;
-            if (customPlayer.getSkillLevel(SkillType.BUILDER) >= SpecializationConfig.getReinforcementConfig().getInteger("LIGHT_REINFORCEMENT_LEVEL")) {
+        if (mainType == Material.COPPER_INGOT || offType == Material.COPPER_INGOT) {
+            boolean useOffHand = mainType != Material.COPPER_INGOT;
+            if (customPlayer.getSkillLevel(SkillType.BUILDER) >= SpecializationConfig.getReinforcementConfig().getInt("LIGHT_REINFORCEMENT_LEVEL")) {
                 List<Block> blocks = getMultiBlocks(clicked);
                 boolean success = false;
                 for (Block block : blocks) {
@@ -159,10 +144,10 @@ public class RightClickListener implements Listener {
             }
         }
         // Heavy reinforcement (iron ingot) - check main hand first, then off-hand
-        else if (mainHand == Material.IRON_INGOT || offHand == Material.IRON_INGOT) {
-            boolean useOffHand = mainHand != Material.IRON_INGOT;
+        else if (mainType == Material.IRON_INGOT || offType == Material.IRON_INGOT) {
+            boolean useOffHand = mainType != Material.IRON_INGOT;
 
-            if (customPlayer.getSkillLevel(SkillType.BUILDER) >= SpecializationConfig.getReinforcementConfig().getInteger("HEAVY_REINFORCEMENT_LEVEL")) {
+            if (customPlayer.getSkillLevel(SkillType.BUILDER) >= SpecializationConfig.getReinforcementConfig().getInt("HEAVY_REINFORCEMENT_LEVEL")) {
                 List<Block> blocks = getMultiBlocks(clicked);
                 boolean success = false;
                 for (Block block : blocks) {

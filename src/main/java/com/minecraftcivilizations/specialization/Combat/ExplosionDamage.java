@@ -1,28 +1,18 @@
 package com.minecraftcivilizations.specialization.Combat;
 
-import com.minecraftcivilizations.specialization.SmartEntity.SmartEntity;
-import com.minecraftcivilizations.specialization.Specialization;
-import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import org.bukkit.*;
-import org.bukkit.block.BlockState;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.entity.EntityDamageByBlockEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.persistence.PersistentDataType;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.bukkit.event.entity.EntityDamageEvent.DamageModifier.*;
 
 public class ExplosionDamage implements Listener {
 

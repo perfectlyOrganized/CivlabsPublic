@@ -1,23 +1,17 @@
 package com.minecraftcivilizations.specialization.Listener.Player.Blocks.Mining;
 
-import com.google.gson.reflect.TypeToken;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.CraftEngine.ItemGetterUtil;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.Data.Pair;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
-import com.minecraftcivilizations.specialization.util.CoreUtil;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import com.typesafe.config.Config;
-import minecraftcivilizations.com.minecraftCivilizationsCore.Config.ConfigFile;
-import minecraftcivilizations.com.minecraftCivilizationsCore.Options.Pair;
-import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Ageable;
@@ -40,7 +34,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.minecraftcivilizations.specialization.Reinforcement.ReinforcementManager.*;
-import com.minecraftcivilizations.specialization.Reinforcement.ReinforcementManager;
 
 public class BreakBlockListener implements Listener {
 
@@ -61,9 +54,9 @@ public class BreakBlockListener implements Listener {
         }
 
         ItemStack tool = event.getPlayer().getInventory().getItemInMainHand();
-        if (tool.getType().name().endsWith("_PICKAXE")) { // ensure it's a pickaxe
+        if (tool.getType().name().endsWith("_PICKAXE")) {
             if (tool.containsEnchantment(Enchantment.SILK_TOUCH)) {
-                return; // Exit early: do not give miner XP
+                return;
             }
         }
 
@@ -73,7 +66,7 @@ public class BreakBlockListener implements Listener {
 //            breakSpeedAttr.setBaseValue(SpecializationConfig.getBlockHardnessConfig().getDouble(event.getBlock().getType().toString()));
 
             Pair<SkillType, Double> pair = SkillType.getSkillXpFromConfig(SpecializationConfig.getXpGainFromBreakingConfig(),  ItemGetterUtil.getItemId(event));
-            CustomPlayer player = CoreUtil.getPlayer(event.getPlayer().getUniqueId());
+            CustomPlayer player = CustomPlayerManager.INSTANCE.getCustomPlayer(event.getPlayer().getUniqueId());
             BlockData blockData = event.getBlock().getBlockData();
 
             if (isReinforced(event.getBlock())) {
@@ -125,7 +118,7 @@ public class BreakBlockListener implements Listener {
     }
 
     public void minerListener(BlockBreakEvent event) {
-        CustomPlayer player = CoreUtil.getPlayer(event.getPlayer());
+        CustomPlayer player = CustomPlayerManager.INSTANCE.getCustomPlayer(event.getPlayer());
         Material materialName = event.getBlock().getType();
         Config CanMinerLvlBreak = SpecializationConfig.getCanMinerLvlBreakConfig().getConfig();
         String item = materialName.toString();
@@ -143,7 +136,7 @@ public class BreakBlockListener implements Listener {
     }
 
     public void farmerListener(BlockBreakEvent event) {
-        CustomPlayer player = CoreUtil.getPlayer(event.getPlayer());
+        CustomPlayer player = CustomPlayerManager.INSTANCE.getCustomPlayer(event.getPlayer());
         Material materialName = event.getBlock().getType();
         Config CanFarmerBreak = SpecializationConfig.getCanFarmerBreakConfig().getConfig();
         String item = materialName.toString();

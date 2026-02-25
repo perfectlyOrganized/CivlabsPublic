@@ -1,10 +1,10 @@
 package com.minecraftcivilizations.specialization.Command;
 
-import com.minecraftcivilizations.specialization.Player.LocalNameGenerator;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
+import com.minecraftcivilizations.specialization.player.LocalNameGenerator;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
+import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
-import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
 import co.aikar.commands.BaseCommand;
 import co.aikar.commands.annotation.*;
 import net.kyori.adventure.text.Component;
@@ -16,7 +16,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.NoSuchElementException;
-import java.util.UUID;
 
 /**
  * allows players or admins to reroll their username or another player's username and set a custom username
@@ -33,7 +32,7 @@ public class RerollNameCommand extends BaseCommand {
 
     public RerollNameCommand(LocalNameGenerator generator) {
         this.nameGenerator = generator;
-        this.rerollKey = new NamespacedKey(MinecraftCivilizationsCore.getInstance(), "reroll_timestamp");
+        this.rerollKey = new NamespacedKey(OpenLab.getInstance(), "reroll_timestamp");
     }
 
     // ---------------- Default reroll ----------------
@@ -128,11 +127,10 @@ public class RerollNameCommand extends BaseCommand {
                 .color(NamedTextColor.WHITE)
                 .decoration(TextDecoration.ITALIC, false);
 
-        CustomPlayer customPlayer = Specialization.customPlayerManager
-                .getCustomPlayer(target.getUniqueId());
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(target.getUniqueId());
 
         customPlayer.setName(newName);
-        Specialization.getInstance().applyCustomName(target, newName);
+        OpenLab.getInstance().applyCustomName(target, newName);
 
         if (target.equals(sender)) {
             sender.getPersistentDataContainer().set(rerollKey, PersistentDataType.LONG, now);

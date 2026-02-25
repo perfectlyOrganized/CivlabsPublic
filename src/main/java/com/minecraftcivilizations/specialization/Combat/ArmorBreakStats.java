@@ -1,9 +1,7 @@
 package com.minecraftcivilizations.specialization.Combat;
 
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
-import com.minecraftcivilizations.specialization.Skill.Skill;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.util.MathUtils;
 import lombok.Getter;
 

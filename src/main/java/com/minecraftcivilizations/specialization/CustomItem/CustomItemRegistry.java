@@ -1,15 +1,10 @@
 package com.minecraftcivilizations.specialization.CustomItem;
 
-import com.minecraftcivilizations.specialization.CustomItem.CustomItem;
 import lombok.Getter;
-import minecraftcivilizations.com.minecraftCivilizationsCore.Ability.CustomAbility;
 import org.bukkit.NamespacedKey;
-import org.bukkit.inventory.ItemStack;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 public class CustomItemRegistry {
     @Getter

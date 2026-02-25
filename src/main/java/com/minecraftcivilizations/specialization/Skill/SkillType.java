@@ -1,9 +1,9 @@
 package com.minecraftcivilizations.specialization.Skill;
 
+import com.minecraftcivilizations.specialization.Config.ConfigFile;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
+import com.minecraftcivilizations.specialization.Data.Pair;
 import com.typesafe.config.ConfigException;
-import minecraftcivilizations.com.minecraftCivilizationsCore.Config.ConfigFile;
-import minecraftcivilizations.com.minecraftCivilizationsCore.Options.Pair;
 import org.bukkit.Material;
 
 public enum SkillType {

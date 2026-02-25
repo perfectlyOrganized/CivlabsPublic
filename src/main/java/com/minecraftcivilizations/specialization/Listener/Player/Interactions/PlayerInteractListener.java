@@ -1,22 +1,21 @@
 package com.minecraftcivilizations.specialization.Listener.Player.Interactions;
 
-import com.google.gson.reflect.TypeToken;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.Listener.Player.ReviveListener;
+import com.minecraftcivilizations.specialization.OpenLab;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.Skill;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.util.CoreUtil;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
+import com.minecraftcivilizations.specialization.util.OvergearedUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import com.typesafe.config.Config;
-import io.izzel.arclight.api.Arclight;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.BlockState;
-import org.bukkit.block.Chest;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
@@ -27,13 +26,10 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockPhysicsEvent;
-import org.bukkit.event.inventory.InventoryOpenEvent;
-import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -44,16 +40,31 @@ public class PlayerInteractListener implements Listener {
     private final Set<UUID> cascadingSugarcane = new HashSet<>();
 
     @EventHandler
+    public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
+        if (event.getRightClicked() instanceof Player) {
+            Player clicker = event.getPlayer();
+            Material mainType = clicker.getInventory().getItemInMainHand().getType();
+            Player clicked = (Player) event.getRightClicked();
+            List<String> reviveItems = SpecializationConfig.getDownedConfig().getStringList("revive_items");
+            if (reviveItems.contains(mainType.toString())) {
+                ReviveListener.startRevive(clicker, clicked);
+            }
+        }
+    }
+
+    @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
+        boolean bypass = event.getPlayer().getPotionEffect(PotionEffectType.LUCK) != null && event.getPlayer().isOp();
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
             Block block = event.getClickedBlock();
             if (block == null) return;
             boolean typeClassLocked = false;
             String type = block.getType().toString();
-            CustomPlayer player = CoreUtil.getPlayer(event.getPlayer());
-            for (Skill skill : player.getSkills()) {
+            Player player = event.getPlayer();
+            CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
+            for (Skill skill : customPlayer.getSkills()) {
                 SkillType skillType = skill.getSkillType();
-                int playerSkillLevel = player.getSkillLevel(skillType);
+                int playerSkillLevel = customPlayer.getSkillLevel(skillType);
 
             for (SkillLevel skillLevel : SkillLevel.values()) {
                     String configKey = skillType + "_" + skillLevel;
@@ -61,19 +72,22 @@ public class PlayerInteractListener implements Listener {
                     if (types == null) continue;
                     if (!types.contains(type)) continue;
 
+                    if (OvergearedUtils.INSTANCE.isOvergearedAnvilConversion(player,block)) return;
                     if (playerSkillLevel >= skillLevel.getLevel()) {
-                        return;
+                        break;
                     } else {
                         typeClassLocked = true;
                     }
                 }
             }
-            if (typeClassLocked) {
+            if (typeClassLocked && !bypass) {
                 event.getPlayer().sendMessage("You are unable to access: "+ type + ", report if this is a bug.");
                 event.setCancelled(true);
             }
+            OvergearedUtils.INSTANCE.handleOvergearedAnvilEvent(event,block, player);
         }
     }
+
 
 
 //    @EventHandler
@@ -83,7 +97,7 @@ public class PlayerInteractListener implements Listener {
 //        List<String> defaultAllow = SpecializationConfig.getCanUseBlockConfig().getStringList("default");
 //        if (defaultAllow.contains(type.toString())) return;
 //
-//        CustomPlayer player = CoreUtil.getPlayer(e.getPlayer());
+//        CustomPlayer player = CustomPlayerManager.INSTANCE.getCustomPlayer(e.getPlayer());
 //        for (Skill skill : player.getSkills()) {
 //            SkillType skillType = skill.getSkillType();
 //            int playerSkillLevel = player.getSkillLevel(skillType);
@@ -143,9 +157,9 @@ public class PlayerInteractListener implements Listener {
         if (!e.getPlayer().getInventory().getItemInOffHand().getType().equals(Material.BOOK))
             return;
 
-        CustomPlayer player = CoreUtil.getPlayer(e.getPlayer());
-        int xpBase = SpecializationConfig.getLibrarianConfig().getInteger("BLESS_ITEM_XP_LEVEL_REQUIREMENT");
-        int skillMin = SpecializationConfig.getLibrarianConfig().getInteger("BLESS_ITEM_LIBRARIAN_LEVEL");
+        CustomPlayer player = CustomPlayerManager.INSTANCE.getCustomPlayer(e.getPlayer());
+        int xpBase = SpecializationConfig.getLibrarianConfig().getInt("BLESS_ITEM_XP_LEVEL_REQUIREMENT");
+        int skillMin = SpecializationConfig.getLibrarianConfig().getInt("BLESS_ITEM_LIBRARIAN_LEVEL");
         int xpLevelAmount = xpBase * (player.getSkillLevel(SkillType.LIBRARIAN) - skillMin + 1);
         if (xpLevelAmount > e.getPlayer().getLevel()) return;
 
@@ -184,7 +198,7 @@ public class PlayerInteractListener implements Listener {
         Enchantment enchant = validEnchants.get(new Random().nextInt(validEnchants.size()));
         int level = new Random().nextInt(1 + player.getSkillLevel(SkillType.LIBRARIAN) - skillMin);
         if (level <= 0) level = 1;
-        int finalLevel = level; //Math.min(enchant.getMaxLevel(), level);
+        int finalLevel = Math.min(enchant.getMaxLevel(), level);
 
         meta.addEnchant(enchant, finalLevel, false);
 
@@ -209,7 +223,7 @@ public class PlayerInteractListener implements Listener {
         e.getPlayer().setLevel(e.getPlayer().getLevel() - xpLevelAmount);
         e.getPlayer().getInventory().getItemInOffHand()
                 .setAmount(e.getPlayer().getInventory().getItemInOffHand().getAmount() - 1);
-
+        e.getItem().setItemMeta(meta);
         PlayerUtil.message(e.getPlayer(), ChatColor.GOLD + "✨ Your " + capitalizeWords(typeName.replace("_", " ")) + " has been blessed with " + enchantDisplay + " " + levelRoman + "!");
     }
 
@@ -221,7 +235,7 @@ public class PlayerInteractListener implements Listener {
         if (!producedBerries) return;
 
         Player player = e.getPlayer();
-        CustomPlayer cp = CoreUtil.getPlayer(player);
+        CustomPlayer cp = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
         if (cp != null) {
             cp.addSkillXp(SkillType.FARMER, 3);
         }
@@ -231,7 +245,7 @@ public class PlayerInteractListener implements Listener {
     public void onSugarcaneBreak(BlockBreakEvent e) {
         if (e.getBlock().getType() != Material.SUGAR_CANE) return;
 
-        CustomPlayer cp = CoreUtil.getPlayer(e.getPlayer());
+        CustomPlayer cp = CustomPlayerManager.INSTANCE.getCustomPlayer(e.getPlayer());
         if (cp == null) return;
         Config farmerConfig = SpecializationConfig.getXpGainFromBreakingConfig().getObject(SkillType.FARMER.toString());
         double xp = farmerConfig.getDouble(Material.SUGAR_CANE.toString());
@@ -309,7 +323,7 @@ public class PlayerInteractListener implements Listener {
             return;
         }
 
-        CustomPlayer cp = CoreUtil.getPlayer(player);
+        CustomPlayer cp = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
         if (cp != null) {
             cp.addSkillXp(SkillType.FARMER, 1);
         }
@@ -320,9 +334,9 @@ public class PlayerInteractListener implements Listener {
         if (e.getItem().getType() != Material.MILK_BUCKET) return;
 
         Bukkit.getScheduler().runTaskLater(
-                com.minecraftcivilizations.specialization.Specialization.getInstance(),
+                OpenLab.getInstance(),
                 () -> {
-                    CustomPlayer cp = CoreUtil.getPlayer(e.getPlayer());
+                    CustomPlayer cp = CustomPlayerManager.INSTANCE.getCustomPlayer(e.getPlayer());
                     if (cp != null) {
 //                        cp.applyEffects();
                     }
@@ -337,7 +351,7 @@ public class PlayerInteractListener implements Listener {
     @EventHandler
     public void onBucketEmpty(PlayerBucketEmptyEvent e) {
         if (e.getBucket().equals(Material.LAVA_BUCKET)) {
-            CustomPlayer player = CoreUtil.getPlayer(e);
+            CustomPlayer player = CustomPlayerManager.INSTANCE.getCustomPlayer(e);
             if (player.getSkillLevel(SkillType.BLACKSMITH) < SkillLevel.EXPERT.getLevel()) e.setCancelled(true);
         }
     }
@@ -345,7 +359,7 @@ public class PlayerInteractListener implements Listener {
     @EventHandler
     public void onBucketFill(PlayerBucketFillEvent e) {
         if (e.getBucket().equals(Material.LAVA_BUCKET)) {
-            CustomPlayer player = CoreUtil.getPlayer(e);
+            CustomPlayer player = CustomPlayerManager.INSTANCE.getCustomPlayer(e);
             if (player.getSkillLevel(SkillType.BLACKSMITH) < SkillLevel.EXPERT.getLevel()) e.setCancelled(true);
         }
     }

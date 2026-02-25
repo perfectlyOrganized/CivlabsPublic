@@ -1,21 +1,17 @@
 package com.minecraftcivilizations.specialization.Combat.Mobs;
 
 import com.minecraftcivilizations.specialization.Combat.CombatManager;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.OpenLab;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
-import com.minecraftcivilizations.specialization.util.CoreUtil;
 import com.minecraftcivilizations.specialization.util.WorldUtils;
-import lombok.extern.slf4j.Slf4j;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.block.Biome;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -30,18 +26,15 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.util.Vector;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.bukkit.event.entity.EntityDamageEvent.DamageModifier.*;
 import static org.bukkit.entity.EntityType.*;
-import static com.minecraftcivilizations.specialization.util.MathUtils.*;
 
 /**
  * Allows for customization of mob spawning rules and stats
@@ -67,7 +60,7 @@ public class MobManager implements Listener {
     }
 
     public MobManager(CombatManager combatManager) {
-        Specialization plugin = combatManager.getPlugin();
+        OpenLab plugin = combatManager.getPlugin();
         this.SPAWN_VARIATION_ID_KEY = new NamespacedKey(plugin, "mob_spawn_id");
         this.EXP_GAIN_OVERRIDE_KEY = new NamespacedKey(plugin, "exp_gain_override");
         SCALE_KEY = new NamespacedKey(plugin, "custom_scale");
@@ -88,7 +81,7 @@ public class MobManager implements Listener {
 //        ItemStack item = player.getInventory().getItem(event.getHand());
 //        if (item.getType() != Material.BOWL) return;
 //
-//        CustomPlayer pp = CoreUtil.getPlayer(player);
+//        CustomPlayer pp = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
 //        int lvl = pp.getSkillLevel(SkillType.FARMER);
 //
 //        // Minimum level to milk
@@ -582,7 +575,7 @@ public class MobManager implements Listener {
                 list.add(livingEntity);
             }
         }
-        Bukkit.getScheduler().runTask(Specialization.getInstance(), () -> overrideMobs(list));
+        Bukkit.getScheduler().runTask(OpenLab.getInstance(), () -> overrideMobs(list));
     }
 
     /**
@@ -842,7 +835,7 @@ public class MobManager implements Listener {
          */
         if(stats.doesHunting()) {
             if (entity instanceof Mob mob) {
-                Specialization.getInstance().huntPlayerMobGoalSystem.addHuntGoal(mob, stats.getFollowRange(), stats.doesBreaking(), stats.getBreakScalar());
+                OpenLab.getInstance().huntPlayerMobGoalSystem.addHuntGoal(mob, stats.getFollowRange(), stats.doesBreaking(), stats.getBreakScalar());
               //  Bukkit.getMobGoals().removeGoal(mob, ShootPlayerMobGoal.KEY);
                 //Bukkit.getMobGoals().addGoal(mob, 0, new ShootPlayerMobGoal(mob));
             }
@@ -964,7 +957,7 @@ public class MobManager implements Listener {
 //        }else{
 //            double nightMobDamageMultiplier = SpecializationConfig.getMobConfig().get("NIGHTTIME_MOB_DAMAGE_MULTIPLIER", Double.class);
 //            newDamage = event.getDamage() * nightMobDamageMultiplier;
-//            if(CoreUtil.getPlayer(player).getSkillLevel(SkillType.GUARDSMAN) >= 1){
+//            if(CustomPlayerManager.INSTANCE.getCustomPlayer(player).getSkillLevel(SkillType.GUARDSMAN) >= 1){
 //                double guardsmanReductionAmount = SpecializationConfig.getMobConfig().get("NIGHT_GUARDSMAN_MOB_DAMAGE_PERCENT_REDUCTION", Double.class);
 //                newDamage *= 1 - (guardsmanReductionAmount/100d);
 //            }

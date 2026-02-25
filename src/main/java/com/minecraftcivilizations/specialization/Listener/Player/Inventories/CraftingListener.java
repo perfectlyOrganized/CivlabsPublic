@@ -2,29 +2,28 @@ package com.minecraftcivilizations.specialization.Listener.Player.Inventories;
 
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Data.Pair;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
-import com.minecraftcivilizations.specialization.Skill.SkillLevel;
+import com.minecraftcivilizations.specialization.OpenLab;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
+import com.minecraftcivilizations.specialization.Recipe.RecipeBlocker;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.ItemStackUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import com.typesafe.config.ConfigException;
-import minecraftcivilizations.com.minecraftCivilizationsCore.Config.ConfigFile;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.*;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.CraftItemEvent;
-import org.bukkit.event.inventory.InventoryAction;
-import org.bukkit.event.inventory.PrepareItemCraftEvent;
+import org.bukkit.event.inventory.*;
 import org.bukkit.inventory.*;
 import org.bukkit.inventory.ShapelessRecipe;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 
 import java.util.*;
@@ -80,6 +79,40 @@ public class CraftingListener implements Listener {
         this.plugin = plugin;
     }
 
+    private final NamespacedKey newPotionKey = new NamespacedKey(OpenLab.getInstance(), "new_brewing");
+
+    @EventHandler
+    public void onInventoryClick(InventoryClickEvent event) {
+        if (!(event.getInventory() instanceof BrewerInventory)) return;
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+        if (event.getRawSlot() >= 0 && event.getRawSlot() <= 2) {
+            ItemStack potion = event.getCurrentItem();
+            if (potion != null && potion.getType() != Material.AIR && isPotionUntouched(potion)) {
+                setNewTag(potion, true);
+                CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
+                Pair<SkillType, Double> xp_pair = getItemCraftXp(potion.getType().name());
+                customPlayer.addSkillXp(xp_pair.key(),xp_pair.value());
+            }
+        }
+
+    }
+
+    private void setNewTag(ItemStack potion, boolean value) {
+        if (potion == null || potion.getType() == Material.AIR) return;
+        ItemMeta meta = potion.getItemMeta();
+        if (meta == null) return;
+        if (value) {
+            meta.getPersistentDataContainer().set(newPotionKey, PersistentDataType.BOOLEAN, true);
+        } else {
+            meta.getPersistentDataContainer().remove(newPotionKey);
+        }
+        potion.setItemMeta(meta);
+    }
+    private boolean isPotionUntouched(ItemStack item) {
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) return false;
+        return !meta.getPersistentDataContainer().has(newPotionKey, PersistentDataType.BOOLEAN);
+    }
 
 
     public void keepGenericItem(CraftItemEvent event, Material material, ItemStack newItem) {
@@ -88,7 +121,7 @@ public class CraftingListener implements Listener {
         for (int i = 0; i < matrix.length; i++) {
             if (matrix[i] != null && matrix[i].getType() == material) {
                 int finalI = i;
-                Bukkit.getScheduler().runTaskLater(Specialization.getInstance(), () -> {
+                Bukkit.getScheduler().runTaskLater(OpenLab.getInstance(), () -> {
                     event.getInventory().setItem(finalI + 1, newItem);
                 }, 1L);
             }
@@ -105,6 +138,21 @@ public class CraftingListener implements Listener {
         return "";
     }
 
+    private Pair<SkillType, Double> getItemCraftXp(String itemName) {
+        Double xp = 0.0;
+        SkillType skillType = SkillType.BLACKSMITH;
+
+        for (SkillType skill : SkillType.values()) {
+            try {
+                xp = SpecializationConfig.getXpGainFromCraftingConfig().getDouble(skill.name() + "." + itemName);
+            } catch(ConfigException.Missing _e) {}
+            if (xp != 0) {
+                skillType = skill;
+                break;
+            }
+        }
+        return new Pair<>(skillType,xp);
+    }
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onCraft(CraftItemEvent event) {
         if (!(event.getWhoClicked() instanceof Player player) || event.getCurrentItem() == null) return;
@@ -119,14 +167,14 @@ public class CraftingListener implements Listener {
 
 
         if (event.getRecipe() instanceof ShapedRecipe recipe) {
-            NamespacedKey recipeKey = new NamespacedKey(Specialization.getInstance(), "wheat_dough");
+            NamespacedKey recipeKey = new NamespacedKey(OpenLab.getInstance(), "wheat_dough");
             if (recipe.getKey().equals(recipeKey)) {
                 keepGenericItem(event, Material.WATER_BUCKET, new ItemStack(Material.BUCKET, 1));
             }
         }
 
         if (COMPLEX_ITEMS.contains(crafted.getType())) {
-            CustomPlayer customPlayer = Specialization.customPlayerManager.getCustomPlayer(player.getUniqueId());
+            CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player.getUniqueId());
 
             int amount = getCraftedAmount(event);
             for(int i = 0; i < amount; i++) {
@@ -135,23 +183,13 @@ public class CraftingListener implements Listener {
             Debug.broadcast("analytics", player.getName() + " crafted complex item: " + crafted.getType() + " x" + amount);
         }
 
-        Double xp = 0.0;
-        SkillType skillType = SkillType.BLACKSMITH;
-        String itemName = getCraftId(event);
-
-        for (SkillType skill : SkillType.values()) {
-            try {
-                xp = SpecializationConfig.getXpGainFromCraftingConfig().getDouble(skill.name() + "." + itemName);
-            } catch(ConfigException.Missing _e) {}
-            if (xp != 0) {
-                skillType = skill;
-                break;
-            }
-        }
+        Pair<SkillType, Double> xp_pair = getItemCraftXp(getCraftId(event));
+        SkillType skillType = xp_pair.key();
+        double xp = xp_pair.value();
 
         int craftedAmount = getCraftedAmount(event);
 
-        CustomPlayer customPlayer = Specialization.customPlayerManager.getCustomPlayer(player.getUniqueId());
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player.getUniqueId());
 
         int lvl = (int) Math.max(customPlayer.getSkillLevel(skillType), customPlayer.getSkillLevel(SkillType.BLACKSMITH)*1.5);
         if(lvl>5)lvl = 5;
@@ -233,7 +271,7 @@ public class CraftingListener implements Listener {
 
     private String getCraftId(CraftItemEvent event) {
         ItemStack item = event.getCurrentItem();
-        if (Specialization.getInstance().customItemManager.isCustomItem(item)) {
+        if (OpenLab.getInstance().customItemManager.isCustomItem(item)) {
             return event.getRecipe().toString().toUpperCase(Locale.ROOT);
         } else {
             if (!item.getType().getKey().getNamespace().equals("minecraft"))
@@ -408,9 +446,9 @@ public class CraftingListener implements Listener {
         // based on available ingredients in the crafting matrix
         org.bukkit.inventory.CraftingInventory craftingInventory = event.getInventory();
         ItemStack[] matrix = craftingInventory.getMatrix();
-        
+
         int maxCrafts = Integer.MAX_VALUE;
-        
+
         // Check each ingredient slot to find the limiting factor
         for (ItemStack ingredient : matrix) {
             if (ingredient != null && ingredient.getAmount() > 0) {
@@ -418,12 +456,12 @@ public class CraftingListener implements Listener {
                 maxCrafts = Math.min(maxCrafts, ingredient.getAmount());
             }
         }
-        
+
         // If no ingredients found or unlimited, default to result amount divided by recipe yield
         if (maxCrafts == Integer.MAX_VALUE) {
             return result.getAmount();
         }
-        
+
         return maxCrafts * event.getRecipe().getResult().getAmount();
     }/**
      * Returns the exact ItemStacks that will be added to the player's inventory
@@ -487,7 +525,7 @@ public class CraftingListener implements Listener {
             recipeKey = keyed.getKey();
         }
 
-        if (shouldBlockRecipe(player, recipeKey)) {
+        if (RecipeBlocker.shouldBlockRecipe(player, recipeKey)) {
             LOGGER.info("Blocking recipe " + recipeKey + " for player " + player.getName());
             event.getInventory().setResult(null);
 
@@ -497,44 +535,4 @@ public class CraftingListener implements Listener {
         }
     }
 
-    public static boolean shouldBlockRecipe(Player player, NamespacedKey recipeKey) {
-        CustomPlayer customPlayer = Specialization.customPlayerManager.getCustomPlayer(player.getUniqueId());
-
-        if(customPlayer.getAdditionUnlockedRecipes() != null &&
-                customPlayer.getAdditionUnlockedRecipes().contains(recipeKey)) {
-            return false;
-        }
-
-        List<Pair<SkillType, SkillLevel>> recipeRequirements = new ArrayList<>();
-        for (SkillType skillType : SkillType.values()) {
-            for (SkillLevel skillLevel : SkillLevel.values()) {
-                String configKey = skillType + "_" + skillLevel;
-                Set<NamespacedKey> skillRecipes = new HashSet<>(SpecializationConfig.getUnlockedRecipesConfig()
-                        .getStringList(configKey).stream().map(NamespacedKey::fromString).toList());
-
-                if (skillRecipes.contains(recipeKey)) {
-                    recipeRequirements.add(new Pair<>(skillType, skillLevel));
-                }
-            }
-        }
-
-        // If recipe is not in any skill config - allow it (no restrictions)
-        if (recipeRequirements.isEmpty()) {
-            return false;
-        }
-
-        // Check if player meets ANY of the requirements
-        for (Pair<SkillType, SkillLevel> requirement : recipeRequirements) {
-            SkillType requiredSkill = requirement.key();
-            SkillLevel requiredLevel = requirement.value();
-
-            // If player's skill level meets or exceeds the requirement for this skill type
-            if (customPlayer.getSkillLevel(requiredSkill) >= requiredLevel.ordinal()) {
-                return false; // Player qualifies through at least one skill, don't block
-            }
-        }
-
-        // Player doesn't meet ANY of the requirements, block the recipe
-        return true;
-    }
 }
