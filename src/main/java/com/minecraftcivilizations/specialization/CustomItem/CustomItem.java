@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.minecraftcivilizations.specialization.CustomItem.ability.CustomAbility;
 import com.minecraftcivilizations.specialization.CustomItem.ability.CustomItemAbilityRegistry;
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.util.ComponentUtils;
 import com.minecraftcivilizations.specialization.util.LoreUtils;
 import lombok.Getter;
@@ -27,11 +27,11 @@ import java.util.*;
 public class CustomItem {
     private static final Gson GSON = new Gson();
     private static final NamespacedKey CUSTOM_ITEM_KEY =
-            new NamespacedKey(Specialization.getInstance(), "customItem");
+            new NamespacedKey(OpenLab.getInstance(), "customItem");
     private static final NamespacedKey LORE_KEY =
-            new NamespacedKey(Specialization.getInstance(), "lore");
+            new NamespacedKey(OpenLab.getInstance(), "lore");
     private static final NamespacedKey ABILITIES_KEY =
-            new NamespacedKey(Specialization.getInstance(), "abilities");
+            new NamespacedKey(OpenLab.getInstance(), "abilities");
 
     @Getter
     @Setter

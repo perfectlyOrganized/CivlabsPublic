@@ -1,11 +1,11 @@
 package com.minecraftcivilizations.specialization.Data;
 
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.OpenLab;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import lombok.Getter;
-import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
@@ -13,21 +13,17 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class DataManager {
 
     @Getter
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-    public static void startSaver(Specialization plugin) {
+    public static void startSaver(OpenLab plugin) {
         long initialDelay = getInitialDelayUntilNext10Min();
         long period = 10 * 60; // seconds
         Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, save_runnable, initialDelay*20, period*20); //Thread safe scheduler
@@ -39,7 +35,7 @@ public class DataManager {
 
         String timestamp = java.time.ZonedDateTime.now().toLocalTime().toString().substring(0, 8);
         for(Player player : Bukkit.getOnlinePlayers()){
-            CustomPlayer customPlayer = Specialization.customPlayerManager.getCustomPlayer(player.getUniqueId());
+            CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player.getUniqueId());
             String msg = "Skills being saved for "+player.getName()+":";
             for(SkillType type : SkillType.values()){
                 double xp = customPlayer.getSkill(type).getXp();
@@ -56,7 +52,7 @@ public class DataManager {
         }
 
         // TODO Future note for CivCore : Make sure you handle exceptions with e.printStackTrace(); so we can figure out when things go wrong.
-        MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().saveAll();
+        CustomPlayerManager.INSTANCE.saveAll();
     };
 
     // this is done so analytics are exactly every 10 min, so its clean

@@ -1,7 +1,7 @@
 package com.minecraftcivilizations.specialization.Combat;
 
 import com.minecraftcivilizations.specialization.Listener.Player.PlayerDownedListener;
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import org.bukkit.*;
@@ -116,12 +116,12 @@ public class PVPManager implements Listener, CommandExecutor {
         if (!victimAlreadyTagged) {
 //            victim.sendMessage("§0[§0§6CivLabs§0]§8 » §7You have been tagged for §ccombat §7for §b"
 //                    + (COMBAT_COOLDOWN / 1000) + " §7seconds by: §c" + damager.getName());
-            Specialization.message(victim ,"§cCombat§7 logging leaves your items on a §ckillable §aMannequin§7 for §c15s§7 before logging out safely.");
+            OpenLab.message(victim ,"§cCombat§7 logging leaves your items on a §ckillable §aMannequin§7 for §c15s§7 before logging out safely.");
 
         }
         if (!damagerAlreadyTagged) {
 //            damager.sendMessage("§0[§0§6CivLabs§0]§8 » §7You are tagged for §ccombat §7for §b" + (COMBAT_COOLDOWN / 1000) + " §7seconds");
-            Specialization.message(damager, "§cCombat§7 logging leaves your items on a §ckillable §aMannequin§7 for §c15s§7 before logging out safely.");
+            OpenLab.message(damager, "§cCombat§7 logging leaves your items on a §ckillable §aMannequin§7 for §c15s§7 before logging out safely.");
         }
 
 
@@ -177,7 +177,7 @@ public class PVPManager implements Listener, CommandExecutor {
 
                 if (remaining <= 0) {
                     it.remove();
-                    Specialization.message(p,"You may §bsafely§7 log out");
+                    OpenLab.message(p,"You may §bsafely§7 log out");
                     BossBar bar = combatBars.remove(uuid);
                     if (bar != null) bar.removeAll();
 

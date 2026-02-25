@@ -17,4 +17,4 @@ fi
 chmod -R 777 /data
 
 # Start the server
-exec java -ea -Xms2G -Xmx4G -jar /arclight.jar nogui
+exec java -Xms2G -Xmx4G -jar /arclight.jar nogui

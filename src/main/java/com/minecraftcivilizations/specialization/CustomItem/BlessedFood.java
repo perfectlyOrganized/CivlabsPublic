@@ -1,9 +1,10 @@
 package com.minecraftcivilizations.specialization.CustomItem;
 
 import com.minecraftcivilizations.specialization.Listener.Player.Inventories.SpecializationCraftItemEvent;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.OpenLab;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -42,7 +43,7 @@ public class BlessedFood extends CustomItemBase {
     public void init() {
         // Register shapeless recipe if ingredients exist
         if (craftingIngredients != null && !craftingIngredients.isEmpty()) {
-            NamespacedKey key = new NamespacedKey(Specialization.getInstance(), String.valueOf(getId()));
+            NamespacedKey key = new NamespacedKey(OpenLab.getInstance(), String.valueOf(getId()));
             ShapelessRecipe recipe = new ShapelessRecipe(key, createItemStack());
             craftingIngredients.forEach(recipe::addIngredient);
             Bukkit.addRecipe(recipe);
@@ -51,7 +52,7 @@ public class BlessedFood extends CustomItemBase {
 
 //    @Override
 //    public boolean canPlayerCraft(Player player) {
-//        CustomPlayer cPlayer = CoreUtil.getPlayer(player.getUniqueId());
+//        CustomPlayer cPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player.getUniqueId());
 //        return cPlayer.getSkillLevel(SkillType.HEALER) > 0;
 //    }
 
@@ -99,7 +100,7 @@ public class BlessedFood extends CustomItemBase {
     @Override
     public void onCustomCraft(SpecializationCraftItemEvent event, ItemStack itemstack) {
         Player player = event.getPlayer();
-        CustomPlayer.getCustomPlayer(player).addSkillXp(SkillType.HEALER, xpReward);
+        CustomPlayerManager.INSTANCE.getCustomPlayer(player).addSkillXp(SkillType.HEALER, xpReward);
         event.setCancelXp(true); //we will handle custom xp ourselves
     }
 

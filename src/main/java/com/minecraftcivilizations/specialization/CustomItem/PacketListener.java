@@ -6,12 +6,10 @@ import com.comphenix.protocol.events.PacketEvent;
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
 import com.minecraftcivilizations.specialization.Command.EmoteManager;
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 
 import java.util.Set;
 
@@ -24,7 +22,7 @@ public class PacketListener extends PacketAdapter {
     EmoteManager emoteCommand;
 
     public PacketListener(EmoteManager command) {
-        super(Specialization.getInstance(),
+        super(OpenLab.getInstance(),
                 PacketType.Play.Server.NAMED_SOUND_EFFECT,
                 PacketType.Play.Server.SYSTEM_CHAT
         );

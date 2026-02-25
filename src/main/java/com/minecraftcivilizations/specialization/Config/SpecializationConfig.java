@@ -1,10 +1,9 @@
 package com.minecraftcivilizations.specialization.Config;
 
+import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
 import lombok.Getter;
-import minecraftcivilizations.com.minecraftCivilizationsCore.Config.ConfigFile;
 import org.bukkit.*;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.EntityType;
@@ -25,8 +24,6 @@ public class SpecializationConfig {
     private static ConfigFile skillsConfig;
     @Getter
     private static ConfigFile blockHardnessConfig;
-    @Getter
-    private static ConfigFile skillRequirementsConfig;
     @Getter
     private static ConfigFile unlockedRecipesConfig;
     @Getter
@@ -54,11 +51,13 @@ public class SpecializationConfig {
     @Getter
     private static ConfigFile librarianConfig;
     @Getter
-    private static ConfigFile farmerConfig;
+    public static ConfigFile farmerConfig;
+    @Getter
+    public static ConfigFile minerConfig;
     @Getter
     private static ConfigFile cookingConfig;
     @Getter
-    private static ConfigFile tameableConfig;
+    public static ConfigFile tameableConfig;
     @Getter
     private static ConfigFile canUseBlockConfig;
     @Getter
@@ -118,7 +117,7 @@ public class SpecializationConfig {
             data.put("CROSS_SKILL_PENALTY", 0.25);
             return data;
         };
-        playerConfig = new ConfigFile(Specialization.getInstance(), "playerConfig", playerDefaults);
+        playerConfig = new ConfigFile(OpenLab.getInstance(), "playerConfig", playerDefaults);
 
         Supplier<Map<String, Object>> locatorBarDefaults = () -> {
             Map<String, Object> data = new HashMap<>();
@@ -129,7 +128,7 @@ public class SpecializationConfig {
             data.put("OBSERVER_RECEIVE_RANGE", 128.0);
             return data;
         };
-        locatorBarConfig = new ConfigFile(Specialization.getInstance(), "locatorBarConfig", locatorBarDefaults);
+        locatorBarConfig = new ConfigFile(OpenLab.getInstance(), "locatorBarConfig", locatorBarDefaults);
 
         Supplier<Map<String, Double>> reinforcementDefaults = () -> {
             Map<String, Double> data = new HashMap<>();
@@ -141,7 +140,7 @@ public class SpecializationConfig {
             data.put("HEAVY_EXPLOSION_RESISTANCE", 0.95);
             return data;
         };
-        reinforcementConfig = new ConfigFile(Specialization.getInstance(), "reinforcementConfig", reinforcementDefaults);
+        reinforcementConfig = new ConfigFile(OpenLab.getInstance(), "reinforcementConfig", reinforcementDefaults);
 
         Supplier<Map<String, Object>> unlockedRecipesDefaults = () -> {
             Map<String, Object> data = new HashMap<>();
@@ -150,9 +149,11 @@ public class SpecializationConfig {
                     data.put(skillType + "_" + skillLevel, new HashSet<NamespacedKey>());
                 }
             }
+            data.put("blacklist", new ArrayList());
+            data.put("mod_blacklist", new ArrayList());
             return data;
         };
-        unlockedRecipesConfig = new ConfigFile(Specialization.getInstance(), "unlockedRecipesConfig", unlockedRecipesDefaults);
+        unlockedRecipesConfig = new ConfigFile(OpenLab.getInstance(), "unlockedRecipesConfig", unlockedRecipesDefaults);
 
         Supplier<Map<String, List<Object>>> cookingConfigDefaults = () -> {
             Map<String, List<Object>> data = new HashMap<>();
@@ -188,7 +189,7 @@ public class SpecializationConfig {
             farmer.add(recipeData);
             return data;
         };
-        cookingConfig = new ConfigFile(Specialization.getInstance(), "cookingConfig", cookingConfigDefaults);
+        cookingConfig = new ConfigFile(OpenLab.getInstance(), "cookingConfig", cookingConfigDefaults);
 
         Supplier<Map<String, Map<String, Object>>> xpGainFromCraftingDefaults = () -> {
             Map<String, Map<String, Object>> data = new HashMap<>();
@@ -203,7 +204,7 @@ public class SpecializationConfig {
             }
             return data;
         };
-        xpGainFromCraftingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromCrafting", xpGainFromCraftingDefaults);
+        xpGainFromCraftingConfig = new ConfigFile(OpenLab.getInstance(), "xpGainFromCrafting", xpGainFromCraftingDefaults);
 
         Supplier<Map<String, Map<String, Object>>> grindDefaults = () -> {
             Map<String, Map<String, Object>> data = new HashMap<>();
@@ -224,7 +225,7 @@ public class SpecializationConfig {
             return data;
         };
 
-        grindConfig = new ConfigFile(Specialization.getInstance(), "grind", grindDefaults);
+        grindConfig = new ConfigFile(OpenLab.getInstance(), "grind", grindDefaults);
 
         Supplier<Map<String, Map<String, Object>>> xpGainFromStonecuttingDefaults = () -> {
             Map<String, Map<String, Object>> data = new HashMap<>();
@@ -245,7 +246,7 @@ public class SpecializationConfig {
             }
             return data;
         };
-        xpGainFromStonecuttingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromStonecutting", xpGainFromStonecuttingDefaults);
+        xpGainFromStonecuttingConfig = new ConfigFile(OpenLab.getInstance(), "xpGainFromStonecutting", xpGainFromStonecuttingDefaults);
 
         Supplier<Map<String, Double>> combatDefaults = () -> {
             Map<String, Double> data = new HashMap<>();
@@ -255,14 +256,14 @@ public class SpecializationConfig {
             data.put("CROSSBOW_BASE_QUICKCHARGE_VELOCITY", 1.15);
             return data;
         };
-        combatConfig = new ConfigFile(Specialization.getInstance(), "combatConfig", combatDefaults);
+        combatConfig = new ConfigFile(OpenLab.getInstance(), "combatConfig", combatDefaults);
 
         Supplier<Map<String, String>> serverDefaults = () -> {
             Map<String, String> data = new HashMap<>();
             data.put("SERVER_ANALYTIC", "server_1");
             return data;
         };
-        serverConfig = new ConfigFile(Specialization.getInstance(), "serverConfig", serverDefaults);
+        serverConfig = new ConfigFile(OpenLab.getInstance(), "serverConfig", serverDefaults);
 
         Supplier<Map<String, Double>> hungerDefaults = () -> {
             Map<String, Double> data = new HashMap<>();
@@ -276,7 +277,7 @@ public class SpecializationConfig {
             data.put("HUNGER_REDUCTION_ON_NON_UNIQUE_CONSECUTIVE_FOOD", 1.0);
             return data;
         };
-        hungerConfig = new ConfigFile(Specialization.getInstance(), "hungerConfig", hungerDefaults);
+        hungerConfig = new ConfigFile(OpenLab.getInstance(), "hungerConfig", hungerDefaults);
 
         Supplier<Map<String, Double>> hungerCostDefaults = () -> {
             Map<String, Double> data = new HashMap<>();
@@ -287,7 +288,7 @@ public class SpecializationConfig {
             }
             return data;
         };
-        hungerCostConfig = new ConfigFile(Specialization.getInstance(), "hungerCostConfig", hungerCostDefaults);
+        hungerCostConfig = new ConfigFile(OpenLab.getInstance(), "hungerCostConfig", hungerCostDefaults);
 
         Supplier< Map<String, Integer>> foodExpirationDefaults = () -> {
             Map<String, Integer> data = new HashMap<>();
@@ -298,7 +299,7 @@ public class SpecializationConfig {
             }
             return data;
         };
-        foodExpirationConfig = new ConfigFile(Specialization.getInstance(), "foodExpirationConfig", foodExpirationDefaults);
+        foodExpirationConfig = new ConfigFile(OpenLab.getInstance(), "foodExpirationConfig", foodExpirationDefaults);
         Supplier<Map<String, Object>> mobDefaults = () -> {
             Map<String, Object> data = new HashMap<>();
             data.put("DAYTIME_MOB_DAMAGE_MULTIPLIER", 4.0);
@@ -313,7 +314,7 @@ public class SpecializationConfig {
             data.put("VISUAL_BREAKING_INCREASE_PER_TICK_PERCENTAGE", 1.0);
             return data;
         };
-        mobConfig = new ConfigFile(Specialization.getInstance(), "mobConfig", mobDefaults);
+        mobConfig = new ConfigFile(OpenLab.getInstance(), "mobConfig", mobDefaults);
 
         Supplier<Map<String, Object>> mobDropsDefaults = () -> {
             Map<String, Object> data = new HashMap<>();
@@ -324,7 +325,7 @@ public class SpecializationConfig {
             }
             return data;
         };
-        mobDropsConfig = new ConfigFile(Specialization.getInstance(), "mobDrops", mobDropsDefaults);
+        mobDropsConfig = new ConfigFile(OpenLab.getInstance(), "mobDrops", mobDropsDefaults);
 
         Supplier<Map<String, Map<String, Object>>> xpGainFromRepairingDefaults = () -> {
             Map<String, Map<String, Object>> data = new HashMap<>();
@@ -339,7 +340,7 @@ public class SpecializationConfig {
             }
             return data;
         };
-        xpGainFromRepairingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromRepairing", xpGainFromRepairingDefaults);
+        xpGainFromRepairingConfig = new ConfigFile(OpenLab.getInstance(), "xpGainFromRepairing", xpGainFromRepairingDefaults);
 
         Supplier<Map<String, Double>> guardsmanDefaults = () -> {
             Map<String, Double> data = new HashMap<>();
@@ -349,15 +350,16 @@ public class SpecializationConfig {
             data.put("NON_GUARDSMAN_DAMAGE_REDUCTION", 0.25);
             return data;
         };
-        guardsmanConfig = new ConfigFile(Specialization.getInstance(), "guardsmanConfig", guardsmanDefaults);
+        guardsmanConfig = new ConfigFile(OpenLab.getInstance(), "guardsmanConfig", guardsmanDefaults);
 
-        Supplier<Map<String, Double>> downedDefaults = () -> {
-            Map<String, Double> data = new HashMap<>();
+        Supplier<Map<String, Object>> downedDefaults = () -> {
+            Map<String, Object> data = new HashMap<>();
             data.put("TIME_TO_DEATH_IN_TICKS", 2400.0);
             data.put("OFFSET_TO_GROUND", 1.9);
+            data.put("revive_items", new ArrayList<String>());
             return data;
         };
-        downedConfig = new ConfigFile(Specialization.getInstance(), "downedConfig", downedDefaults);
+        downedConfig = new ConfigFile(OpenLab.getInstance(), "downedConfig", downedDefaults);
 
         Supplier<Map<String, String>> canFarmerBreakDefaults = () -> {
             Map<String, String> data = new HashMap<>();
@@ -368,7 +370,7 @@ public class SpecializationConfig {
             }
             return data;
         };
-        canFarmerBreakConfig = new ConfigFile(Specialization.getInstance(), "canFarmerBreakConfig", canFarmerBreakDefaults);
+        canFarmerBreakConfig = new ConfigFile(OpenLab.getInstance(), "canFarmerBreakConfig", canFarmerBreakDefaults);
 
         Supplier<Map<String, String>> canMinerLvlBreakDefaults = () -> {
             Map<String, String> data = new HashMap<>();
@@ -379,14 +381,14 @@ public class SpecializationConfig {
             }
             return data;
         };
-        canMinerLvlBreakConfig = new ConfigFile(Specialization.getInstance(), "canMinerLvlBreakConfig", canMinerLvlBreakDefaults);
+        canMinerLvlBreakConfig = new ConfigFile(OpenLab.getInstance(), "canMinerLvlBreakConfig", canMinerLvlBreakDefaults);
 
         Supplier<Map<String,Object>> berserkDefaults = () -> {
             List<Map<String,Object>> list = new ArrayList<>();
             list.add(Map.of(PotionEffectType.ABSORPTION.getKey().getKey().toUpperCase(Locale.ROOT), new PotionEffectData(0, 0).toMap()));
             return Map.of("berserk_effect",list);
         };
-        berserkConfig = new ConfigFile(Specialization.getInstance(), "berserkConfig", berserkDefaults);
+        berserkConfig = new ConfigFile(OpenLab.getInstance(), "berserkConfig", berserkDefaults);
 
         Supplier<Map<String, Map<String, Object>>> xpGainFromBlastingDefaults = () -> {
             Map<String, Map<String, Object>> data = new HashMap<>();
@@ -407,7 +409,7 @@ public class SpecializationConfig {
             }
             return data;
         };
-        xpGainFromBlastingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromBlasting", xpGainFromBlastingDefaults);
+        xpGainFromBlastingConfig = new ConfigFile(OpenLab.getInstance(), "xpGainFromBlasting", xpGainFromBlastingDefaults);
 
 
 
@@ -430,7 +432,7 @@ public class SpecializationConfig {
             }
             return data;
         };
-        xpGainFromSmeltingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromSmelting", xpGainFromSmeltingDefaults);
+        xpGainFromSmeltingConfig = new ConfigFile(OpenLab.getInstance(), "xpGainFromSmelting", xpGainFromSmeltingDefaults);
 
         Supplier<Map<String, Map<String, Object>>> xpGainFromSmokingDefaults = () -> {
             Map<String, Map<String, Object>> data = new HashMap<>();
@@ -451,7 +453,7 @@ public class SpecializationConfig {
             }
             return data;
         };
-        xpGainFromSmokingConfig = new ConfigFile(Specialization.getInstance(), "xpGainFromSmoking", xpGainFromSmokingDefaults);
+        xpGainFromSmokingConfig = new ConfigFile(OpenLab.getInstance(), "xpGainFromSmoking", xpGainFromSmokingDefaults);
 
         Supplier<Map<String, Map<String, Double>>> xpGainFromBreakingDefaults = () -> {
             Map<String, Map<String, Double>> data = new HashMap<>();
@@ -467,7 +469,7 @@ public class SpecializationConfig {
             return data;
         };
         xpGainFromBreakingConfig = new ConfigFile(
-                Specialization.getInstance(),
+                OpenLab.getInstance(),
                 "xpGainFromBreaking",
                 xpGainFromBreakingDefaults
         );
@@ -486,7 +488,7 @@ public class SpecializationConfig {
             return data;
         };
         xpGainFromPlacingConfig = new ConfigFile(
-                Specialization.getInstance(),
+                OpenLab.getInstance(),
                 "xpGainFromPlacing",
                 xpGainFromPlacingDefaults
         );
@@ -503,7 +505,7 @@ public class SpecializationConfig {
         };
 
         canUseItemConfig = new ConfigFile(
-                Specialization.getInstance(),
+                OpenLab.getInstance(),
                 "canUseItem",
                 canUseItemDefaults
         );
@@ -520,7 +522,7 @@ public class SpecializationConfig {
         };
 
         canUseBlockConfig = new ConfigFile(
-                Specialization.getInstance(),
+                OpenLab.getInstance(),
                 "canUseBlock",
                 canUseBlockDefaults
         );
@@ -538,7 +540,7 @@ public class SpecializationConfig {
             return data;
         };
         classSkillEffectsConfig = new ConfigFile(
-                Specialization.getInstance(),
+                OpenLab.getInstance(),
                 "classSkillEffectsConfig",
                 classSkillEffectsDefaults
         );
@@ -555,7 +557,7 @@ public class SpecializationConfig {
             return data;
         };
         allRecipeBank = new ConfigFile(
-                Specialization.getInstance(),
+                OpenLab.getInstance(),
                 "allRecipeBank",
                 allRecipeBankDefaults
         );
@@ -570,7 +572,7 @@ public class SpecializationConfig {
             return data;
         };
         blockHardnessConfig = new ConfigFile(
-                Specialization.getInstance(),
+                OpenLab.getInstance(),
                 "blockHardnessConfig",
                 blockHardnessDefaults
         );
@@ -592,7 +594,7 @@ public class SpecializationConfig {
             return data;
         };
         armorDamageReductionConfig = new ConfigFile(
-                Specialization.getInstance(),
+                OpenLab.getInstance(),
                 "armorDamageReductionConfig",
                 armorDamageReductionDefaults
         );
@@ -609,7 +611,7 @@ public class SpecializationConfig {
             return data;
         };
         healthConfig = new ConfigFile(
-                Specialization.getInstance(),
+                OpenLab.getInstance(),
                 "healthConfig",
                 healthDefaults
         );
@@ -628,7 +630,7 @@ public class SpecializationConfig {
             return data;
         };
         bedOwnershipConfig = new ConfigFile(
-                Specialization.getInstance(),
+                OpenLab.getInstance(),
                 "bedOwnershipConfig",
                 bedOwnershipDefaults
         );
@@ -639,31 +641,23 @@ public class SpecializationConfig {
                 data.put(skillType + "_WORKSTATION", Material.COMPOSTER.getKey().getKey().toUpperCase(Locale.ROOT));
                 data.put(skillType + "_DESCRIPTION", "Description");
                 data.put(skillType + "_XP_MULTIPLIER", 1.0);
+                data.put(skillType + "_XP_GAIN_REQUIREMENT_PER_LEVEL", 100D);
+                data.put(skillType + "_XP_DECAY", 0.05D);
+                for (SkillLevel skillLevel : SkillLevel.values()) {
+                    data.put(skillType + "_" + skillLevel + "_REQUIREMENT", 0D);
+                }
+
             }
             data.put("XP_MULTIPLIER", 1.0);
             data.put("XP_LOSS", 1.0);
             return data;
         };
         skillsConfig = new ConfigFile(
-                Specialization.getInstance(),
+                OpenLab.getInstance(),
                 "skillsConfig",
                 skillsDefaults
         );
 
-        Supplier<Map<String, Double>> skillRequirementsDefaults = () -> {
-            Map<String, Double> data = new HashMap<>();
-            for (SkillType skillType : SkillType.values()) {
-                for (SkillLevel skillLevel : SkillLevel.values()) {
-                    data.put(skillType + "_" + skillLevel + "_REQUIREMENT", 0D);
-                }
-            }
-            return data;
-        };
-        skillRequirementsConfig = new ConfigFile(
-                Specialization.getInstance(),
-                "skillRequirementsConfig",
-                skillRequirementsDefaults
-        );
 
         Supplier<Map<String, Object>> librarianDefaults = () -> {
             Map<String, Object> data = new HashMap<>();
@@ -676,9 +670,19 @@ public class SpecializationConfig {
             return data;
         };
         librarianConfig = new ConfigFile(
-                Specialization.getInstance(),
+                OpenLab.getInstance(),
                 "librarianConfig",
                 librarianDefaults
+        );
+        Supplier<Map<String, Object>> minerDefaults = () -> {
+            Map<String, Object> data = new HashMap<>();
+            data.put("TRESSURE_TRIGGERING_BLOCKS", new HashMap<>());
+            return data;
+        };
+        minerConfig = new ConfigFile(
+                OpenLab.getInstance(),
+                "minerConfig",
+                minerDefaults
         );
 
         Supplier<Map<String, Object>> farmerDefaults = () -> {
@@ -692,7 +696,7 @@ public class SpecializationConfig {
             return data;
         };
         farmerConfig = new ConfigFile(
-                Specialization.getInstance(),
+                OpenLab.getInstance(),
                 "farmerConfig",
                 farmerDefaults
         );
@@ -709,7 +713,7 @@ public class SpecializationConfig {
             return data;
         };
         tameableConfig = new ConfigFile(
-                Specialization.getInstance(),
+                OpenLab.getInstance(),
                 "tamingConfig",
                 tameableDefaults
         );
@@ -723,7 +727,7 @@ public class SpecializationConfig {
             return data;
         };
         chatConfig = new ConfigFile(
-                Specialization.getInstance(),
+                OpenLab.getInstance(),
                 "chatConfig",
                 chatDefaults
         );
@@ -738,7 +742,7 @@ public class SpecializationConfig {
             return data;
         };
         instinctConfig = new ConfigFile(
-                Specialization.getInstance(),
+                OpenLab.getInstance(),
                 "instinctConfig",
                 instinctDefaults
         );
@@ -762,7 +766,7 @@ public class SpecializationConfig {
             return data;
         };
         xpMonitorConfig = new ConfigFile(
-                Specialization.getInstance(),
+                OpenLab.getInstance(),
                 "XpMonitorAlertThresholds",
                 xpMonitorDefaults
         );

@@ -1,8 +1,8 @@
 package com.minecraftcivilizations.specialization.Listener;
 
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.util.CoreUtil;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -15,7 +15,6 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 
-import static org.bukkit.ChatColor.*;
 import static com.minecraftcivilizations.specialization.util.MathUtils.random;
 /**
  * @author Jfrogy
@@ -52,7 +51,7 @@ public class RepairingListener implements Listener {
             return;
         }
 
-        CustomPlayer cp = CoreUtil.getPlayer(player.getUniqueId());
+        CustomPlayer cp = CustomPlayerManager.INSTANCE.getCustomPlayer(player.getUniqueId());
         int level = cp.getSkillLevel(SkillType.BLACKSMITH);
         if (level < 1) {
             return;

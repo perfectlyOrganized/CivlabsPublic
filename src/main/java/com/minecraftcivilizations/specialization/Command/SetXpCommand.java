@@ -5,10 +5,10 @@ import co.aikar.commands.annotation.CommandAlias;
 import co.aikar.commands.annotation.CommandPermission;
 import co.aikar.commands.annotation.Default;
 import co.aikar.commands.annotation.Subcommand;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.OpenLab;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
-import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -19,7 +19,7 @@ public class SetXpCommand extends BaseCommand {
     @Default
     @CommandPermission("specialization.setxp.self")
     public void onSetXP(@NotNull Player player, @NotNull SkillType type, double amount) {
-        CustomPlayer customPlayer = Specialization.customPlayerManager.getCustomPlayer(player.getUniqueId());
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player.getUniqueId());
         
         if (customPlayer == null) {
             player.sendMessage("§cError: Could not find your player data.");
@@ -44,7 +44,7 @@ public class SetXpCommand extends BaseCommand {
             return;
         }
         
-        CustomPlayer customPlayer = Specialization.customPlayerManager.getCustomPlayer(target.getUniqueId());
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(target.getUniqueId());
         
         if (customPlayer == null) {
             sender.sendMessage("§cError: Could not find player data for " + target.getName() + ".");
@@ -74,7 +74,7 @@ public class SetXpCommand extends BaseCommand {
             return;
         }
         
-        CustomPlayer customPlayer = Specialization.customPlayerManager.getCustomPlayer(target.getUniqueId());
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(target.getUniqueId());
         
         if (customPlayer == null) {
             sender.sendMessage("§cError: Could not find player data for " + target.getName() + ".");

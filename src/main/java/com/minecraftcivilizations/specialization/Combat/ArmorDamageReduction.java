@@ -1,17 +1,14 @@
 package com.minecraftcivilizations.specialization.Combat;
 
+import com.minecraftcivilizations.specialization.Config.ConfigFile;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
-import com.minecraftcivilizations.specialization.util.CoreUtil;
-import com.minecraftcivilizations.specialization.util.PlayerUtil;
-import minecraftcivilizations.com.minecraftCivilizationsCore.Config.ConfigFile;
-import org.bukkit.attribute.Attribute;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 
@@ -63,7 +60,7 @@ public class ArmorDamageReduction {
 
         double lvl;
         if (event.getEntity() instanceof Player player_victim) {
-            CustomPlayer customPlayer = CustomPlayer.getCustomPlayer(player_victim);
+            CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player_victim);
             lvl = customPlayer.getSkillLevel(SkillType.GUARDSMAN);
         } else {
             lvl = 0;

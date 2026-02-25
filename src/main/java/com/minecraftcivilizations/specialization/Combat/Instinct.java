@@ -1,9 +1,9 @@
 package com.minecraftcivilizations.specialization.Combat;
 
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.util.CoreUtil;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
@@ -34,7 +34,7 @@ public class Instinct {
         }
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            CustomPlayer customPlayer = CoreUtil.getPlayer(player);
+            CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
             int guardsmanLevel = customPlayer.getSkillLevel(SkillType.GUARDSMAN);
 
             if (guardsmanLevel < 1) {
@@ -72,7 +72,7 @@ public class Instinct {
 
         lastDetectionTime.put(mobId, currentTime);
 
-        int detectionDuration = SpecializationConfig.getInstinctConfig().getInteger("INSTINCT_GLOW_DURATION_TICKS");
+        int detectionDuration = SpecializationConfig.getInstinctConfig().getInt("INSTINCT_GLOW_DURATION_TICKS");
 
 
         

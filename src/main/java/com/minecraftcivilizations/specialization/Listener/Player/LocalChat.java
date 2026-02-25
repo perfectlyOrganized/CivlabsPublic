@@ -1,21 +1,16 @@
 package com.minecraftcivilizations.specialization.Listener.Player;
 
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
+import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.ComponentUtils;
-import com.minecraftcivilizations.specialization.util.LoreUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
-import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
-import org.bukkit.event.*;
-import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.player.*;
 import org.bukkit.entity.ArmorStand;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -24,7 +19,6 @@ import org.bukkit.potion.PotionEffectType;
 
 import java.util.List;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 /*
@@ -73,7 +67,7 @@ public class LocalChat implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onChat(AsyncPlayerChatEvent e) {
         Player p = e.getPlayer();
-        CustomPlayer customPlayer = CustomPlayer.getCustomPlayer(p);
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(p);
         String raw = MiniMessage.miniMessage().stripTags(e.getMessage().trim());
 
         // Global debug / announcement channel
@@ -95,9 +89,8 @@ public class LocalChat implements Listener {
                 .getChatConfig()
                 .getString("DEFAULT_FORMAT");
 
-        String nameString = ComponentUtils.serializeComponentAsString(customPlayer.getName()).replaceAll("§[0-9a-fklmnor]", "");;
-        Specialization.logger.info(nameString);
-        Bukkit.getScheduler().runTask(Specialization.getInstance(), () -> {
+        String nameString = ComponentUtils.serializeComponentAsStringWithStrip(customPlayer.getName());
+        Bukkit.getScheduler().runTask(OpenLab.getInstance(), () -> {
             for (Player near : getNearbyPlayers(p)) {
                 PlayerUtil.sendMessage(near,fmt.formatted(nameString, raw));
             }

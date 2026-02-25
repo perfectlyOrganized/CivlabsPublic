@@ -1,8 +1,7 @@
 package com.minecraftcivilizations.specialization.Listener.Player;
 
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
-import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.util.EffectsUtil;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import org.bukkit.*;
@@ -39,11 +38,11 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class BedListener implements Listener {
 
-    private static final NamespacedKey BED_OWNER_KEY = new NamespacedKey(Specialization.getInstance(), "bed_owner");
-    private static final NamespacedKey PLAYER_BED_ID = new NamespacedKey(Specialization.getInstance(), "bed_id");
-    private static final NamespacedKey PLAYER_BED_X = new NamespacedKey(Specialization.getInstance(), "bed_x");
-    private static final NamespacedKey PLAYER_BED_Y = new NamespacedKey(Specialization.getInstance(), "bed_y");
-    private static final NamespacedKey PLAYER_BED_Z = new NamespacedKey(Specialization.getInstance(), "bed_z");
+    private static final NamespacedKey BED_OWNER_KEY = new NamespacedKey(OpenLab.getInstance(), "bed_owner");
+    private static final NamespacedKey PLAYER_BED_ID = new NamespacedKey(OpenLab.getInstance(), "bed_id");
+    private static final NamespacedKey PLAYER_BED_X = new NamespacedKey(OpenLab.getInstance(), "bed_x");
+    private static final NamespacedKey PLAYER_BED_Y = new NamespacedKey(OpenLab.getInstance(), "bed_y");
+    private static final NamespacedKey PLAYER_BED_Z = new NamespacedKey(OpenLab.getInstance(), "bed_z");
 
     private static boolean isBed(Material material) {
         return material.name().endsWith("_BED");
@@ -237,7 +236,7 @@ public class BedListener implements Listener {
 
     //-----------BED HEALING ---------------------//
     private static final double NIGHT_HEAL_CAP = SpecializationConfig.getHealthConfig().getDouble("SLEEP_REGEN_CAP"); // 2.5 hearts
-    private static final long BED_HEAL_INTERVAL = SpecializationConfig.getHealthConfig().getInteger("SLEEP_REGEN_TICK_SPEED"); // ticks between heals
+    private static final long BED_HEAL_INTERVAL = SpecializationConfig.getHealthConfig().getInt("SLEEP_REGEN_TICK_SPEED"); // ticks between heals
     private static final boolean LIMIT_SLEEP_REGEN_PER_DAY =  SpecializationConfig.getHealthConfig().getBoolean("LIMIT_SLEEP_REGEN_PER_DAY");
     private final Map<UUID, BedHealingTasks> bedHealTasks = new HashMap<>();
     private final Map<UUID, Long> lastHealDay = new HashMap<>();     // MC day index
@@ -387,7 +386,7 @@ public class BedListener implements Listener {
             }
         };
 
-        tasks.bossBarUpdater.runTaskTimer(Specialization.getInstance(), 0L, 1L);
+        tasks.bossBarUpdater.runTaskTimer(OpenLab.getInstance(), 0L, 1L);
         bedHealTasks.put(id, tasks);
     }
 

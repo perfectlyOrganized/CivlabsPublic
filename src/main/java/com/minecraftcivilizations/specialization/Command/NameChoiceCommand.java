@@ -2,11 +2,11 @@ package com.minecraftcivilizations.specialization.Command;
 
 import co.aikar.commands.BaseCommand;
 import co.aikar.commands.annotation.*;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
-import com.minecraftcivilizations.specialization.Player.LocalNameGenerator;
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.OpenLab;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
+import com.minecraftcivilizations.specialization.player.LocalNameGenerator;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
-import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -30,7 +30,7 @@ import java.util.UUID;
 public class NameChoiceCommand extends BaseCommand {
 
     private final LocalNameGenerator nameGenerator;
-    private final NamespacedKey PERMANENT_NAME_KEY = new NamespacedKey(Specialization.getInstance(), "permanent_name");
+    private final NamespacedKey PERMANENT_NAME_KEY = new NamespacedKey(OpenLab.getInstance(), "permanent_name");
 
     public NameChoiceCommand(LocalNameGenerator generator) {
         this.nameGenerator = generator;
@@ -45,8 +45,7 @@ public class NameChoiceCommand extends BaseCommand {
         if (!isNameValid(sender, chosenName, data)) return;
 
         // Update CustomPlayer object
-        CustomPlayer customPlayer = Specialization.customPlayerManager
-                .getCustomPlayer(uuid);
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(uuid);
 
         Component newName = Component.text(chosenName)
                 .color(NamedTextColor.WHITE)
@@ -56,7 +55,7 @@ public class NameChoiceCommand extends BaseCommand {
 
         Player bukkitPlayer = Bukkit.getPlayer(uuid);
         if (bukkitPlayer != null) {
-            Specialization.getInstance().applyCustomName(bukkitPlayer, newName);
+            OpenLab.getInstance().applyCustomName(bukkitPlayer, newName);
             // Mark in PDC
             nameGenerator.confirmNameChoice(sender.getUniqueId(), chosenName);
             // simulate writing and sealing a name

@@ -1,19 +1,15 @@
 package com.minecraftcivilizations.specialization.Combat.Mobs;
 
-import com.minecraftcivilizations.specialization.Specialization;
-import com.minecraftcivilizations.specialization.StaffTools.Debug;
+import com.minecraftcivilizations.specialization.OpenLab;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
-import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class MobCleanupSystem extends BukkitRunnable {
 
@@ -82,7 +78,7 @@ public class MobCleanupSystem extends BukkitRunnable {
 
     public BukkitRunnable start() {
         int interval_ticks = 40;
-        runTaskTimer(Specialization.getInstance(), interval_ticks, interval_ticks);
+        runTaskTimer(OpenLab.getInstance(), interval_ticks, interval_ticks);
         return this;
     }
 }

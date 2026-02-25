@@ -1,9 +1,9 @@
 package com.minecraftcivilizations.specialization.GUI;
 
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.OpenLab;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.ComponentUtils;
 import com.minecraftcivilizations.specialization.util.ItemStackUtils;
-import com.minecraftcivilizations.specialization.util.LoreUtils;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -31,7 +31,7 @@ public abstract class GUI {
         this.options.putAll(options);
         if (items.size() == size) return;
         fillEmptySlots();
-        Specialization.guiManager.getGUIs().add(this);
+        OpenLab.guiManager.getGUIs().add(this);
     }
 
     public GUI(Component title, int size, Map<GUIPlaceOption, Boolean> options) {
@@ -40,7 +40,7 @@ public abstract class GUI {
         this.options.putAll(options);
         if (items.size() == size) return;
         fillEmptySlots();
-        Specialization.guiManager.getGUIs().add(this);
+        OpenLab.guiManager.getGUIs().add(this);
     }
 
     public GUI(Component title, int size) {
@@ -48,7 +48,7 @@ public abstract class GUI {
         this.size = size;
         if (size == 0) return;
         fillEmptySlots();
-        Specialization.guiManager.getGUIs().add(this);
+        OpenLab.guiManager.getGUIs().add(this);
     }
 
     public void open(Player player) {
@@ -116,7 +116,7 @@ public abstract class GUI {
         } else if (option.getKey() == GUIPlaceOption.SHOULD_PLACE_SEARCH && option.getValue()) {
             GUIItem search = ItemStackUtils.makeGUIItemOfType(Material.OAK_SIGN, "Search");
             search.setOnClick(() -> {
-                Specialization.customPlayerManager.getCustomPlayer((inventory.getViewers().get(0)).getUniqueId()).setCurrentGUI(GUI.this.id);
+                CustomPlayerManager.INSTANCE.getCustomPlayer((inventory.getViewers().get(0)).getUniqueId()).setCurrentGUI(GUI.this.id);
                 SearchSignGUI.openSearch((Player) inventory.getViewers().get(0));
             });
             this.items.put(4, search);

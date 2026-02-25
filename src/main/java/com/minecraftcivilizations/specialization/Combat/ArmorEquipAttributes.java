@@ -1,8 +1,8 @@
 package com.minecraftcivilizations.specialization.Combat;
 
 import com.minecraftcivilizations.specialization.Listener.Player.Inventories.SpecializationCraftItemEvent;
+import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.minecraftcivilizations.specialization.util.ItemStackUtils;
 import com.minecraftcivilizations.specialization.util.MathUtils;
@@ -18,14 +18,11 @@ import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.CraftItemEvent;
-import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.trim.ArmorTrim;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.util.Vector;
 
 import static net.md_5.bungee.api.ChatColor.*;
 
@@ -38,7 +35,7 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class ArmorEquipAttributes implements Listener {
 
-    Specialization plugin;
+    OpenLab plugin;
     CombatManager manager;
 
 
@@ -227,7 +224,7 @@ public class ArmorEquipAttributes implements Listener {
         boolean trimmed = false;
         String trimmed_msg = "";
         if(rng2 < armor_trim_chance){
-            BlacksmithArmorTrim armorTrimSystem = Specialization.getInstance().getArmorTrimSystem();
+            BlacksmithArmorTrim armorTrimSystem = OpenLab.getInstance().getArmorTrimSystem();
             if(armorTrimSystem!=null){
                 ArmorTrim trim = armorTrimSystem.applyArmorTrimToItem(player, current);
                 if(trim!=null) {

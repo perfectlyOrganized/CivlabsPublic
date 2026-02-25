@@ -1,12 +1,9 @@
 name: Specialization
 version: '0.0.0.1'
-main: com.minecraftcivilizations.specialization.Specialization
+main: com.minecraftcivilizations.specialization.OpenLab
 api-version: '1.20'
 depend:
-  - MinecraftCivilizationsCore
   - ProtocolLib
-softdepend:
-  - CraftEngine
 authors: [ DNFneca ]
 description: Lyphea
 

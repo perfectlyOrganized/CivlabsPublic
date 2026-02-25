@@ -1,6 +1,6 @@
 package com.minecraftcivilizations.specialization.CustomItem;
 
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.OpenLab;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -22,7 +22,7 @@ import java.util.List;
  */
 public class DefineCustomItems implements Listener {
     public Bandage bandage;
-    public DefineCustomItems(Specialization plugin) {
+    public DefineCustomItems(OpenLab plugin) {
         this.bandage = new Bandage(1301, "Bandage");
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }

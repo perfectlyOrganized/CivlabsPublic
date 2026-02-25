@@ -3,7 +3,7 @@ package com.minecraftcivilizations.specialization.StaffTools;
 import co.aikar.commands.BaseCommand;
 import co.aikar.commands.PaperCommandManager;
 import co.aikar.commands.annotation.*;
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.OpenLab;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.command.CommandSender;
@@ -61,13 +61,13 @@ public class DebugListenCommand extends BaseCommand implements Listener {
     @Subcommand("enable")
     public void enableDebug(CommandSender sender, @Optional String debug_channel) {
         Debug.DEBUG_ENABLED = true;
-        Specialization.getInstance().getLogger().info("Debug was enabled by "+sender.getName());
+        OpenLab.getInstance().getLogger().info("Debug was enabled by "+sender.getName());
         sender.sendMessage(Debug.TITLE + GRAY + "Debug Enabled (This might produce lag, disable when finished)");
     }
     @Subcommand("disable")
     public void disableDebug(CommandSender sender, @Optional String debug_channel) {
         Debug.DEBUG_ENABLED = false;
-        Specialization.getInstance().getLogger().info("Debug was disabled by "+sender.getName());
+        OpenLab.getInstance().getLogger().info("Debug was disabled by "+sender.getName());
         sender.sendMessage(Debug.TITLE + GRAY + "Debug Disabled: Messages will no longer be broadcast");
     }
 

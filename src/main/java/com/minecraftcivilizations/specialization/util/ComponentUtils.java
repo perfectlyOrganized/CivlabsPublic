@@ -14,14 +14,14 @@ public class ComponentUtils {
         return GsonComponentSerializer.gson().deserialize(serializedComponent);
     }
 
-
+    public static String serializeComponentAsStringWithStrip(final Component component) {
+        return serializeComponentAsString(component).replaceAll("§[0-9a-fklmnor]", "");
+    }
     public static String serializeComponentAsString(final Component component) {
-        // Use Legacy serializer which exists in older versions
         return LegacyComponentSerializer.legacySection().serialize(component);
     }
 
     public static Component deserializeStringAsComponent(final String serializedComponent) {
-        // Use Legacy serializer which exists in older versions
         return LegacyComponentSerializer.legacySection().deserialize(serializedComponent);
     }
 }

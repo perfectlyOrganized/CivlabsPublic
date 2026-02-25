@@ -4,8 +4,6 @@ import co.aikar.commands.BaseCommand;
 import co.aikar.commands.annotation.*;
 import com.minecraftcivilizations.specialization.Listener.Player.XpGainMonitor;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
-import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataType;
 

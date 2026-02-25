@@ -2,10 +2,10 @@ package com.minecraftcivilizations.specialization.Reinforcement;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import com.minecraftcivilizations.specialization.Specialization;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.OpenLab;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.util.CoreUtil;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -18,7 +18,7 @@ import java.util.*;
 
 public class ReinforcementManager {
 
-    public static final NamespacedKey namespacedKey = new NamespacedKey(Specialization.getInstance(), "reinforcedBlocks");
+    public static final NamespacedKey namespacedKey = new NamespacedKey(OpenLab.getInstance(), "reinforcedBlocks");
 
     private static final Map<Vector, Long> lastTimeSpawnedParticle = new HashMap<>();
     private static final Map<Chunk, Set<Reinforcement>> cachedReinforcements = new HashMap<>();
@@ -79,7 +79,7 @@ public class ReinforcementManager {
                     }
                 }
             }
-        }.runTaskTimerAsynchronously(Specialization.getInstance(), 0L, 60L); // every 3 seconds (60 ticks)
+        }.runTaskTimerAsynchronously(OpenLab.getInstance(), 0L, 60L); // every 3 seconds (60 ticks)
 
         // --- Particle update every tick ---
         new BukkitRunnable() {
@@ -115,7 +115,7 @@ public class ReinforcementManager {
                     }
                 }
             }
-        }.runTaskTimer(Specialization.getInstance(), 0L, 1L); // every tick
+        }.runTaskTimer(OpenLab.getInstance(), 0L, 1L); // every tick
     }
 
         private static void spawnParticle(Player player, Reinforcement r) {
@@ -208,7 +208,7 @@ public class ReinforcementManager {
         Player target = player != null ? player :
                 PlayerUtil.getNearestPlayer(block.getLocation(), 4.0);
         if (target != null) {
-            CustomPlayer cp = CoreUtil.getPlayer(target.getUniqueId());
+            CustomPlayer cp = CustomPlayerManager.INSTANCE.getCustomPlayer(target.getUniqueId());
             if (cp != null) cp.addSkillXp(SkillType.BUILDER, isHeavy ? 15.0 : 5.0);
         }
         return true;
@@ -229,7 +229,7 @@ public class ReinforcementManager {
         cacheTime.put(chunk, System.currentTimeMillis());
 
         if (player != null) {
-            CustomPlayer cp = CoreUtil.getPlayer(player.getUniqueId());
+            CustomPlayer cp = CustomPlayerManager.INSTANCE.getCustomPlayer(player.getUniqueId());
             if (cp != null) cp.addSkillXp(SkillType.BUILDER, 1.0); // 1 builder xp for wooden
         }
         return true;

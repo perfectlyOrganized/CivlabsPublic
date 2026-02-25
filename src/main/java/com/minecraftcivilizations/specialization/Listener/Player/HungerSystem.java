@@ -2,11 +2,10 @@ package com.minecraftcivilizations.specialization.Listener.Player;
 
 import com.minecraftcivilizations.specialization.Command.EmoteManager;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
-import com.minecraftcivilizations.specialization.StaffTools.Debug;
-import com.minecraftcivilizations.specialization.util.CoreUtil;
+import com.minecraftcivilizations.specialization.OpenLab;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.ItemStackUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import org.bukkit.GameMode;
@@ -21,7 +20,6 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerToggleSprintEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
-import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -31,7 +29,7 @@ import java.util.UUID;
 
 public class HungerSystem implements Listener {
 
-    private final Specialization plugin;
+    private final OpenLab plugin;
     private final Map<UUID, Long> lastMoveTime = new HashMap<>();
     private final Map<UUID, PlayerActivity> playerActivity = new HashMap<>();
     private final Map<UUID, Double> playerHungerBuffer = new HashMap<>();
@@ -42,11 +40,11 @@ public class HungerSystem implements Listener {
     private static final double CROUCHING_DRAIN = SpecializationConfig.getHungerConfig().getDouble("CROUCHING_DRAIN");
     private static final double IDLE_DRAIN = SpecializationConfig.getHungerConfig().getDouble("IDLE_DRAIN");
 
-    private static final long DRAIN_INTERVAL = SpecializationConfig.getHungerConfig().getInteger("DRAIN_INTERVAL_IN_TICKS");
-    private static final long IDLE_CHECK_TIME = SpecializationConfig.getHungerConfig().getInteger("IDLE_CHECK_TIME_IN_TICKS");
+    private static final long DRAIN_INTERVAL = SpecializationConfig.getHungerConfig().getInt("DRAIN_INTERVAL_IN_TICKS");
+    private static final long IDLE_CHECK_TIME = SpecializationConfig.getHungerConfig().getInt("IDLE_CHECK_TIME_IN_TICKS");
     private final EmoteManager emoteCommand;
 
-    public HungerSystem(Specialization plugin, EmoteManager emoteCommand) {
+    public HungerSystem(OpenLab plugin, EmoteManager emoteCommand) {
         this.plugin = plugin;
         this.emoteCommand = emoteCommand;
         startHungerDrainTask();
@@ -210,7 +208,7 @@ public class HungerSystem implements Listener {
         ItemStack handItem = player.getInventory().getItemInMainHand();
         if (!handItem.getType().isEdible()) return;
 
-        CustomPlayer cPlayer = CoreUtil.getPlayer(player);
+        CustomPlayer cPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
         // Guardsman/healer check
         if ((cPlayer.getSkillLevel(SkillType.GUARDSMAN) <= 0) && (cPlayer.getSkillLevel(SkillType.HEALER) <= 2)) return;
 

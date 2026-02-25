@@ -2,11 +2,11 @@ package com.minecraftcivilizations.specialization.CustomItem;
 
 import com.minecraftcivilizations.specialization.Combat.PVPManager;
 import com.minecraftcivilizations.specialization.Listener.Player.ReviveListener;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.OpenLab;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
-import com.minecraftcivilizations.specialization.util.CoreUtil;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -31,13 +31,13 @@ import java.util.List;
  * @author jfrogy, alectriciti
  */
 public class Bandage extends CustomItemBase {
-    private static final NamespacedKey IS_DOWNED = new NamespacedKey(Specialization.getInstance(), "is_downed");
+    private static final NamespacedKey IS_DOWNED = new NamespacedKey(OpenLab.getInstance(), "is_downed");
     private final ReviveListener reviveListener;
-    NamespacedKey RECIPE_KEY = new NamespacedKey(Specialization.getInstance(), "bandage_recipe");
+    NamespacedKey RECIPE_KEY = new NamespacedKey(OpenLab.getInstance(), "bandage_recipe");
 
     public Bandage(int id, String displayName) {
         super(id, displayName, org.bukkit.Material.PAPER, true);
-        this.reviveListener = Specialization.getInstance().reviveListener;
+        this.reviveListener = OpenLab.getInstance().reviveListener;
     }
 
     /**
@@ -83,7 +83,7 @@ public class Bandage extends CustomItemBase {
         if (itemStack == null) return;
 
         Player healer = event.getPlayer();
-        CustomPlayer cHealer = CoreUtil.getPlayer(healer.getUniqueId());
+        CustomPlayer cHealer = CustomPlayerManager.INSTANCE.getCustomPlayer(healer.getUniqueId());
         int lvl = cHealer.getSkillLevel(SkillType.HEALER);
         if (lvl == 0)
         {
@@ -146,7 +146,7 @@ public class Bandage extends CustomItemBase {
 
 
         Debug.broadcast("customitem", "<green>applying heal");
-        CustomPlayer cHealer = CoreUtil.getPlayer(healer.getUniqueId());
+        CustomPlayer cHealer = CustomPlayerManager.INSTANCE.getCustomPlayer(healer.getUniqueId());
         int lvl = cHealer.getSkillLevel(SkillType.HEALER);
 
         if (lvl <= 0){
@@ -156,7 +156,7 @@ public class Bandage extends CustomItemBase {
         //reviving player
         if (target instanceof Player pTarget) {
             Byte downed = pTarget.getPersistentDataContainer().get(
-                    new NamespacedKey(Specialization.getInstance(), "is_downed"),
+                    new NamespacedKey(OpenLab.getInstance(), "is_downed"),
                     PersistentDataType.BYTE
             );
 
@@ -187,7 +187,7 @@ public class Bandage extends CustomItemBase {
 
 
 
-        PVPManager pvpManager = Specialization.getInstance().getPvpManager();
+        PVPManager pvpManager = OpenLab.getInstance().getPvpManager();
         boolean healer_in_combat = pvpManager.isInCombat(healer);
         boolean self_heal = target.equals(healer);
 

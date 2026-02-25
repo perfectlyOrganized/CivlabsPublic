@@ -1,39 +1,31 @@
-package com.minecraftcivilizations.specialization.Player;
+package com.minecraftcivilizations.specialization.player;
 
 import com.google.common.collect.Queues;
-import com.google.gson.reflect.TypeToken;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Events.SkillLevelChangeEvent;
 import com.minecraftcivilizations.specialization.Listener.Player.XpGainMonitor;
+import com.minecraftcivilizations.specialization.OpenLab;
+import com.minecraftcivilizations.specialization.Recipe.RecipeBlocker;
 import com.minecraftcivilizations.specialization.Skill.Skill;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
-import com.minecraftcivilizations.specialization.util.CoreUtil;
 import com.minecraftcivilizations.specialization.util.LoreUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import com.typesafe.config.Config;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
-import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
-import minecraftcivilizations.com.minecraftCivilizationsCore.Options.Pair;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.md_5.bungee.api.ChatMessageType;
 import org.bukkit.*;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeInstance;
-import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.FileNotFoundException;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -43,7 +35,7 @@ import static com.minecraftcivilizations.specialization.Skill.SkillType.getDispl
 
 @Getter
 public class CustomPlayer extends CustomPlayerBase {
-    private static final @NotNull NamespacedKey MAX_HEALTH_KEY = new NamespacedKey(Specialization.getInstance(), "CLASS_HEALTH_BOOST");
+    private static final @NotNull NamespacedKey MAX_HEALTH_KEY = new NamespacedKey(OpenLab.getInstance(), "CLASS_HEALTH_BOOST");
     @Getter
     @Setter
     private SkillType preferredSkill = SkillType.values()[ThreadLocalRandom.current().nextInt(SkillType.values().length)];
@@ -82,38 +74,8 @@ public class CustomPlayer extends CustomPlayerBase {
 
     public CustomPlayer(UUID uuid) {
         super(uuid);
-        loadPlayer();
-
     }
 
-    private void loadPlayer() {
-        CustomPlayer customPlayer = null;
-        try {
-            customPlayer = Specialization.customPlayerManager.load(this.getUuid());
-        } catch (FileNotFoundException e) {
-            Specialization.getInstance().getLogger().severe(String.format("Couldn't load player %s", this.getUuid()));
-        }
-
-        if (customPlayer != null) {
-            //Loads existing player
-            this.skills = customPlayer.skills;
-            this.preferredSkill = customPlayer.preferredSkill;
-            this.height = customPlayer.height;
-            this.isAdvancedClassesGUIEnabled = customPlayer.isAdvancedClassesGUIEnabled;
-            this.isSoundEnabled = customPlayer.isSoundEnabled;
-            this.isNewRecipeGUIIteration = customPlayer.isNewRecipeGUIIteration;
-            this.analyticPlayerData = customPlayer.analyticPlayerData;
-            this.additionUnlockedRecipes.addAll(customPlayer.additionUnlockedRecipes);
-            return;
-        }
-
-        // New player - initialize with default skills
-        for (SkillType skill : SkillType.values()) {
-            Skill skill1 = new Skill(skill, 0, System.currentTimeMillis());
-            skill1.setSkillType(skill);
-            this.skills.add(skill1);
-        }
-    }
 
 
     /**
@@ -186,7 +148,7 @@ public class CustomPlayer extends CustomPlayerBase {
                 );
             }catch(Exception e){
                 e.printStackTrace();
-                Specialization.getInstance().getLogger().info("BAD DEBUG in CustomPlayer.java");
+                OpenLab.getInstance().getLogger().info("BAD DEBUG in CustomPlayer.java");
             }
         }
 
@@ -209,8 +171,7 @@ public class CustomPlayer extends CustomPlayerBase {
                 PlayerUtil.message(player, LoreUtils.createLoreLine("Your " + skill_name + "ing ability has deteriorated, you are now " + getDisplayName(skillType) + " " + SkillLevel.getDisplayName(currentLevel), NamedTextColor.WHITE));
             }
             while (currentLevel > 0) {
-                List<NamespacedKey> recipes = SpecializationConfig.getUnlockedRecipesConfig().getStringList(skillType.name() + "_" + SkillLevel.getSkillLevelFromInt(currentLevel)).stream().map(NamespacedKey::fromString).toList();
-
+                Set<NamespacedKey> recipes = RecipeBlocker.getRecipes(skillType, currentLevel);
                 for (NamespacedKey entry : recipes) {
                     player.discoverRecipe(entry);
                 }
@@ -223,7 +184,7 @@ public class CustomPlayer extends CustomPlayerBase {
 
     public void applyEffects(Player player){
         for (SkillType skill : SkillType.values()) {
-            List<? extends Config> potionList = SpecializationConfig.getClassSkillEffectsConfig().getList(skill.name() + "_" + getSkillLevelEnum(skill).name());
+            List<? extends Config> potionList = SpecializationConfig.getClassSkillEffectsConfig().getConfigList(skill.name() + "_" + getSkillLevelEnum(skill).name());
             for (Config potionConfig : potionList) {
                 int amplifier = potionConfig.getInt("amplifier");
                 NamespacedKey effectKey = NamespacedKey.fromString(potionConfig.getString("effect"));
@@ -302,7 +263,7 @@ public class CustomPlayer extends CustomPlayerBase {
     }
 
     private boolean isMissingPercentForLevel(SkillType skillType, int level) {
-        return getPercentOfTotal(skillType) < SpecializationConfig.getSkillRequirementsConfig().getDouble(skillType + "_" + SkillLevel.getSkillLevelFromInt(level) + "_REQUIREMENT");
+        return getPercentOfTotal(skillType) < SpecializationConfig.getSkillsConfig().getDouble(skillType + "_" + SkillLevel.getSkillLevelFromInt(level) + "_REQUIREMENT");
     }
 
     public double getGUIDistributionOfTotalSkills(SkillType skillType) {
@@ -315,8 +276,8 @@ public class CustomPlayer extends CustomPlayerBase {
         double XPMax = getXPNeededForLevel(level + 1);
 
         Skill skill = getSkill(skillType);
-        double percentageNeededMin = SpecializationConfig.getSkillRequirementsConfig().getDouble(skill.getSkillType() + "_" + SkillLevel.getSkillLevelFromInt(level) + "_REQUIREMENT");
-        double percentageNeededMax = SpecializationConfig.getSkillRequirementsConfig().getDouble(skill.getSkillType() + "_" + SkillLevel.getSkillLevelFromInt(level + 1) + "_REQUIREMENT");
+        double percentageNeededMin = SpecializationConfig.getSkillsConfig().getDouble(skill.getSkillType() + "_" + SkillLevel.getSkillLevelFromInt(level) + "_REQUIREMENT");
+        double percentageNeededMax = SpecializationConfig.getSkillsConfig().getDouble(skill.getSkillType() + "_" + SkillLevel.getSkillLevelFromInt(level + 1) + "_REQUIREMENT");
         double currentPercentage = getPercentOfTotal(skillType);
 
         double XPProgressAsPercentage;
@@ -368,7 +329,7 @@ public class CustomPlayer extends CustomPlayerBase {
                     }
                     currentTime ++;
                 }
-            }.runTaskTimer(MinecraftCivilizationsCore.getInstance(), 0, 1);
+            }.runTaskTimer(OpenLab.getInstance(), 0, 1);
         }
     }
 
@@ -380,7 +341,6 @@ public class CustomPlayer extends CustomPlayerBase {
         }
         throw new IllegalStateException("Couldn't get skill " + skillType.toString());
     }
-
 
     /**
      * TODO PDC-xp-hotfix for later if we need it
@@ -440,11 +400,6 @@ public class CustomPlayer extends CustomPlayerBase {
             lastEatenFood.poll();
         }
         return result;
-    }
-
-
-    public static CustomPlayer getCustomPlayer(Player player){
-        return CoreUtil.getPlayer(player);
     }
 
 }

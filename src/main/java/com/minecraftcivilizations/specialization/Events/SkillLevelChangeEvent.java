@@ -1,6 +1,6 @@
 package com.minecraftcivilizations.specialization.Events;
 
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import lombok.Getter;
 import org.bukkit.entity.Player;

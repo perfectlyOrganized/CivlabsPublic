@@ -2,7 +2,7 @@ package com.minecraftcivilizations.specialization.Listener.Player;
 
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -41,13 +41,13 @@ public final class XpGainMonitor {
     }
 
     private XpGainMonitor() {}
-    public static NamespacedKey XP_MONITOR_KEY = new NamespacedKey(Specialization.getInstance(), "xpmonitor");
+    public static NamespacedKey XP_MONITOR_KEY = new NamespacedKey(OpenLab.getInstance(), "xpmonitor");
 
     public static void init() {
         var cfg = SpecializationConfig.getXpMonitorConfig();
         for (SkillType type : SkillType.values()) {
             Double t = cfg.getDouble(type.name() + ".threshold");
-            Long cd = Long.valueOf(cfg.getInteger(type.name() + ".cooldown-seconds"));
+            Long cd = Long.valueOf(cfg.getInt(type.name() + ".cooldown-seconds"));
             thresholds.put(type.name(), t != null ? t : 500.0);
             cooldowns.put(type.name(), cd != null ? cd : 30L);
         }

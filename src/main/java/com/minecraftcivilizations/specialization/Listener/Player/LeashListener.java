@@ -1,15 +1,14 @@
 package com.minecraftcivilizations.specialization.Listener.Player;
 
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.OpenLab;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
-import com.minecraftcivilizations.specialization.util.CoreUtil;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Sheep;
@@ -49,10 +48,10 @@ public final class LeashListener implements Listener {
 
     private final Map<Player, Sheep> proxies = new HashMap<>();
     private final PlayerDownedListener downedListener;
-    private final NamespacedKey leashKey = new NamespacedKey(Specialization.getInstance(), "leash_proxy");
+    private final NamespacedKey leashKey = new NamespacedKey(OpenLab.getInstance(), "leash_proxy");
 
     public LeashListener() {
-        this.downedListener = new PlayerDownedListener(Specialization.getInstance());
+        this.downedListener = new PlayerDownedListener(OpenLab.getInstance());
     }
 
     @EventHandler
@@ -92,12 +91,12 @@ public final class LeashListener implements Listener {
     }
 
     private void leashPlayer(Player targetPlayer, Player leasher) {
-        CustomPlayer h = CoreUtil.getPlayer(leasher);
+        CustomPlayer h = CustomPlayerManager.INSTANCE.getCustomPlayer(leasher);
 
         int lvl = h.getSkillLevel(SkillType.GUARDSMAN);
 
         if (lvl == SkillLevel.APPRENTICE.getLevel()) {
-            Specialization.message(leasher, "You are not skilled enough for that");
+            OpenLab.message(leasher, "You are not skilled enough for that");
         }else if (lvl < SkillLevel.APPRENTICE.getLevel()) {
             return; // too low level to leash players
         }
@@ -114,7 +113,7 @@ public final class LeashListener implements Listener {
         proxy.addPassenger(targetPlayer);
         proxy.setLeashHolder(leasher);
         proxy.getPersistentDataContainer().set(leashKey, PersistentDataType.BOOLEAN, true);
-        targetPlayer.getPersistentDataContainer().set(new NamespacedKey(Specialization.getInstance(), "is_leashed"), PersistentDataType.BOOLEAN, true);
+        targetPlayer.getPersistentDataContainer().set(new NamespacedKey(OpenLab.getInstance(), "is_leashed"), PersistentDataType.BOOLEAN, true);
         proxies.put(targetPlayer, proxy);
 
         ItemStack item = leasher.getInventory().getItemInMainHand();
@@ -139,7 +138,7 @@ public final class LeashListener implements Listener {
             for (Entity passenger : proxy.getPassengers()) passenger.leaveVehicle();
             proxy.remove();
         }
-        targetPlayer.getPersistentDataContainer().remove(new NamespacedKey(Specialization.getInstance(), "is_leashed"));
+        targetPlayer.getPersistentDataContainer().remove(new NamespacedKey(OpenLab.getInstance(), "is_leashed"));
         proxies.remove(targetPlayer);
     }
 
@@ -201,7 +200,7 @@ public final class LeashListener implements Listener {
         Player rider = e.getPlayer();
 
         Boolean isLeashed = rider.getPersistentDataContainer().get(
-                new NamespacedKey(Specialization.getInstance(), "is_leashed"),
+                new NamespacedKey(OpenLab.getInstance(), "is_leashed"),
                 PersistentDataType.BOOLEAN
         );
 

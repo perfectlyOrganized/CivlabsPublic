@@ -1,19 +1,17 @@
 package com.minecraftcivilizations.specialization.Listener.Player;
 
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.OpenLab;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
-import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.*;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.block.Block;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
@@ -114,7 +112,7 @@ public class PlayerDownedListener implements Listener {
             clearDowned(player);
         } else {
             startDowned(player, health, DOWNED_DURATION_TICKS);
-            Specialization.message(player, "You're knocked out");
+            OpenLab.message(player, "You're knocked out");
             sendDownedMessage(player);
         }
     }
@@ -166,7 +164,7 @@ public class PlayerDownedListener implements Listener {
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player player = event.getEntity();
 
-        CustomPlayer customPlayer = Specialization.customPlayerManager.getCustomPlayer(player.getUniqueId());
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player.getUniqueId());
         // Reset all skills to 0
         for (SkillType type : SkillType.values()) {
             double currentXp = customPlayer.getSkill(type).getXp();
@@ -216,7 +214,7 @@ public class PlayerDownedListener implements Listener {
             }
             if (ticksLeft < 0) {
                 ticksLeft = 0;
-                Specialization.message(player, "You have §cbled §7out while offline!");
+                OpenLab.message(player, "You have §cbled §7out while offline!");
             }
         }
 
@@ -553,7 +551,7 @@ public class PlayerDownedListener implements Listener {
 
         // Send main message
 //        player.sendMessage(msg);
-        Specialization.message(player, msg);
+        OpenLab.message(player, msg);
 
         // If player is allowed to self revive
         if (player.hasPermission("civlabs.selfrevive")) {
@@ -561,7 +559,7 @@ public class PlayerDownedListener implements Listener {
                     .clickEvent(ClickEvent.runCommand("/revive"))
                     .hoverEvent(HoverEvent.showText(Component.text("Click to instantly revive yourself!")));
 
-            Specialization.message(player, revive_msg);
+            OpenLab.message(player, revive_msg);
         }
 
     }

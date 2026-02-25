@@ -2,10 +2,9 @@ package com.minecraftcivilizations.specialization.Combat;
 
 import com.minecraftcivilizations.specialization.Combat.Mobs.MobVariation;
 import com.minecraftcivilizations.specialization.Events.SkillLevelChangeEvent;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
-import com.minecraftcivilizations.specialization.Skill.SkillLevel;
+import com.minecraftcivilizations.specialization.OpenLab;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -27,7 +26,7 @@ import static org.bukkit.event.entity.EntityDamageEvent.DamageModifier.*;
  */
 public class GuardsmanDamage implements Listener {
 
-    Specialization plugin;
+    OpenLab plugin;
     NamespacedKey MAX_HEALTH_KEY;
     CombatManager combatManager;
 

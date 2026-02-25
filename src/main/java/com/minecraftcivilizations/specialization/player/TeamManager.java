@@ -1,9 +1,9 @@
-package com.minecraftcivilizations.specialization.Player;
+package com.minecraftcivilizations.specialization.player;
 
+import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.Skill.Skill;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
-import com.minecraftcivilizations.specialization.util.CoreUtil;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -43,11 +43,11 @@ public class TeamManager {
     }
 
     public static void setTeam(Player player){
-        Skill bestSkill = CoreUtil.getPlayer(player).getSkills().stream().max(Comparator.comparingDouble(Skill::getXp)).orElse(null);
+        Skill bestSkill = CustomPlayerManager.INSTANCE.getCustomPlayer(player).getSkills().stream().max(Comparator.comparingDouble(Skill::getXp)).orElse(null);
         if(bestSkill == null) return;
         SkillType skill = bestSkill.getSkillType();
         if(!skillTeams.get(skill).hasPlayer(player)) {
-            Bukkit.getScheduler().runTask(Specialization.getInstance(), ()-> {
+            Bukkit.getScheduler().runTask(OpenLab.getInstance(), ()-> {
                 skillTeams.values().forEach(team -> {
                     team.removeEntry(player.getName());
                 });

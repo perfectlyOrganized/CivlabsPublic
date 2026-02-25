@@ -1,14 +1,13 @@
 package com.minecraftcivilizations.specialization.Combat;
 
-import com.google.gson.reflect.TypeToken;
 import com.minecraftcivilizations.specialization.Combat.Mobs.MobVariation;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Combat.Mobs.MobManager;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.OpenLab;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
-import com.minecraftcivilizations.specialization.util.CoreUtil;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import lombok.Getter;
 import org.bukkit.*;
@@ -23,7 +22,6 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.projectiles.ProjectileSource;
 
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 
 import static com.minecraftcivilizations.specialization.util.MathUtils.random;
 import static org.bukkit.entity.EntityType.*;
@@ -63,9 +61,9 @@ public class CombatManager implements Listener {
     private final ArmorBreakSystem armorBreakSystem;
 
     @Getter
-    final Specialization plugin;
+    final OpenLab plugin;
 
-    public CombatManager(Specialization specialization) {
+    public CombatManager(OpenLab specialization) {
         this.plugin = specialization;
         specialization.getServer().getPluginManager().registerEvents(this, specialization);
         CRIT_BONUS_KEY = new NamespacedKey(specialization, "COMBAT_CRIT_BONUS");
@@ -86,7 +84,7 @@ public class CombatManager implements Listener {
     }
 
     public static CombatManager getInstance() {
-        return Specialization.getInstance().getCombatManager();
+        return OpenLab.getInstance().getCombatManager();
     }
 
     @EventHandler
@@ -181,7 +179,7 @@ public class CombatManager implements Listener {
 //        Debug.broadcast("damage", "<gray> ------- <white>"+event.getDamager().getName()+"</white> -> <white>"+event.getEntity().getName()+"</white> ------- </gray>");
 
         Entity damager = event.getDamager();
-        CustomPlayer customPlayer = CoreUtil.getPlayer(damager.getUniqueId());
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(damager.getUniqueId());
         String extramsg = "";
 
 
@@ -399,7 +397,7 @@ public class CombatManager implements Listener {
         if(damager instanceof Player dmger) {
             if (event.getEntity() instanceof LivingEntity victim) {
                 if (!event.isCancelled()) {
-                    if (!Specialization.getInstance().getPlayerDownedListener().isDowned(dmger)) {
+                    if (!OpenLab.getInstance().getPlayerDownedListener().isDowned(dmger)) {
                         mobManager.applyGuardsmanExp(event, customPlayer, dmger, victim); //Exp is acquired only after calculating final damage
                     }
                 }
@@ -447,17 +445,17 @@ public class CombatManager implements Listener {
     /**
      * Custom Mob Drops
      */
-    @EventHandler
-    public void addCustomMobDrops(EntityDeathEvent e){
-        if (e.getEntity().getKiller() != null) {
-            Player player = e.getEntity().getKiller();
-            assert player != null;
-//            CustomPlayer killer = CoreUtil.getPlayer(e.getEntity().getKiller().getUniqueId());
-//            EntityType entity = e.getEntity().getType();
-            List<NamespacedKey> items = SpecializationConfig.getMobDropsConfig().getStringList(e.getEntityType().name()).stream().map(NamespacedKey::fromString).toList();
-            Material.matchMaterial(e.getEntityType().getKey().getKey());
-        }
-    }
+//    @EventHandler
+//    public void addCustomMobDrops(EntityDeathEvent e){
+//        if (e.getEntity().getKiller() != null) {
+//            Player player = e.getEntity().getKiller();
+//            assert player != null;
+////            CustomPlayer killer = CustomPlayerManager.INSTANCE.getCustomPlayer(e.getEntity().getKiller().getUniqueId());
+////            EntityType entity = e.getEntity().getType();
+//           // List<NamespacedKey> items = SpecializationConfig.getMobDropsConfig().getStringList(e.getEntityType().name()).stream().map(NamespacedKey::fromString).toList();
+//           // Material.matchMaterial(e.getEntityType().getKey().getKey());
+//        }
+//    }
 
 
 

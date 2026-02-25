@@ -2,8 +2,8 @@ package com.minecraftcivilizations.specialization.Command;
 
 import co.aikar.commands.BaseCommand;
 import co.aikar.commands.annotation.*;
+import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.Recipe.Recipes;
-import com.minecraftcivilizations.specialization.Specialization;
 import org.bukkit.Bukkit;
 import org.bukkit.Keyed;
 import org.bukkit.NamespacedKey;
@@ -26,7 +26,7 @@ public class RecipeRefreshCommand extends BaseCommand {
     @CommandPermission("specialization.recipe.refresh")
     public void onRefresh(CommandSender sender) {
         Recipes.init();
-        Specialization.getInstance().getLogger().info("Custom recipes/blueprints have been refreshed.");
+        OpenLab.getInstance().getLogger().info("Custom recipes/blueprints have been refreshed.");
 
         sender.sendMessage("§aCustom recipes have been re-initialized.");
     }
@@ -46,10 +46,10 @@ public class RecipeRefreshCommand extends BaseCommand {
             int interval = (minutes != null && minutes > 0) ? minutes : 5;
 
             refreshTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(
-                    JavaPlugin.getPlugin(Specialization.class),
+                    JavaPlugin.getPlugin(OpenLab.class),
                     () -> {
                         Recipes.init();
-                        Specialization.getInstance().getLogger().info("Custom recipes/blueprints have been refreshed.");
+                        OpenLab.getInstance().getLogger().info("Custom recipes/blueprints have been refreshed.");
                     },
                     0L, // initial delay
                     20L * 60L * interval // convert minutes to ticks

@@ -1,6 +1,6 @@
 package com.minecraftcivilizations.specialization.StaffTools;
 
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
@@ -52,7 +52,7 @@ public class Debug implements Listener {
     public static boolean DEBUG_ENABLED = false;
 
 
-    public Debug(Specialization plugin){
+    public Debug(OpenLab plugin){
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         this.debug_channels_key = new NamespacedKey(plugin, "DebugChannels");
         setupDefaultChannels();
@@ -200,7 +200,7 @@ public class Debug implements Listener {
         debug.listening_channels = new HashMap<UUID, List<String>>();
         debug.debug_channels = new ArrayList<String>();
         debug.setupDefaultChannels();
-        Specialization.getInstance().getLogger().info("Debug Cache Globally Reset by "+commander.getName());
+        OpenLab.getInstance().getLogger().info("Debug Cache Globally Reset by "+commander.getName());
     }
 
     /**
@@ -421,7 +421,7 @@ public class Debug implements Listener {
     }
 
     public static Debug getInstance(){
-        return Specialization.getInstance().getDebugUtils();
+        return OpenLab.getInstance().getDebugUtils();
     }
 
 

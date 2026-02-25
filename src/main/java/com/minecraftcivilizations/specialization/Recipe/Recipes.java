@@ -2,12 +2,9 @@ package com.minecraftcivilizations.specialization.Recipe;
 
 import com.minecraftcivilizations.specialization.CustomItem.CustomItem;
 import com.minecraftcivilizations.specialization.CustomItem.CustomItemRegistry;
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.OpenLab;
 import org.bukkit.*;
-import org.bukkit.entity.Item;
 import org.bukkit.inventory.*;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +52,7 @@ public class Recipes {
             }
         }
         // ----- String recipe
-        NamespacedKey stringRecipeKEY = new NamespacedKey(Specialization.getInstance(), "wool_to_string_recipe");
+        NamespacedKey stringRecipeKEY = new NamespacedKey(OpenLab.getInstance(), "wool_to_string_recipe");
         ShapelessRecipe stringRecipe = new ShapelessRecipe(stringRecipeKEY, new ItemStack(Material.STRING,2));
         RecipeChoice wool = new RecipeChoice.MaterialChoice(Tag.WOOL);
         stringRecipe.addIngredient(wool);
@@ -72,7 +69,7 @@ public class Recipes {
 
 
         // ----- CUSTOM "RAIL" RECIPE -----
-        NamespacedKey railKey = new NamespacedKey(Specialization.getInstance(), "rail_alt");
+        NamespacedKey railKey = new NamespacedKey(OpenLab.getInstance(), "rail_alt");
         ShapedRecipe rail = new ShapedRecipe(railKey, new ItemStack(Material.RAIL, 64));
         rail.shape("I I", "ISI", "I I");
         rail.setIngredient('I', Material.IRON_INGOT);
@@ -114,7 +111,7 @@ public class Recipes {
     public static int addNetherRecipes(List<String> failedExceptions, int skippedDuplicateCount) {
         int count = 0;
 
-        NamespacedKey netheriteKey = new NamespacedKey(Specialization.getInstance(), "netherite_upgrade");
+        NamespacedKey netheriteKey = new NamespacedKey(OpenLab.getInstance(), "netherite_upgrade");
         ShapelessRecipe netheriteUpgrade = new ShapelessRecipe(netheriteKey,
                 new ItemStack(Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE));
         netheriteUpgrade.addIngredient(1, Material.NETHERITE_INGOT);
@@ -125,7 +122,7 @@ public class Recipes {
             catch (Exception e) { failedExceptions.add("netherite_upgrade (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
-        NamespacedKey blazeRodKey = new NamespacedKey(Specialization.getInstance(), "blaze_rod");
+        NamespacedKey blazeRodKey = new NamespacedKey(OpenLab.getInstance(), "blaze_rod");
         ShapelessRecipe blazeRod = new ShapelessRecipe(blazeRodKey, new ItemStack(Material.BLAZE_ROD));
         blazeRod.addIngredient(1, Material.GOLD_INGOT);
         blazeRod.addIngredient(3, Material.GUNPOWDER);
@@ -136,7 +133,7 @@ public class Recipes {
             catch (Exception e) { failedExceptions.add("blaze_rod (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
-        NamespacedKey netherWartKey = new NamespacedKey(Specialization.getInstance(), "nether_wart");
+        NamespacedKey netherWartKey = new NamespacedKey(OpenLab.getInstance(), "nether_wart");
         ShapedRecipe netherWart = new ShapedRecipe(netherWartKey, new ItemStack(Material.NETHER_WART));
         netherWart.shape(" E ", "DDD", " B ");
         netherWart.setIngredient('E', Material.BEETROOT);
@@ -151,7 +148,7 @@ public class Recipes {
     }
 
     public static void addUnobtainableRecipes(List<String> failedExceptions, int skippedDuplicateCount) {
-        NamespacedKey catEggKey = new NamespacedKey(Specialization.getInstance(), "cat_spawn_egg");
+        NamespacedKey catEggKey = new NamespacedKey(OpenLab.getInstance(), "cat_spawn_egg");
         ShapedRecipe catEgg = new ShapedRecipe(catEggKey, new ItemStack(Material.CAT_SPAWN_EGG));
         catEgg.shape("FFF", " E ", "FDF");
         catEgg.setIngredient('F', Material.TROPICAL_FISH);
@@ -162,7 +159,7 @@ public class Recipes {
             catch (Exception e) { failedExceptions.add("cat_spawn_egg (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
-        NamespacedKey bellKey = new NamespacedKey(Specialization.getInstance(), "bell");
+        NamespacedKey bellKey = new NamespacedKey(OpenLab.getInstance(), "bell");
         ShapedRecipe bell = new ShapedRecipe(bellKey, new ItemStack(Material.BELL));
         bell.shape(" W ", "GGG", "GGG");
         bell.setIngredient('W', new RecipeChoice.MaterialChoice(Tag.PLANKS));
@@ -172,7 +169,7 @@ public class Recipes {
             catch (Exception e) { failedExceptions.add("bell (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
-        NamespacedKey cobwebKey = new NamespacedKey(Specialization.getInstance(), "cobweb");
+        NamespacedKey cobwebKey = new NamespacedKey(OpenLab.getInstance(), "cobweb");
         ShapedRecipe cobweb = new ShapedRecipe(cobwebKey, new ItemStack(Material.COBWEB));
         cobweb.shape("SSS", "SSS", "SSS");
         cobweb.setIngredient('S', Material.STRING);
@@ -183,7 +180,7 @@ public class Recipes {
     }
 
     public static void addArmorTrims(List<String> failedExceptions, int skippedDuplicateCount) {
-        NamespacedKey boltTrim = new NamespacedKey(Specialization.getInstance(), "bolt_trim");
+        NamespacedKey boltTrim = new NamespacedKey(OpenLab.getInstance(), "bolt_trim");
         ShapedRecipe bolt = new ShapedRecipe(boltTrim, new ItemStack(Material.COAST_ARMOR_TRIM_SMITHING_TEMPLATE));
         bolt.shape("ABA", "BBB", "AAA");
         bolt.setIngredient('A', Material.LIGHT_BLUE_DYE);
@@ -193,7 +190,7 @@ public class Recipes {
             catch (Exception e) { failedExceptions.add("bolt_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
-        NamespacedKey flowTrim = new NamespacedKey(Specialization.getInstance(), "flow_trim");
+        NamespacedKey flowTrim = new NamespacedKey(OpenLab.getInstance(), "flow_trim");
         ShapedRecipe flow = new ShapedRecipe(flowTrim, new ItemStack(Material.TIDE_ARMOR_TRIM_SMITHING_TEMPLATE));
         flow.shape("ABA", "BBA", "ABB");
         flow.setIngredient('A', Material.LIGHT_BLUE_DYE);
@@ -203,7 +200,7 @@ public class Recipes {
             catch (Exception e) { failedExceptions.add("flow_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
-        NamespacedKey tideTrim = new NamespacedKey(Specialization.getInstance(), "tide_trim");
+        NamespacedKey tideTrim = new NamespacedKey(OpenLab.getInstance(), "tide_trim");
         ShapedRecipe tide = new ShapedRecipe(tideTrim, new ItemStack(Material.TIDE_ARMOR_TRIM_SMITHING_TEMPLATE));
         tide.shape("ABA", "ABA", "BAB");
         tide.setIngredient('A', Material.DEAD_BRAIN_CORAL_BLOCK);
@@ -213,7 +210,7 @@ public class Recipes {
             catch (Exception e) { failedExceptions.add("tide_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
-        NamespacedKey silenceTrim = new NamespacedKey(Specialization.getInstance(), "silence_trim");
+        NamespacedKey silenceTrim = new NamespacedKey(OpenLab.getInstance(), "silence_trim");
         ShapedRecipe silence = new ShapedRecipe(silenceTrim, new ItemStack(Material.SILENCE_ARMOR_TRIM_SMITHING_TEMPLATE));
         silence.shape("ABC", "ABA", "CBA");
         silence.setIngredient('A', Material.DEEPSLATE);
@@ -224,7 +221,7 @@ public class Recipes {
             catch (Exception e) { failedExceptions.add("silence_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
-        NamespacedKey wardTrim = new NamespacedKey(Specialization.getInstance(), "ward_trim");
+        NamespacedKey wardTrim = new NamespacedKey(OpenLab.getInstance(), "ward_trim");
         ShapedRecipe ward = new ShapedRecipe(wardTrim, new ItemStack(Material.WARD_ARMOR_TRIM_SMITHING_TEMPLATE));
         ward.shape("ABA", "BAB", "BBB");
         ward.setIngredient('A', Material.LIGHT_BLUE_DYE);
@@ -234,7 +231,7 @@ public class Recipes {
             catch (Exception e) { failedExceptions.add("ward_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
-        NamespacedKey snoutTrim = new NamespacedKey(Specialization.getInstance(), "snout_trim");
+        NamespacedKey snoutTrim = new NamespacedKey(OpenLab.getInstance(), "snout_trim");
         ShapedRecipe snout = new ShapedRecipe(snoutTrim, new ItemStack(Material.SNOUT_ARMOR_TRIM_SMITHING_TEMPLATE));
         snout.shape("AAA", "BAB", "AAA");
         snout.setIngredient('A', Material.BLACKSTONE);
@@ -244,7 +241,7 @@ public class Recipes {
             catch (Exception e) { failedExceptions.add("snout_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
-        NamespacedKey raiserTrim = new NamespacedKey(Specialization.getInstance(), "raiser_trim");
+        NamespacedKey raiserTrim = new NamespacedKey(OpenLab.getInstance(), "raiser_trim");
         ShapedRecipe raiser = new ShapedRecipe(raiserTrim, new ItemStack(Material.RAISER_ARMOR_TRIM_SMITHING_TEMPLATE));
         raiser.shape("ABB", "BAB", "BBA");
         raiser.setIngredient('A', Material.LIGHT_BLUE_DYE);
@@ -254,7 +251,7 @@ public class Recipes {
             catch (Exception e) { failedExceptions.add("raiser_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
-        NamespacedKey shaperTrim = new NamespacedKey(Specialization.getInstance(), "shaper_trim");
+        NamespacedKey shaperTrim = new NamespacedKey(OpenLab.getInstance(), "shaper_trim");
         ShapedRecipe shaper = new ShapedRecipe(shaperTrim, new ItemStack(Material.SHAPER_ARMOR_TRIM_SMITHING_TEMPLATE));
         shaper.shape("AAB", "BBB", "BAA");
         shaper.setIngredient('A', Material.TERRACOTTA);
@@ -264,7 +261,7 @@ public class Recipes {
             catch (Exception e) { failedExceptions.add("shaper_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
-        NamespacedKey hostTrim = new NamespacedKey(Specialization.getInstance(), "host_trim");
+        NamespacedKey hostTrim = new NamespacedKey(OpenLab.getInstance(), "host_trim");
         ShapedRecipe host = new ShapedRecipe(hostTrim, new ItemStack(Material.HOST_ARMOR_TRIM_SMITHING_TEMPLATE));
         host.shape("ABA", "ABB", "ABA");
         host.setIngredient('A', Material.TERRACOTTA);
@@ -274,7 +271,7 @@ public class Recipes {
             catch (Exception e) { failedExceptions.add("host_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
-        NamespacedKey wildTrim = new NamespacedKey(Specialization.getInstance(), "wild_trim");
+        NamespacedKey wildTrim = new NamespacedKey(OpenLab.getInstance(), "wild_trim");
         ShapedRecipe wild = new ShapedRecipe(wildTrim, new ItemStack(Material.WILD_ARMOR_TRIM_SMITHING_TEMPLATE));
         wild.shape("AAA", "BBB", "AAA");
         wild.setIngredient('A', Material.MOSSY_COBBLESTONE);
@@ -284,7 +281,7 @@ public class Recipes {
             catch (Exception e) { failedExceptions.add("wild_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
-        NamespacedKey coastTrim = new NamespacedKey(Specialization.getInstance(), "coast_trim");
+        NamespacedKey coastTrim = new NamespacedKey(OpenLab.getInstance(), "coast_trim");
         ShapedRecipe coast = new ShapedRecipe(coastTrim, new ItemStack(Material.COAST_ARMOR_TRIM_SMITHING_TEMPLATE));
         coast.shape("ABA", "CAC", "CCC");
         coast.setIngredient('A', Material.LIGHT_BLUE_DYE);
@@ -295,7 +292,7 @@ public class Recipes {
             catch (Exception e) { failedExceptions.add("coast_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
-        NamespacedKey duneTrim = new NamespacedKey(Specialization.getInstance(), "dune_trim");
+        NamespacedKey duneTrim = new NamespacedKey(OpenLab.getInstance(), "dune_trim");
         ShapedRecipe dune = new ShapedRecipe(duneTrim, new ItemStack(Material.DUNE_ARMOR_TRIM_SMITHING_TEMPLATE));
         dune.shape("AAA", "BBB", "AAA");
         dune.setIngredient('A', Material.LIGHT_BLUE_DYE);
@@ -305,7 +302,7 @@ public class Recipes {
             catch (Exception e) { failedExceptions.add("dune_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
-        NamespacedKey eyeTrim = new NamespacedKey(Specialization.getInstance(), "eye_trim");
+        NamespacedKey eyeTrim = new NamespacedKey(OpenLab.getInstance(), "eye_trim");
         ShapedRecipe eye = new ShapedRecipe(eyeTrim, new ItemStack(Material.EYE_ARMOR_TRIM_SMITHING_TEMPLATE));
         eye.shape("ABA", "BAB", "ABA");
         eye.setIngredient('A', Material.SANDSTONE);
@@ -315,7 +312,7 @@ public class Recipes {
             catch (Exception e) { failedExceptions.add("eye_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
-        NamespacedKey sentryTrim = new NamespacedKey(Specialization.getInstance(), "sentry_trim");
+        NamespacedKey sentryTrim = new NamespacedKey(OpenLab.getInstance(), "sentry_trim");
         ShapedRecipe sentry = new ShapedRecipe(sentryTrim, new ItemStack(Material.SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE));
         sentry.shape("ABA", "BAB", "ABA");
         sentry.setIngredient('A', Material.COBBLESTONE);
@@ -325,7 +322,7 @@ public class Recipes {
             catch (Exception e) { failedExceptions.add("sentry_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
-        NamespacedKey vexTrim = new NamespacedKey(Specialization.getInstance(), "vex_trim");
+        NamespacedKey vexTrim = new NamespacedKey(OpenLab.getInstance(), "vex_trim");
         ShapedRecipe vex = new ShapedRecipe(vexTrim, new ItemStack(Material.VEX_ARMOR_TRIM_SMITHING_TEMPLATE));
         vex.shape("ABB", "BAB", "BBA");
         vex.setIngredient('A', Material.LIGHT_BLUE_DYE);
@@ -335,7 +332,7 @@ public class Recipes {
             catch (Exception e) { failedExceptions.add("vex_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
-        NamespacedKey wayfinderTrim = new NamespacedKey(Specialization.getInstance(), "wayfinder_trim");
+        NamespacedKey wayfinderTrim = new NamespacedKey(OpenLab.getInstance(), "wayfinder_trim");
         ShapedRecipe wayfinder = new ShapedRecipe(wayfinderTrim, new ItemStack(Material.WAYFINDER_ARMOR_TRIM_SMITHING_TEMPLATE));
         wayfinder.shape("AAA", "ABA", "BAB");
         wayfinder.setIngredient('A', Material.TERRACOTTA);
@@ -345,7 +342,7 @@ public class Recipes {
             catch (Exception e) { failedExceptions.add("wayfinder_trim (" + e.getMessage() + ")"); }
         } else skippedDuplicateCount++;
 
-        NamespacedKey spireTrim = new NamespacedKey(Specialization.getInstance(), "spire_trim");
+        NamespacedKey spireTrim = new NamespacedKey(OpenLab.getInstance(), "spire_trim");
         ShapedRecipe spire = new ShapedRecipe(spireTrim, new ItemStack(Material.SPIRE_ARMOR_TRIM_SMITHING_TEMPLATE));
         spire.shape("AAA", "ABA", "AAA");
         spire.setIngredient('A', Material.PINK_CONCRETE);
@@ -529,7 +526,7 @@ public class Recipes {
      * Helper method to add a stonecutting recipe
      */
     private static int addStonecuttingRecipe(String keyName, Material input, Material output, int amount, List<String> failedExceptions) {
-        NamespacedKey key = new NamespacedKey(Specialization.getInstance(), keyName);
+        NamespacedKey key = new NamespacedKey(OpenLab.getInstance(), keyName);
         StonecuttingRecipe recipe = new StonecuttingRecipe(key, new ItemStack(output, amount), input);
         if (!recipeExists(key, recipe.getResult())) {
             try {

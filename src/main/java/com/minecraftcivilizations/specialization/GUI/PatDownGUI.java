@@ -1,26 +1,20 @@
 package com.minecraftcivilizations.specialization.GUI;
 
-import com.minecraftcivilizations.specialization.Specialization;
-import com.minecraftcivilizations.specialization.util.ItemStackUtils;
+import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.util.LoreUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
-import minecraftcivilizations.com.minecraftCivilizationsCore.GUI.GUI;
-import minecraftcivilizations.com.minecraftCivilizationsCore.GUI.GUIItem;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
-import java.util.Arrays;
 import java.util.List;
 
 public class PatDownGUI extends GUI {
@@ -127,8 +121,8 @@ public class PatDownGUI extends GUI {
         // PDC check: only allow if target has flag set to 1
 
 
-        boolean isDowned = target.getPersistentDataContainer().has(new NamespacedKey(Specialization.getInstance(), "is_downed"), PersistentDataType.BYTE) &&
-                target.getPersistentDataContainer().get(new NamespacedKey(Specialization.getInstance(), "is_downed"), PersistentDataType.BYTE) == 1;
+        boolean isDowned = target.getPersistentDataContainer().has(new NamespacedKey(OpenLab.getInstance(), "is_downed"), PersistentDataType.BYTE) &&
+                target.getPersistentDataContainer().get(new NamespacedKey(OpenLab.getInstance(), "is_downed"), PersistentDataType.BYTE) == 1;
         if (!isDowned) return;
 
         ItemStack realItem = null;

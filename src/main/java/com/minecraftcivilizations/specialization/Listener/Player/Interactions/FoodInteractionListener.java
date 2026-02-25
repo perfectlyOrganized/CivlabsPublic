@@ -2,11 +2,11 @@ package com.minecraftcivilizations.specialization.Listener.Player.Interactions;
 
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.CustomItem.CustomItem;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.OpenLab;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
-import com.minecraftcivilizations.specialization.util.CoreUtil;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -32,11 +32,11 @@ import java.util.Random;
 
 public class FoodInteractionListener implements Listener {
 
-    Specialization plugin;
+    OpenLab plugin;
 
-    static NamespacedKey BLESSED_FOOD_KEY = new NamespacedKey(Specialization.getInstance(), "BLESSED_FOOD");
+    static NamespacedKey BLESSED_FOOD_KEY = new NamespacedKey(OpenLab.getInstance(), "BLESSED_FOOD");
 
-    public FoodInteractionListener(Specialization plugin) {
+    public FoodInteractionListener(OpenLab plugin) {
         this.plugin = plugin;
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
@@ -45,7 +45,7 @@ public class FoodInteractionListener implements Listener {
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
-        CustomPlayer customPlayer = CoreUtil.getPlayer(player.getUniqueId());
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player.getUniqueId());
         if (customPlayer == null) return;
         Action action = event.getAction();
         if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
@@ -85,8 +85,8 @@ public class FoodInteractionListener implements Listener {
                             }
                         }
 
-                        int blessXp = SpecializationConfig.getHealthConfig().getInteger("BLESSED_FOOD_HEALER_XP");
-                        int hungerCost = SpecializationConfig.getHealthConfig().getInteger("BLESSED_FOOD_HUNGER_COST");
+                        int blessXp = SpecializationConfig.getHealthConfig().getInt("BLESSED_FOOD_HEALER_XP");
+                        int hungerCost = SpecializationConfig.getHealthConfig().getInt("BLESSED_FOOD_HUNGER_COST");
 
                         ItemStack singleItem = item.clone();
                         singleItem.setAmount(1);
@@ -113,7 +113,7 @@ public class FoodInteractionListener implements Listener {
     public void onPlayerConsume(PlayerItemConsumeEvent event) {
         Player player = event.getPlayer();
         ItemStack consumed = event.getItem();
-        CustomPlayer customPlayer = CoreUtil.getPlayer(player.getUniqueId());
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player.getUniqueId());
         if (customPlayer == null) return;
 
         if (isBlessedFood(consumed)) {
@@ -145,7 +145,7 @@ public class FoodInteractionListener implements Listener {
 
         // Existing custom food logic
         if (!customPlayer.eatFood(consumed.getType())) {
-            int reduction = SpecializationConfig.getHungerConfig().getInteger("HUNGER_REDUCTION_ON_NON_UNIQUE_CONSECUTIVE_FOOD");
+            int reduction = SpecializationConfig.getHungerConfig().getInt("HUNGER_REDUCTION_ON_NON_UNIQUE_CONSECUTIVE_FOOD");
             player.setSaturation(player.getSaturation() - reduction);
         }
 
@@ -189,7 +189,7 @@ public class FoodInteractionListener implements Listener {
                 effectSummary = "Regeneration I 5s, Absorption I 5s";
             }
 
-            customItem.addLore(Specialization.getInstance(), List.of(
+            customItem.addLore(OpenLab.getInstance(), List.of(
                     Component.empty(),
                     Component.text("Blessed Food").color(NamedTextColor.YELLOW),
                     Component.text("Healer Level: " + healerLevel).color(NamedTextColor.GRAY),

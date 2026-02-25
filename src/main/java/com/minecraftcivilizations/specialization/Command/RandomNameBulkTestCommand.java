@@ -5,8 +5,8 @@ import co.aikar.commands.annotation.CommandAlias;
 import co.aikar.commands.annotation.CommandPermission;
 import co.aikar.commands.annotation.Default;
 import co.aikar.commands.annotation.Single;
-import com.minecraftcivilizations.specialization.Specialization;
-import com.minecraftcivilizations.specialization.Player.LocalNameGenerator;
+import com.minecraftcivilizations.specialization.OpenLab;
+import com.minecraftcivilizations.specialization.player.LocalNameGenerator;
 import org.bukkit.entity.Player;
 
 import java.io.File;
@@ -38,7 +38,7 @@ public class RandomNameBulkTestCommand extends BaseCommand {
                 }
             }
 
-            File output = new File(Specialization.getInstance().getDataFolder(), "RolledNames.txt");
+            File output = new File(OpenLab.getInstance().getDataFolder(), "RolledNames.txt");
             Files.createDirectories(output.getParentFile().toPath());
             Files.write(output.toPath(), results);
 

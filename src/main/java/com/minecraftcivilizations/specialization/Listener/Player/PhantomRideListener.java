@@ -1,10 +1,8 @@
 package com.minecraftcivilizations.specialization.Listener.Player;
 
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import org.bukkit.*;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Phantom;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -30,13 +28,13 @@ import java.util.UUID;
  */
 public class PhantomRideListener implements Listener {
 
-    private final NamespacedKey ownerKey = new NamespacedKey(Specialization.getInstance(), "ownerUUID");
-    private final NamespacedKey fireResistKey = new NamespacedKey(Specialization.getInstance(), "fireResistant");
-    private final NamespacedKey tameProgressKey = new NamespacedKey(Specialization.getInstance(), "tameProgress");
-    private final NamespacedKey isTamed = new NamespacedKey(Specialization.getInstance(), "isTamed");
-    private final NamespacedKey lastDismountKey = new NamespacedKey(Specialization.getInstance(), "lastDismount");
+    private final NamespacedKey ownerKey = new NamespacedKey(OpenLab.getInstance(), "ownerUUID");
+    private final NamespacedKey fireResistKey = new NamespacedKey(OpenLab.getInstance(), "fireResistant");
+    private final NamespacedKey tameProgressKey = new NamespacedKey(OpenLab.getInstance(), "tameProgress");
+    private final NamespacedKey isTamed = new NamespacedKey(OpenLab.getInstance(), "isTamed");
+    private final NamespacedKey lastDismountKey = new NamespacedKey(OpenLab.getInstance(), "lastDismount");
     private final int scale = 5;
-    public PhantomRideListener(Specialization specialization) {
+    public PhantomRideListener(OpenLab specialization) {
 
     }
 
@@ -255,7 +253,7 @@ public class PhantomRideListener implements Listener {
                     startPhantomRide(player, phantom);
                 }
             };
-            rejoinTask.runTaskLater(Specialization.getInstance(), 1L);
+            rejoinTask.runTaskLater(OpenLab.getInstance(), 1L);
         }
     }
 
@@ -418,13 +416,13 @@ public class PhantomRideListener implements Listener {
                                 Vector vel = new Vector(0, velY, 0);
                                 phantom.setVelocity(vel);
                             }
-                        }.runTaskTimer(Specialization.getInstance(), 1L, 2L); // 2L = 0.1 block/tick ~ 1 block/sec
+                        }.runTaskTimer(OpenLab.getInstance(), 1L, 2L); // 2L = 0.1 block/tick ~ 1 block/sec
 
 
                     }
                 }
             }
-        }.runTaskTimer(Specialization.getInstance(), 0L, 1L);
+        }.runTaskTimer(OpenLab.getInstance(), 0L, 1L);
     }
 
     private boolean canMount(Phantom phantom, long delayMs) {

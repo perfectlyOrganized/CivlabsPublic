@@ -1,20 +1,16 @@
 package com.minecraftcivilizations.specialization.Combat;
 
-import com.google.gson.reflect.TypeToken;
 import com.minecraftcivilizations.specialization.Config.PotionEffectData;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.util.CoreUtil;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import lombok.NonNull;
-import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
-import org.bukkit.NamespacedKey;
-import org.bukkit.Registry;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -27,7 +23,6 @@ import org.bukkit.potion.PotionEffectType;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,7 +45,7 @@ public class Berserk implements Listener {
         if (e.getEntity().getType() != EntityType.PLAYER) return;
 
         Player player = (Player) e.getEntity();
-        CustomPlayer damaged = CoreUtil.getPlayer(player);
+        CustomPlayer damaged = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
 
         if (damaged.getSkillLevel(SkillType.GUARDSMAN) < 1) return;
 
@@ -96,7 +91,7 @@ public class Berserk implements Listener {
         for (PotionEffectType potionEffectType : PotionEffectType.values()) {
             try {
                 String effectKey = potionEffectType.getKey().getKey().toUpperCase();
-                List<? extends Config> effects = SpecializationConfig.getBerserkConfig().getList("berserk_effect");
+                List<? extends Config> effects = SpecializationConfig.getBerserkConfig().getConfigList("berserk_effect");
                 effects.forEach((config -> {
                     Config effect = config.getObject(effectKey).toConfig();
                     PotionEffectData effectData = new PotionEffectData( effect.getInt("duration"), effect.getInt("amplifier"));

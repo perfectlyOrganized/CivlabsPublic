@@ -1,16 +1,14 @@
-package com.minecraftcivilizations.specialization.Player;
+package com.minecraftcivilizations.specialization.player;
 
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.OpenLab;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 
 import java.util.List;
-import java.util.UUID;
 
 public class PreJoinEventListener implements Listener {
 
@@ -26,9 +24,9 @@ public class PreJoinEventListener implements Listener {
 
             // List of all custom recipe keys you want players to always discover
             List<NamespacedKey> alwaysUnlockedRecipes = List.of(
-                    new NamespacedKey(Specialization.getInstance(), "hearty_soup"),
-                    new NamespacedKey(Specialization.getInstance(), "cat_spawn_egg"),
-                    new NamespacedKey(Specialization.getInstance(), "bell")
+                    new NamespacedKey(OpenLab.getInstance(), "hearty_soup"),
+                    new NamespacedKey(OpenLab.getInstance(), "cat_spawn_egg"),
+                    new NamespacedKey(OpenLab.getInstance(), "bell")
                     // add more NamespacedKey objects for other recipes
             );
 

@@ -1,13 +1,12 @@
 package com.minecraftcivilizations.specialization.GUI;
 
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.OpenLab;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.Skill;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.Specialization;
-import com.minecraftcivilizations.specialization.util.CoreUtil;
-import com.minecraftcivilizations.specialization.util.ItemStackUtils;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.LoreUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -32,7 +31,7 @@ public class ClassGUI extends GUI {
 
     @Override
     public void open(Player player) {
-        CustomPlayer customPlayer = CoreUtil.getPlayer(player);
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
         this.getItems().clear();
 
         if(customPlayer == null) return;
@@ -66,7 +65,7 @@ public class ClassGUI extends GUI {
         recipesItemMeta.addItemFlags(ItemFlag.values());
         LoreUtils.setItemDisplayName(recipesItemMeta,Component.text("Recipes").decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
         recipes.setItemMeta(recipesItemMeta);
-        return new GUIItem(recipes, () -> new RecipesGUI(Specialization.customPlayerManager.getCustomPlayer(player.getUniqueId()), null).open(player));
+        return new GUIItem(recipes, () -> new RecipesGUI(CustomPlayerManager.INSTANCE.getCustomPlayer(player.getUniqueId()), null).open(player));
     }
 
     private GUIItem makeUserItem(Component name){
@@ -155,7 +154,7 @@ public class ClassGUI extends GUI {
                 double currentXp = Math.round(skill.getXp() * 100) / 100D;
                 double xpToNextLevel = Math.round((Skill.getXPNeededForLevel(currentSkillLevel + 1) - skill.getXp()) * 100) / 100D ;
                 double percentOfTotalForNextLevel = Math.round(
-                        SpecializationConfig.getSkillRequirementsConfig().getDouble(
+                        SpecializationConfig.getSkillsConfig().getDouble(
                                 skill.getSkillType() + "_" + SkillLevel.getSkillLevelFromInt(currentSkillLevel + 1) + "_REQUIREMENT") * 100) / 100D;
 
                 ItemStack itemStack = new ItemStack(skill.getSkillType().getSkillWorkstation());
@@ -245,7 +244,7 @@ public class ClassGUI extends GUI {
             }
 
             double currentXp = Math.round(skill.getXp() * 100) / 100D;
-            double percentOfTotalForNextLevel = Math.round(SpecializationConfig.getSkillRequirementsConfig().getDouble(skill.getSkillType() + "_" + SkillLevel.getSkillLevelFromInt(currentSkillLevel + 1) + "_REQUIREMENT") * 100) / 100D;
+            double percentOfTotalForNextLevel = Math.round(SpecializationConfig.getSkillsConfig().getDouble(skill.getSkillType() + "_" + SkillLevel.getSkillLevelFromInt(currentSkillLevel + 1) + "_REQUIREMENT") * 100) / 100D;
             double xpToNextLevel = Math.max(
                     Math.round((Skill.getXPNeededForLevel(currentSkillLevel + 1) - skill.getXp()) * 100) / 100D,
                     Math.round((percentOfTotalForNextLevel / 100 * customPlayer.getTotalXp() - currentXp) / (1.0 - percentOfTotalForNextLevel / 100))

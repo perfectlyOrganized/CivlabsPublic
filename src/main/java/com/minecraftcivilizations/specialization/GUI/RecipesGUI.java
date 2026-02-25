@@ -1,8 +1,6 @@
 package com.minecraftcivilizations.specialization.GUI;
 
-import com.google.gson.reflect.TypeToken;
-import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
-import com.minecraftcivilizations.specialization.Player.CustomPlayer;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Recipe.RecipeBlocker;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
@@ -17,7 +15,6 @@ import org.bukkit.block.banner.Pattern;
 import org.bukkit.block.banner.PatternType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.meta.BannerMeta;
 import org.bukkit.inventory.meta.BlockStateMeta;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -160,12 +157,22 @@ public class RecipesGUI extends GUI {
             ArrayList<ItemStack> itemStacks = new ArrayList<>(0);
             if (stringHashSetPair != null) {
                 for (NamespacedKey namespacedKey : stringHashSetPair) {
+                    if (namespacedKey == null) {
+                        Debug.broadcast("recipe", "<red>Null NamespacedKey in recipe set");
+                        continue;
+                    }
+
                     ItemStack item = ItemStackUtils.getItemStack(namespacedKey);
                     if (item != null) {
                         itemStacks.add(item);
                     } else {
-                        // fallback for weird cases
-                        ItemStack stack = recipe_exceptions.get(namespacedKey.getKey());
+                        String keyString = namespacedKey.toString();
+                        ItemStack stack = recipe_exceptions.get(keyString);
+
+                        if (stack == null) {
+                            stack = recipe_exceptions.get(namespacedKey.getKey());
+                        }
+
                         if (stack != null) {
                             itemStacks.add(stack);
                         } else {

@@ -1,21 +1,17 @@
 package com.minecraftcivilizations.specialization.util;
 
-import com.minecraftcivilizations.specialization.Specialization;
+import com.minecraftcivilizations.specialization.OpenLab;
 import net.kyori.adventure.audience.Audience;
-import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import net.kyori.adventure.title.Title;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
-import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
-import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -46,7 +42,7 @@ public class PlayerUtil {
     }
 
     public static void sendMessage(Player player, Component message) {
-        Audience audience = Specialization.adventure.player(player.getUniqueId());
+        Audience audience = OpenLab.adventure.player(player.getUniqueId());
         audience.sendMessage(message);
     }
 
@@ -55,7 +51,7 @@ public class PlayerUtil {
         sendMessage(player, component);
     }
 
-    public static void sendActionBar(Player player, Component component) {
+public static void sendActionBar(Player player, Component component) {
         player.spigot().sendMessage(
                 ChatMessageType.ACTION_BAR,
                 TextComponent.fromLegacyText(LEGACY_SERIALIZER.serialize(component))
@@ -238,7 +234,7 @@ public class PlayerUtil {
 
 
     public static PlayerUtil getPlayerUtil(Player player){
-        return Specialization.getInstance().getPlayerUtil(player.getUniqueId());
+        return OpenLab.getInstance().getPlayerUtil(player.getUniqueId());
     }
 
     private Map<String, Long> cooldowns = new HashMap<String, Long>();
@@ -322,7 +318,7 @@ public class PlayerUtil {
      * <points> sets raw XP points (no "L" suffix).
      */
     private static void setXpPointsViaConsole(Player player, int points) {
-        Bukkit.getScheduler().runTask(Specialization.getInstance(), () -> {
+        Bukkit.getScheduler().runTask(OpenLab.getInstance(), () -> {
             String cmd = "xp set " + player.getName() + " " + points;
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
         });
