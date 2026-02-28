@@ -166,9 +166,13 @@ public class PlayerDownedListener implements Listener {
 
         CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player.getUniqueId());
         // Reset all skills to 0
+        double xpLossMultiplier = SpecializationConfig.getSkillsConfig().getDouble("XP_LOSS");
+
         for (SkillType type : SkillType.values()) {
             double currentXp = customPlayer.getSkill(type).getXp();
-            customPlayer.addSkillXp(type, Math.round(-currentXp* SpecializationConfig.getSkillsConfig().getDouble("XP_LOSS")), null, true, false); // subtract current XP to zero it
+            // Calculate the XP to subtract directly
+            double xpToSubtract = currentXp * xpLossMultiplier;
+            customPlayer.addSkillXp(type, -xpToSubtract, null, true, false);
         }
 
         if (isDowned(player)) {

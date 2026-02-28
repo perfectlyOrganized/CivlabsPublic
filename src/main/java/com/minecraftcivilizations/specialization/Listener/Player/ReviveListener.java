@@ -1,5 +1,6 @@
 package com.minecraftcivilizations.specialization.Listener.Player;
 
+import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.CustomItem.CustomItemBase;
 import com.minecraftcivilizations.specialization.CustomItem.CustomItemManager;
 import com.minecraftcivilizations.specialization.OpenLab;
@@ -7,6 +8,7 @@ import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
+import com.minecraftcivilizations.specialization.util.ComponentUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -110,10 +112,8 @@ public class ReviveListener implements Listener {
 // CREATE REVIVE INVENTORY
 // -------------------------------
     public Inventory createReviveInventory(Player downed) {
-        Component titleComponent = Component.text("Reviving " + downed.getName(), NamedTextColor.BLACK);
+        String title = "Reviving " + downed.getName();
         Inventory inv;
-
-        String title = LegacyComponentSerializer.legacySection().serialize(titleComponent);
         inv = Bukkit.createInventory(null, 54, title);
 
         // shuffle & place injuries
@@ -261,8 +261,8 @@ public class ReviveListener implements Listener {
     public void onInventoryClick(InventoryClickEvent e) {
         if (!(e.getWhoClicked() instanceof Player healer)) return;
 
-        String title = BukkitComponentSerializer.legacy().serialize(Component.text(e.getView().getTitle()));
-        if (!title.startsWith("Reviving ")) return;
+        String title = e.getView().getTitle();
+        if (!title.contains("Reviving ")) return;
 
         e.setCancelled(true);
 

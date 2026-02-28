@@ -156,32 +156,14 @@ public class CraftingListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onCraft(CraftItemEvent event) {
         if (!(event.getWhoClicked() instanceof Player player) || event.getCurrentItem() == null) return;
-
-        if (!isCraftingActionValid(event)) {
+        if (!isCraftingActionValid(event) || event.getRecipe() instanceof ShapedRecipe recipe && RecipeBlocker.INSTANCE.shouldBlockRecipe(player, recipe.getKey())) {
             event.setResult(Event.Result.DENY);
             event.setCancelled(true);
             return;
         }
 
+
         ItemStack crafted = event.getCurrentItem();
-
-
-        if (event.getRecipe() instanceof ShapedRecipe recipe) {
-            NamespacedKey recipeKey = new NamespacedKey(OpenLab.getInstance(), "wheat_dough");
-            if (recipe.getKey().equals(recipeKey)) {
-                keepGenericItem(event, Material.WATER_BUCKET, new ItemStack(Material.BUCKET, 1));
-            }
-        }
-
-        if (COMPLEX_ITEMS.contains(crafted.getType())) {
-            CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player.getUniqueId());
-
-            int amount = getCraftedAmount(event);
-            for(int i = 0; i < amount; i++) {
-                customPlayer.getAnalyticPlayerData().incrementComplexItemsCrafted(crafted.getType().toString());
-            }
-            Debug.broadcast("analytics", player.getName() + " crafted complex item: " + crafted.getType() + " x" + amount);
-        }
 
         Pair<SkillType, Double> xp_pair = getItemCraftXp(getCraftId(event));
         SkillType skillType = xp_pair.key();
@@ -525,9 +507,9 @@ public class CraftingListener implements Listener {
             recipeKey = keyed.getKey();
         }
 
-        if (RecipeBlocker.shouldBlockRecipe(player, recipeKey)) {
+        if (RecipeBlocker.INSTANCE.shouldBlockRecipe(player, recipeKey)) {
             LOGGER.info("Blocking recipe " + recipeKey + " for player " + player.getName());
-            event.getInventory().setResult(null);
+            event.getInventory().setResult(new ItemStack(Material.AIR));
 
             // Try to undiscover, but don't rely on it
             player.undiscoverRecipe(recipeKey);

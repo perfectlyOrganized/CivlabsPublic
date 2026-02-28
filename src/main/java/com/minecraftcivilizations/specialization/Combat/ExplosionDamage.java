@@ -1,5 +1,6 @@
 package com.minecraftcivilizations.specialization.Combat;
 
+import com.minecraftcivilizations.specialization.util.CooldownManager;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
@@ -55,8 +56,7 @@ public class ExplosionDamage implements Listener {
         }else if(mat.name().contains("_BED")){
             Player player = event.getPlayer();
             if(player.getWorld().getEnvironment() != World.Environment.NORMAL){
-                PlayerUtil u = PlayerUtil.getPlayerUtil(player);
-                u.setCooldown("bed_place", 30);
+                CooldownManager.INSTANCE.setCooldown(player,"bed_place", 30);
                 player.setCooldown(mat, 30);
             }
         }
@@ -71,35 +71,18 @@ public class ExplosionDamage implements Listener {
                     event.setCancelled(true);
                 }
                 Player player = event.getPlayer();
-                PlayerUtil u = PlayerUtil.getPlayerUtil(player);
-                if(u.isOnCooldown("respawn_anchor")) {
+                if(CooldownManager.INSTANCE.isOnCooldown(player,"respawn_anchor")) {
                     event.setCancelled(true);
                 }else{
-                    u.setCooldown("respawn_anchor", 8);
+                    CooldownManager.INSTANCE.setCooldown(player,"respawn_anchor", 8);
                 }
             }else if(type.name().contains("_BED")){
 
                 Player player = event.getPlayer();
-                PlayerUtil u = PlayerUtil.getPlayerUtil(player);
-                if(u.isOnCooldown("bed_place")) {
+                if(CooldownManager.INSTANCE.isOnCooldown(player,"bed_place")) {
                     event.setCancelled(true);
                 }
             }
         }
-    }
-
-    @EventHandler
-    public void onExplosion(BlockExplodeEvent event){
-//        lastExplosions.put(event.getBlock().getLocation(), event.getBlock().getType());
-//        BlockState explodedBlockState = event.getExplodedBlockState();
-//        if(explodedBlockState != null) {
-//            Debug.broadcast("explosion", "<light_purple>Explosion at "+Debug.formatLocation(explodedBlockState.getLocation())+"</light_purple>");
-//
-//            Material type = explodedBlockState.getType();
-//            if (type == Material.RESPAWN_ANCHOR) {
-//                event.setCancelled(true);
-//            }
-//        }
-
     }
 }

@@ -147,95 +147,12 @@ public static void sendActionBar(Player player, Component component) {
 
 
 
-    public static void notify(Player player, String msg) {
-        message(player, msg);
-    }
-
-
-
     public PlayerUtil(UUID player){
 
     }
 
-//    /**
-//     * Color each character in the input string with a separate hex color using MiniMessage syntax.
-//     * Example MiniMessage per char: "<#RRGGBB>c</#RRGGBB>"
-//     *
-//     * @param input the string to color (e.g. "civLabs")
-//     * @param hexColors hex color strings, with or without leading '#', e.g. "ff0000" or "#00ff00"
-//     * @return a single MiniMessage-formatted string where each character is wrapped in its color tag
-//     */
-//    public static String colorEachLetterMiniMsg(String input, String... hexColors) {
-//        if (input == null || input.isEmpty()) return "";
-//        if (hexColors == null || hexColors.length == 0) {
-//            // default to white if no colors supplied
-//            hexColors = new String[] { "ffffff" };
-//        }
-//
-//        StringBuilder sb = new StringBuilder(input.length() * 12); // rough capacity
-//        int colors = hexColors.length;
-//        for (int i = 0; i < input.length(); i++) {
-//            char ch = input.charAt(i);
-//            String raw = hexColors[i % colors];
-//            // normalize to RRGGBB (strip leading '#' if present)
-//            String hex = raw.startsWith("#") ? raw.substring(1) : raw;
-//            // defensive: if invalid length, fall back to white
-//            if (hex.length() != 6) hex = "ffffff";
-//            sb.append('<').append('#').append(hex).append('>')
-//                    .append(ch)
-//                    .append("</").append('#').append(hex).append('>');
-//        }
-//        return sb.toString();
-//    }
-//
-//    String out = colorEachLetterMiniMsg(
-//            "civLabs",
-//            "#ff0000", "#ff7f00", "#ffff00", "#00ff00", "#0000ff", "#4b0082", "#8f00ff"
-//    );
-// out -> "<#ff0000>c</#ff0000><#ff7f00>i</#ff7f00>..."
 
 
-
-
-    /**
-     * Color each character in the input string using java.awt.Color values.
-     * Produces MiniMessage tags like: <#RRGGBB>c</#RRGGBB>
-     *
-     * @param input the text to color
-     * @param colors array of java.awt.Color (cycled if fewer than characters)
-     * @return MiniMessage-formatted string
-     */
-    public static String colorEachLetterMiniMsg(String input, Color... colors) {
-        if (input == null || input.isEmpty()) return "";
-        if (colors == null || colors.length == 0) {
-            colors = new Color[] { Color.WHITE };
-        }
-
-        StringBuilder sb = new StringBuilder(input.length() * 14);
-        int len = colors.length;
-
-        for (int i = 0; i < input.length(); i++) {
-            char ch = input.charAt(i);
-            Color c = colors[i % len];
-
-            // Format the RGB into hex
-            String hex = String.format("%02x%02x%02x", c.getRed(), c.getGreen(), c.getBlue());
-
-            sb.append("<#").append(hex).append('>')
-                    .append(ch)
-                    .append("</#").append(hex).append('>');
-        }
-
-        return sb.toString();
-    }
-
-
-
-
-
-    public static PlayerUtil getPlayerUtil(Player player){
-        return OpenLab.getInstance().getPlayerUtil(player.getUniqueId());
-    }
 
     private Map<String, Long> cooldowns = new HashMap<String, Long>();
 
@@ -247,25 +164,6 @@ public static void sendActionBar(Player player, Component component) {
      */
     public void setCooldown(String key, long ticks) {
         cooldowns.put(key, System.currentTimeMillis() + (ticks*50));
-    }
-    public void addCooldown(String key, long ticks) {
-        if(isOnCooldown(key)){
-            cooldowns.put(key, getRemainingCooldown(key) + (ticks*50));
-        }else {
-            cooldowns.put(key, System.currentTimeMillis() + (ticks * 50));
-        }
-    }
-
-    public static void setCooldown(Player player, String key, long ticks){
-        getPlayerUtil(player).setCooldown(key, ticks);
-    }
-
-    public static boolean isOnCooldown(Player player, String key){
-        return getPlayerUtil(player).isOnCooldown(key);
-    }
-
-    public static long getRemainingCooldown(Player player, String key  ){
-        return getPlayerUtil(player).getRemainingCooldown(key);
     }
 
     /**
@@ -280,27 +178,7 @@ public static void sendActionBar(Player player, Component component) {
         return expireTime != null && System.currentTimeMillis() < expireTime;
     }
 
-    /**
-     * Returns remaining milliseconds, or 0 if expired
-     * @return
-     */
-    public long getRemainingCooldown(String key) {
-//    	if(cooldowns.)
-        if(!cooldowns.containsKey(key)) {
-            cooldowns.put(key, 0L);
-            return 0L;
-        }
-        Long expireTime = cooldowns.get(key);
-        if (expireTime == null) return 0;
-        return Math.max(0, expireTime - System.currentTimeMillis());
-    }
 
-
-
-
-//    /**
-//     * @return true if the player has the requested xp and if it was consumed
-//     */
     public static boolean tryConsumeXp(Player player, int xp_amount) {
         int total = getExp(player);
         if (total < xp_amount) return false;
@@ -310,19 +188,6 @@ public static void sendActionBar(Player player, Component component) {
         return true;
     }
 
-
-    /**
-     *
-     * source: https://gist.github.com/Jikoo/30ec040443a4701b8980
-     * Runs "/xp set <player> <points>" as the console sender.
-     * <points> sets raw XP points (no "L" suffix).
-     */
-    private static void setXpPointsViaConsole(Player player, int points) {
-        Bukkit.getScheduler().runTask(OpenLab.getInstance(), () -> {
-            String cmd = "xp set " + player.getName() + " " + points;
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
-        });
-    }
 
     /**
      * Calculate a player's total experience based on level and progress to next.

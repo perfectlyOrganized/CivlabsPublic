@@ -132,9 +132,9 @@ public class NameChoiceCommand extends BaseCommand {
             PlayerUtil.message(sender, "§cYou must specify a name to confirm.");
             return false;
         }
-
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayerOrThrow(sender);
         // Use the helper from LocalNameGenerator
-        if (!nameGenerator.canSelectTempName(sender)) {
+        if (!nameGenerator.canSelectTempName(customPlayer)) {
             PlayerUtil.message(sender, "The time to pick a name option has §cexpired");
             return false;
         }

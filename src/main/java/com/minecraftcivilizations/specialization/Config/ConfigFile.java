@@ -1,8 +1,10 @@
 package com.minecraftcivilizations.specialization.Config;
 
 import com.google.gson.Gson;
+import com.minecraftcivilizations.specialization.Recipe.RecipeBlocker;
 import com.typesafe.config.*;
 import lombok.experimental.Delegate;
+import org.bukkit.inventory.Recipe;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
@@ -75,6 +77,7 @@ public class ConfigFile {
 
     public void reload() {
         load();
+        RecipeBlocker.INSTANCE.reloadCache();
         logger.info("Loaded config files for: " + CONFIG_FILE);
     }
 
@@ -107,6 +110,9 @@ public class ConfigFile {
     }
     public void setStringList(String key, List<String> value) {
         config.withValue(key, ConfigValueFactory.fromAnyRef(value));
+    }
+    public List<Double> getDoubleList(String key) {
+        return config.getDoubleList(key);
     }
 
     public List<? extends Config> getConfigList(String key) {

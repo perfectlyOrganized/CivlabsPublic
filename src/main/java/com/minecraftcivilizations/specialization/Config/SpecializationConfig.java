@@ -13,6 +13,7 @@ import org.bukkit.potion.PotionEffectType;
 
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @Getter
 public class SpecializationConfig {
@@ -25,7 +26,7 @@ public class SpecializationConfig {
     @Getter
     private static ConfigFile blockHardnessConfig;
     @Getter
-    private static ConfigFile unlockedRecipesConfig;
+    public static ConfigFile unlockedRecipesConfig;
     @Getter
     private static ConfigFile allRecipeBank;
     @Getter
@@ -312,6 +313,7 @@ public class SpecializationConfig {
             data.put("BLOCK_BREAK_CHANCE_PERCENTAGE", 30);
             data.put("BLOCK_BREAK_IGNORE_LIST_REGEX", List.of(".*BRICK.*", "OBSIDIAN"));
             data.put("VISUAL_BREAKING_INCREASE_PER_TICK_PERCENTAGE", 1.0);
+            data.put("NEW_PLAYER_GRACE_PERIOD", 600.0); // seconds
             return data;
         };
         mobConfig = new ConfigFile(OpenLab.getInstance(), "mobConfig", mobDefaults);
@@ -547,18 +549,25 @@ public class SpecializationConfig {
 
         Supplier<Map<String, List<String>>> allRecipeBankDefaults = () -> {
             Map<String, List<String>> data = new HashMap<>();
-            Set<NamespacedKey> allRecipes = new HashSet<>();
+            LinkedList<NamespacedKey> allRecipes = new LinkedList<>();
             Bukkit.recipeIterator().forEachRemaining((recipe) -> {
                 if (recipe instanceof Keyed keyed) {
                     allRecipes.add(keyed.getKey());
                 }
             });
+            allRecipes.sort(Comparator.comparing(NamespacedKey::toString));
             data.put("ALL_RECIPES", allRecipes.stream().map(NamespacedKey::toString).toList());
+
+            List<String> allItemsAndBlocks = Arrays.stream(Material.values())
+                    .filter(material -> material.isItem() || material.isBlock())
+                    .map(Material::name)
+                    .collect(Collectors.toList());
+            data.put("ALL_ITEMS_AND_BLOCKS", allItemsAndBlocks);
             return data;
         };
         allRecipeBank = new ConfigFile(
                 OpenLab.getInstance(),
-                "allRecipeBank",
+                "modRegistry",
                 allRecipeBankDefaults
         );
 
@@ -643,6 +652,8 @@ public class SpecializationConfig {
                 data.put(skillType + "_XP_MULTIPLIER", 1.0);
                 data.put(skillType + "_XP_GAIN_REQUIREMENT_PER_LEVEL", 100D);
                 data.put(skillType + "_XP_DECAY", 0.05D);
+                data.put(skillType + "_LEVEL_XP_ARRAY", new ArrayList<>() {
+                });
                 for (SkillLevel skillLevel : SkillLevel.values()) {
                     data.put(skillType + "_" + skillLevel + "_REQUIREMENT", 0D);
                 }
@@ -677,6 +688,16 @@ public class SpecializationConfig {
         Supplier<Map<String, Object>> minerDefaults = () -> {
             Map<String, Object> data = new HashMap<>();
             data.put("TRESSURE_TRIGGERING_BLOCKS", new HashMap<>());
+            List<Object> tiers = new ArrayList<>();
+
+            for (SkillLevel skillLevel : SkillLevel.values()) {
+                Map<String, Object> tier = new HashMap<>();
+                tier.put("skill_level", skillLevel.name());
+                tier.put("chance", 100);
+                tiers.add(tier);
+            }
+            data.put("MINER_TREASURE_TIERS", tiers);
+
             return data;
         };
         minerConfig = new ConfigFile(

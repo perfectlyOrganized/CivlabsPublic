@@ -1,4 +1,5 @@
 package com.minecraftcivilizations.specialization;
+import com.minecraftcivilizations.specialization.Listener.Player.Blocks.Mining.FarmerMinigame;
 import com.minecraftcivilizations.specialization.Listener.Player.Blocks.Mining.MinerTressureChance;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.network.chat.IChatBaseComponent;
@@ -65,7 +66,6 @@ public final class OpenLab extends JavaPlugin {
     public static Logger logger;
     public ReviveListener reviveListener;
     //Holder for transient player data such as cooldowns
-    public static Map<UUID, PlayerUtil> playerUtilMap = new HashMap<>();
     PaperCommandManager commandManager;
     @Getter
     public static LocalNameGenerator localNameGenerator;
@@ -94,7 +94,6 @@ public final class OpenLab extends JavaPlugin {
     private PlayerDownedListener playerDownedListener;
     @Getter
     public HuntPlayerMobGoal huntPlayerMobGoalSystem;
-    private RecipeBlocker recipeBlocker;
     private EmoteManager emoteManager;
     @Getter
     private PlayerClickListener playerClickListener;
@@ -142,7 +141,6 @@ public final class OpenLab extends JavaPlugin {
         xpMonitoringCommand = new XPMonitoringCommand();
         emoteManager = new EmoteManager(customItemManager, this);
         pvpManager = new PVPManager(playerDownedListener, this);
-        recipeBlocker = new RecipeBlocker();
         armorTrimSystem = new BlacksmithArmorTrim();
         foodDurationTicker = new FoodDurationTicker();
         huntPlayerMobGoalSystem = new HuntPlayerMobGoal(this);
@@ -185,7 +183,8 @@ public final class OpenLab extends JavaPlugin {
         getServer().getPluginManager().registerEvents(phantomRideListener, this);
         getServer().getPluginManager().registerEvents(playerDownedListener, this);
         getServer().getPluginManager().registerEvents(reviveListener, this);
-        getServer().getPluginManager().registerEvents(recipeBlocker, this);
+        getServer().getPluginManager().registerEvents(RecipeBlocker.INSTANCE, this);
+        getServer().getPluginManager().registerEvents(FarmerMinigame.INSTANCE, this);
         getServer().getPluginManager().registerEvents(foodDurationTicker, this);
         getServer().getPluginManager().registerEvents(huntPlayerMobGoalSystem, this);
         //town data does not need to wait anymore
@@ -340,10 +339,4 @@ public final class OpenLab extends JavaPlugin {
     public Debug getDebugUtils() {
         return debug;
     }
-
-    public static PlayerUtil getPlayerUtil(UUID uniqueId) {
-        return playerUtilMap.get(uniqueId);
-    }
-
-
 }

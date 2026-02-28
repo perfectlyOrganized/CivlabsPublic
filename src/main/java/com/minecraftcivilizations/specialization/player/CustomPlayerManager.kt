@@ -6,7 +6,6 @@ import com.minecraftcivilizations.specialization.OpenLab
 import com.minecraftcivilizations.specialization.Skill.Skill
 import com.minecraftcivilizations.specialization.Skill.SkillType
 import com.minecraftcivilizations.specialization.Skill.XPReductionTask
-import com.minecraftcivilizations.specialization.util.PlayerUtil
 import lombok.Setter
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
@@ -17,18 +16,14 @@ import org.bukkit.entity.HumanEntity
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
-import org.bukkit.event.player.AsyncPlayerPreLoginEvent
-import org.bukkit.event.player.PlayerEvent
-import org.bukkit.event.player.PlayerJoinEvent
-import org.bukkit.event.player.PlayerQuitEvent
+import org.bukkit.event.player.*
 import virtuoel.pehkui.api.ScaleTypes
 import java.io.File
-import java.io.FileReader
-import java.io.FileWriter
 import java.io.IOException
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.Consumer
+import kotlin.math.min
 
 object CustomPlayerManager : Listener {
     private val customPlayers = ConcurrentHashMap<UUID, CustomPlayer>()
@@ -40,16 +35,14 @@ object CustomPlayerManager : Listener {
 
     init {
         val playerFolder = File(OpenLab.getInstance().dataFolder, "players")
-
-        if (playerFolder.exists()) {
-            playerFolder.listFiles { file -> file.extension == "json" }
-                ?.forEach { file ->
-                    try {
-                        val uuid = UUID.fromString(file.nameWithoutExtension)
-                        diskPlayers.add(uuid)
-                    } catch (e: IllegalArgumentException) {
-                        // Invalid filename, skip
-                    }
+        playerFolder.mkdirs()
+        playerFolder.listFiles { file -> file.extension == "json" }
+            ?.forEach { file ->
+                try {
+                    val uuid = UUID.fromString(file.nameWithoutExtension)
+                    diskPlayers.add(uuid)
+                } catch (e: IllegalArgumentException) {
+                    // Invalid filename, skip
                 }
         }
 
@@ -74,68 +67,72 @@ object CustomPlayerManager : Listener {
     fun saveAll() {
         customPlayers.keys().asIterator().forEachRemaining(Consumer { uuid: UUID? -> this.save(uuid!!) })
     }
-    fun isCustomPlayerOnline(uuid: UUID): Boolean {
-        return customPlayers.contains(uuid)
-    }
     fun hasCustomPlayer(uuid: UUID): Boolean {
         return diskPlayers.contains(uuid)
     }
 
+    @Synchronized
     fun load(uuid: UUID): CustomPlayer {
-        val folder = File(OpenLab.getInstance().dataFolder.toString() + "/players/")
-        folder.mkdirs()
-
-        if (!hasCustomPlayer(uuid)) {
-            val customPlayer = CustomPlayer(uuid);
-            customPlayer.name = Component.text(OpenLab.localNameGenerator.nextName()).color(NamedTextColor.WHITE)
-                .decoration(TextDecoration.ITALIC, false)
-            val height = Skill.mapValue(Math.random(), 0.0, 1.0, .85, 1.0)
-            customPlayer.height = height
-            for (skill in SkillType.entries) {
-                val skill1 = Skill(skill, 0.0, System.currentTimeMillis())
-                skill1.skillType = skill
-                customPlayer.skills.add(skill1)
-            }
-            return addCustomPlayer(customPlayer);
+        customPlayers[uuid]?.let {
+            return it
         }
 
-        val reader = FileReader(OpenLab.getInstance().dataFolder.toString() + "/players/" + uuid + ".json")
-        val customPlayer: CustomPlayer = gson.fromJson(reader, customPlayerClass)
-        customPlayer.skills = customPlayer.skills
-        customPlayer.preferredSkill = customPlayer.preferredSkill
-        customPlayer.height = customPlayer.height
-        customPlayer.isAdvancedClassesGUIEnabled = customPlayer.isAdvancedClassesGUIEnabled
-        customPlayer.isSoundEnabled = customPlayer.isSoundEnabled
-        customPlayer.isNewRecipeGUIIteration = customPlayer.isNewRecipeGUIIteration
-        customPlayer.analyticPlayerData = customPlayer.analyticPlayerData
-        customPlayer.additionUnlockedRecipes.addAll(customPlayer.additionUnlockedRecipes)
+        val playerFile = File(OpenLab.getInstance().dataFolder, "players/$uuid.json")
+
+        if (!hasCustomPlayer(uuid)) {
+            return createNewPlayer(uuid)
+        }
+        println("=== load CALLED ===")
+        println("Call stack:")
+        val stackTrace = Thread.currentThread().stackTrace
+        for (i in 2..<min(stackTrace.size, 10)) { // Skip first 2
+            println("  " + stackTrace[i])
+        }
+
+        return playerFile.bufferedReader().use { reader ->
+            val customPlayer = gson.fromJson(reader, customPlayerClass)
+            customPlayer.migrate()
+            customPlayers[uuid] = customPlayer
+            customPlayer
+        }
+    }
+
+    private fun createNewPlayer(uuid: UUID): CustomPlayer {
+        val customPlayer = CustomPlayer(uuid).apply {
+            name = Component.text(OpenLab.localNameGenerator.nextName())
+                .color(NamedTextColor.WHITE)
+                .decoration(TextDecoration.ITALIC, false)
+            height = Skill.mapValue(Math.random(), 0.0, 1.0, .85, 1.0)
+            skills = SkillType.entries.map {
+                Skill(it, 0.0, System.currentTimeMillis()).apply {
+                    skillType = it
+                }
+            }.toMutableList()
+            migrate()
+        }
+
+        Bukkit.getScheduler().runTaskAsynchronously(OpenLab.getInstance(),Runnable {
+            save(customPlayer)
+        })
+        diskPlayers.add(customPlayer.uuid)
 
         customPlayers[uuid] = customPlayer
         return customPlayer
     }
 
     fun save(uuid: UUID) {
-        val folder = File(OpenLab.getInstance().dataFolder.toString() + "/players/")
-        folder.mkdirs()
-        try {
-            FileWriter(
-                OpenLab.getInstance().dataFolder.toString() + "/players/" + uuid.toString() + ".json"
-            ).use { writer ->
-                val json: String = gson.toJson(getCustomPlayer(uuid), customPlayerClass)
-                writer.write(json)
-            }
-            diskPlayers.add(uuid)
-        } catch (e: IOException) {
-            OpenLab.logger.severe(String.format("Couldn't save %s custom player", uuid))
-        }
+        val customPlayer = getCustomPlayerOrThrow(uuid);
+        save(customPlayer);
     }
 
-    fun addCustomPlayer(player: CustomPlayer): CustomPlayer {
-        if (getCustomPlayer(player.uuid) != null) {
-            customPlayers.remove(player.uuid)
+    fun save(customPlayer: CustomPlayer) {
+        val playerFile = File(OpenLab.getInstance().dataFolder.toString() + "/players/", "${customPlayer.uuid}.json")
+        try {
+            playerFile.writeText(gson.toJson(customPlayer, customPlayerClass))
+            diskPlayers.add(customPlayer.uuid)
+        } catch (e: IOException) {
+            OpenLab.logger.severe("Couldn't save custom player ${customPlayer.uuid}: ${e.message}")
         }
-        customPlayers[player.uuid] = player
-        return player
     }
 
     fun removeCustomPlayer(player: UUID) {
@@ -149,9 +146,26 @@ object CustomPlayerManager : Listener {
     fun onJoin(event: PlayerJoinEvent) {
         event.joinMessage = null
         val player = event.getPlayer()
-        val customPlayer = load(player.uniqueId);
+        val customPlayer = getCustomPlayerOrThrow(player.uniqueId)
         OpenLab.getInstance().applyCustomName(player, customPlayer.name)
-        val mcEntity = (player as CraftPlayer).handle;
+        applyPlayerCustomizations(player)
+
+    }
+
+    @EventHandler
+    fun onRespawn(event: PlayerRespawnEvent) {
+        val player = event.player
+        Bukkit.getScheduler().runTaskLater(OpenLab.getInstance(), Runnable {
+            if (player.isOnline) {
+                applyPlayerCustomizations(player)
+            }
+        }, 2L)
+    }
+
+    private fun applyPlayerCustomizations(player: Player) {
+        val customPlayer = getCustomPlayerOrThrow(player.uniqueId)
+
+        val mcEntity = (player as CraftPlayer).handle
         val scaleData = ScaleTypes.HEIGHT.getScaleData(mcEntity)
         scaleData.scale = customPlayer.height.toFloat()
         scaleData.tick()
@@ -173,14 +187,11 @@ object CustomPlayerManager : Listener {
     @EventHandler
     fun onPreJoin(event: AsyncPlayerPreLoginEvent) {
         val uuid = event.uniqueId
-        if (!OpenLab.playerUtilMap.containsKey(uuid)) {
-            OpenLab.playerUtilMap[uuid] = PlayerUtil(uuid)
-        }
         load(uuid);
     }
 
-    fun getPlayers(): List<CustomPlayer?> {
-        return Bukkit.getOnlinePlayers().map { player ->
+    fun getPlayers(): List<CustomPlayer> {
+        return Bukkit.getOnlinePlayers().mapNotNull { player ->
             getCustomPlayer(player)
         }
     }

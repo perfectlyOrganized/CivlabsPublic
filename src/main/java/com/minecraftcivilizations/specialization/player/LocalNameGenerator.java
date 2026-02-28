@@ -741,7 +741,7 @@ public class LocalNameGenerator implements Listener {
         tempNames.forEach((uuid, data) -> {
             Player player = Bukkit.getPlayer(uuid);
             if (player == null) return;
-
+            CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayerOrThrow(player);
 
             boolean isPermanent = player.getPersistentDataContainer().has(PERMANENT_NAME_KEY, PersistentDataType.BYTE);
 
@@ -750,7 +750,7 @@ public class LocalNameGenerator implements Listener {
                 Debug.broadcast("name", "unconfirmed name setting initial name to: " + data.initialName + "expTime: " + data.expirationTime + "now:" + now + "Perm & confirmed: " + !data.confirmed + !isPermanent);
                 confirmNameChoice(uuid, data.initialName);
             } else if (!isPermanent) {
-                PlayerUtil.message(player, "Remaining time to pick other names:<red> " + getRemainingTime(player) + "<gray>min(s)");
+                PlayerUtil.message(player, "Remaining time to pick other names:<red> " + getRemainingTime(customPlayer) + "<gray>min(s)");
             }
         });
     }
@@ -766,18 +766,20 @@ public class LocalNameGenerator implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
-        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayerOrThrow(player);
+        long remainingTime = getRemainingTime(customPlayer);
         // Check PDC for permanent name
         boolean hasPermanentName = player.getPersistentDataContainer().has(PERMANENT_NAME_KEY, PersistentDataType.BYTE);
         if (hasPermanentName) return; // Already chosen → skip everything
 
         // Block if player has already played >10min
-        if (!canSelectTempName(player)) {
+        if (!canSelectTempName(customPlayer)) {
             return;
         }
+
         String name = ComponentUtils.serializeComponentAsStringWithStrip(customPlayer.getName());
         Component mainTitle = MiniMessage.miniMessage().deserialize("Your name is: <gold>" + name + "</gold>");
-        Component subTitle = MiniMessage.miniMessage().deserialize("<gray>You have <red>" + getRemainingTime(player) + " </red>minutes to reroll name.</gray>");
+        Component subTitle = MiniMessage.miniMessage().deserialize("<gray>You have <red>" + remainingTime + " </red>minutes to reroll name.</gray>");
 
 // Convert to legacy strings (with § color codes)
         String titleText = LegacyComponentSerializer.legacySection().serialize(mainTitle);
@@ -825,7 +827,7 @@ public class LocalNameGenerator implements Listener {
             }
         }
         PlayerUtil.sendMessage(player, message);
-        PlayerUtil.sendMessage(player, MiniMessage.miniMessage().deserialize("<gray>You have <red>" + getRemainingTime(player) + "</red> minute(s) to select a rerolled name.</gray>"));
+        PlayerUtil.sendMessage(player, MiniMessage.miniMessage().deserialize("<gray>You have <red>" + getRemainingTime(customPlayer) + "</red> minute(s) to select a rerolled name.</gray>"));
         PlayerUtil.message(player, MiniMessage.miniMessage().deserialize("<gradient:#3E4C7F:#2A3253>=====================================</gradient>"));
     }
 
@@ -860,16 +862,18 @@ public class LocalNameGenerator implements Listener {
         return true;
     }
 
-        long timeLimitMinute = 10;
+    private static final long TIME_LIMIT_MINUTES = 10;
+    private static final long MILLIS_PER_MINUTE = 60 * 1000; // 60,000 ms per minute
 
-    public long getRemainingTime(Player player){
-        int ticksPlayed = player.getStatistic(Statistic.PLAY_ONE_MINUTE);
-        return timeLimitMinute - (ticksPlayed / 1200L);
+    public long getRemainingTime(CustomPlayer customPlayer) {
+        long elapsedMillis = System.currentTimeMillis() - customPlayer.getCreation_date();
+        long elapsedMinutes = elapsedMillis / MILLIS_PER_MINUTE;
+
+        long remaining = TIME_LIMIT_MINUTES - elapsedMinutes;
+        return Math.max(0, remaining); // Don't return negative
     }
 
-    public boolean canSelectTempName(Player player){
-        long remaining = getRemainingTime(player);
-        return remaining > 0; // still under 10 minutes
+    public boolean canSelectTempName(CustomPlayer customPlayer) {
+        return getRemainingTime(customPlayer) > 0;
     }
-
 }

@@ -31,7 +31,7 @@ public class ClassGUI extends GUI {
 
     @Override
     public void open(Player player) {
-        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayerOrThrow(player);
         this.getItems().clear();
 
         if(customPlayer == null) return;
@@ -63,7 +63,7 @@ public class ClassGUI extends GUI {
         ItemStack recipes = new ItemStack(Material.KNOWLEDGE_BOOK);
         ItemMeta recipesItemMeta = recipes.getItemMeta();
         recipesItemMeta.addItemFlags(ItemFlag.values());
-        LoreUtils.setItemDisplayName(recipesItemMeta,Component.text("Recipes").decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
+        LoreUtils.setItemDisplayName(recipesItemMeta,Component.text("Unlocked").decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
         recipes.setItemMeta(recipesItemMeta);
         return new GUIItem(recipes, () -> new RecipesGUI(CustomPlayerManager.INSTANCE.getCustomPlayer(player.getUniqueId()), null).open(player));
     }

@@ -8,6 +8,7 @@ import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
+import com.minecraftcivilizations.specialization.util.CooldownManager;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import lombok.Getter;
 import org.bukkit.*;
@@ -163,216 +164,29 @@ public class CombatManager implements Listener {
 
     @EventHandler(priority = EventPriority.LOW)
     public void GlobalDamageListener(EntityDamageByEntityEvent event) {
-        if(!(event.getEntity() instanceof LivingEntity))return; //things like itemframes
+        if(!(event.getEntity() instanceof LivingEntity))return;
         double original_base = event.getDamage(BASE);
-        boolean fully_charged = false;
-        double charge_amount = -1.0;
-
-        /*
-            CRIT SUPPRESSION (this allows us to override with our own crit system)
-         */
-
-
-
-//        Debug.broadcast("damage", " ");
-
-//        Debug.broadcast("damage", "<gray> ------- <white>"+event.getDamager().getName()+"</white> -> <white>"+event.getEntity().getName()+"</white> ------- </gray>");
 
         Entity damager = event.getDamager();
         CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(damager.getUniqueId());
-        String extramsg = "";
-
-
 
         if(damager instanceof Projectile projectile){
             if(projectile.getPersistentDataContainer().has(ARROW_DAMAGE_KEY, PersistentDataType.DOUBLE)) {
                 double multiplier = projectile.getPersistentDataContainer().get(ARROW_DAMAGE_KEY, PersistentDataType.DOUBLE);
                 event.setDamage(BASE, original_base * multiplier);
 
-                String modifiers = "";
-
                 if (event.isApplicable(ARMOR)) {
                     double armor_resist = event.getDamage(ARMOR);
                     event.setDamage(ARMOR, armor_resist * multiplier);
                 }
-                if (Debug.isAnyoneListening("damage", false)) {
-                    for (EntityDamageEvent.DamageModifier m : EntityDamageEvent.DamageModifier.values()) {
-//            if(event.getDamage(m)!=0)
-                        modifiers += "\n<gray>" + m.name() + "</gray>: " + Debug.formatDecimal(event.getDamage(m));
-                    }
-                    if (event.getEntity() instanceof Player p) {
-                        Debug.message(p, "damage", "Arrow Damage: <red>" + Debug.formatDecimal(original_base) + (PlayerUtil.isCritical(p) ? "<yellow>[CRIT]</yellow>" : "") +
-                                " <gold>[<gray>🏹</gray>x" + Debug.formatDecimal(multiplier) + "]</gold>" + "</red> Final: <red>" + Debug.formatDecimal(event.getFinalDamage()), modifiers);
-                    }
-                }
             }
         }
 
 
-
-
-
-        /**
-         * Calculate Crit Modifier
-         */
-        double weapon_bonus_crit = 0.0;
-        if(customPlayer!=null){
-                if(damager instanceof Player dmger && PlayerUtil.isCritical(dmger)) {
-                    ItemStack item = dmger.getEquipment().getItemInMainHand();
-                    PlayerUtil u = PlayerUtil.getPlayerUtil(dmger);
-                    int lvl = customPlayer.getSkillLevel(SkillType.GUARDSMAN);
-                    weapon_bonus_crit = getCustomWeaponCrit(item) + opening_crit_baseline; // TODO refactor name, for opening crit ONLY
-                    if (u.isOnCooldown("crit_bonus") || dmger.getCooldown(item.getType())>0) {
-                        weapon_bonus_crit = 0;
-                    }
-                    int cd = 120 - (lvl*10);
-                    PlayerUtil.getPlayerUtil(dmger).setCooldown("crit_bonus", cd);
-                    double guardsman_bonus_crit = (standard_crit_guardsman_multiplier * (double)(lvl+1));
-                    double base = event.getDamage(BASE);
-                    double crit_base_multiplier = (base * standard_crit_base_multiplier);
-
-
-                    //                crit_add = Math.min(1.5, 0.2 + Math.pow(1.055, lvl)); //slight exponent boost to crit
-                    double crit_add = crit_base_multiplier + guardsman_bonus_crit + weapon_bonus_crit ;
-                    double new_base = base + crit_add;
-//                    extramsg += "<green> [✨+"+Debug.formatDecimal(crit_add)+"]</green>";
-                    //            new_damage *= (crit_multiplier); //apply custom crit
-                    //            crit_msg = GOLD+" ("+GRAY+"✨ "+GOLD+(Debug.formatDecimal(crit_multiplier) +"x)");
-                    event.setDamage(BASE, new_base);
-//                    dmger.setCooldown(item, cd);
-                    Debug.message(dmger,
-                            "damage",
-                            //WHITE+victim.getName()+" "+*
-                            "<dark_red>Crit: </dark_red><red>" +Debug.formatDecimal(base)+
-//                            (WHITE+" ["+BLUE+"🅱: "+Debug.formatDecimal(original_armor)+"]")+
-                                    " <yellow>[✨: +"+Debug.formatDecimal(crit_base_multiplier)+"]</yellow>"+
-                                    " <aqua>[⚔: +"+Debug.formatDecimal(guardsman_bonus_crit)+"]</aqua>"+
-                                    " <green>[⚒: +"+Debug.formatDecimal(weapon_bonus_crit)+"]</green>"+
-//                            (event.isCritical()? GREEN+" (CRIT!)":"")+
-                                    " [❤ "+Debug.formatDecimal(new_base)+"]</red>",
-                            "<gray>Critical hits now work in a blend of scalar and additive.\nThey have two main components:\n" +
-                                    "<aqua>- Guardsman Influence</aqua> which adds crit damage linearly\n"+
-                                    "<green>- Opening Crit Influence</green> which has a baseline of "+opening_crit_baseline+"\n" +
-                                    "blacksmiths can craft weapons with an opening crit bonus\n"+
-                                    "An <green>Opening Crit</green> is utilized when a player has not attacked in awhile.\n"
-                    );
-                }
-            }
-
-
-        if(event.getEntity() instanceof Player) {
-            /**
-             * Damage Compressor
-             */
-//            double threshold = 7;
-//            double knee = 5.0;  // soft knee width
-//            double ratio = 1.5; // compression above knee
-//            double previous_base = event.getDamage(BASE);
-//            double compressed = compress(previous_base, threshold, knee, ratio);
-//            boolean was_compressed = false;
-//            if (Math.abs(compressed - previous_base) > 0.0001) {
-//                was_compressed = true;
-//                event.setDamage(BASE, compressed);
-//            }
-//
-//            String compression_msg = was_compressed ? ("<dark_red>Compressor:</dark_red> <red>" + Debug.formatDecimal(previous_base)
-//                    + " <gray>-></gray> "
-//                    + "[❤ " + Debug.formatDecimal(compressed) + "]</red>") : "<dark_gray>Uncompressed</dark_gray>";
-//            Debug.broadcast(
-//                    "damage",
-//                    //WHITE+victim.getName()+" "+*
-//                    compression_msg,
-//                    "<gray>The compressor basically squashes the damage to prevent absurdly high hits." +
-//                            " This helps with softening extreme damage modifiers such as Sharpness and Strength potions\n"
-//                            + "<red>This modifier is PVP only</red>\n"
-//                            + "threshold: <green>" + threshold + "</green>\n"
-//                            + "ratio: <green>" + ratio + "</green>\n"
-//                            + "knee: <green>" + knee + "</green>\n"
-//            );
-        }
-
-
-        /**
-         * Calculate Guardsman Modifier
-         */
-        if (damager instanceof Player player) {
-            //Attacker is a player
-            charge_amount = player.getAttackCooldown();
-            fully_charged = charge_amount >= 1.0f;
-            if (charge_amount < 0.225) {
-                //prevents auto-click / excessive attack spam
-                event.setCancelled(true);
-                return;
-            }
-            guardsmanDamage.applyGuardsmanDamage(customPlayer, event);
-//            dynamicArmor.applyRaytracedArmorHit(event);
-//            Debug.broadcast("mob", "animal took damage :(");
-        } else {
-            //Attacker is a Mob
-            // This should ONLY apply to mob damage, not PVP damage
-            if(event.getEntity() instanceof Player player) {
-                //increase damage of mobs to players
-                mobManager.onMobAttack(player, event);
-
-            }
-        }
-
-
-        /**
-         * Absorption Damage
-         */
-        double absorption = event.getDamage(ABSORPTION);
-        double absorption_to_remove = 0;
-        if (absorption < 0) {
-            if(event.getDamage()==0) {
-                if (event.getEntity() instanceof Damageable target) {
-                    double absorption_hearts = target.getAbsorptionAmount();
-                    if(charge_amount>0.5) {
-                        target.setAbsorptionAmount(Math.max(0, absorption_hearts - 1));
-                    }
-                    event.setDamage(BASE, event.getDamage(BASE)*0);
-                }
-            }
-
-
-//            absorption_to_remove = absorption / 2;
-        }
-
-
-        //Finally, apply GLOBAL armor reduction
-        if(event.getEntity() instanceof LivingEntity le) {
-            if(event.isApplicable(ARMOR)) {
-                armorDamageReduction.applyArmorReduction(le, event);
-            }
-            if(armorBreakSystem != null) {
-                extramsg += " <light_purple>" + armorBreakSystem.breakArmorWithItem(le, event) + "</light_purple>";
-            }
-            if(weapon_bonus_crit>0){
-                le.getWorld().playSound(le.getLocation(), Sound.ENTITY_HORSE_ARMOR, 0.25f, 1);
-            }
-            if(event.isApplicable(BLOCKING)) {
-                double blocking_damage = event.getDamage(BLOCKING);
-                if (blocking_damage != 0) {
-                    event.setDamage(BLOCKING, -event.getDamage(BASE));
-                }
-            }
-        }
-
-
-
-        /**
-         * ZERO HIT MITIGATION SYSTEM
-         * TODO consider making minimum hit 0 if barehanded punch
-         */
-        double DAMAGE_MINIMUM = 0;
         if(damager instanceof Player player) { //Mobs have a chance to hit zero with this cast
-            DAMAGE_MINIMUM = (0.075 * original_base) * (PlayerUtil.isCritical(player) ? 1.5:1.0);
+            double DAMAGE_MINIMUM = (0.075 * original_base) * (PlayerUtil.isCritical(player) ? 1.5:1.0);
             double total_final = calculateTotalDamage(event);
-//        Debug.broadcast("damage", "Pre-Minimu calculation: "+total_final);
             if (total_final <= DAMAGE_MINIMUM) {
-                Entity entity = event.getEntity();
-
-
                 for (EntityDamageEvent.DamageModifier m : EntityDamageEvent.DamageModifier.values()) {
                     if (event.isApplicable(m)) {
                         if (m != BLOCKING)
@@ -380,54 +194,16 @@ public class CombatManager implements Listener {
                     }
                 }
                 event.setDamage(BASE, DAMAGE_MINIMUM);
-                extramsg += " <dark_gray>[Minimum]</dark_gray>";
-
-
             }
-        }
 
-        //display player CHARGE - ENSURE damager is in survival for testing
-        extramsg +=  "<gold> [⚡" + Debug.formatDecimal(charge_amount) + "]</gold>";
-        String modifiers = "";
-
-        for (EntityDamageEvent.DamageModifier m : EntityDamageEvent.DamageModifier.values()) {
-            modifiers += "\n<gray>"+m.name()+"</gray>: "+Debug.formatDecimal(event.getDamage(m));
-        }
-
-        if(damager instanceof Player dmger) {
-            if (event.getEntity() instanceof LivingEntity victim) {
+            if(event.getEntity() instanceof LivingEntity victim) {
                 if (!event.isCancelled()) {
-                    if (!OpenLab.getInstance().getPlayerDownedListener().isDowned(dmger)) {
-                        mobManager.applyGuardsmanExp(event, customPlayer, dmger, victim); //Exp is acquired only after calculating final damage
+                    if (!OpenLab.getInstance().getPlayerDownedListener().isDowned(player)) {
+                        mobManager.applyGuardsmanExp(event, customPlayer, player, victim); //Exp is acquired only after calculating final damage
                     }
                 }
             }
-
-            double dmg = calculateTotalDamage(event);
-            String ss = "";
-            if(event.getEntity() instanceof LivingEntity lv) {
-                double maxhealth = lv.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
-                ss = " Hits-To-Kill: <red>"+(Math.ceil(maxhealth/dmg));
-            }
-            Debug.message(dmger,
-                    "damage",
-                    "<dark_red>Final Damage: <red>"+Debug.formatDecimal(calculateTotalDamage(event))+extramsg
-                    +ss,
-                    "<red>Minimum Hit Required: </red>"+DAMAGE_MINIMUM+""+modifiers
-            );
         }
-        if(event.getEntity() instanceof Player victim){
-            //display player CHARGE - ENSURE damager is in survival for testing
-            double dmg = calculateTotalDamage(event);
-            double maxhealth = victim.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
-            Debug.message(victim,
-                    "damage",
-                    "<dark_red>📩 Damage: <red>"+Debug.formatDecimal(dmg)+extramsg
-                    +" Hits-To-Die: <red>"+(Math.ceil(maxhealth/dmg)),
-                    "<red>Minimum Hit Required: </red>"+DAMAGE_MINIMUM+""+modifiers
-            );
-        }
-
     }
 
 
