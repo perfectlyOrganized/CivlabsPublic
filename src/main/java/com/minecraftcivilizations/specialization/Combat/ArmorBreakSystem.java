@@ -50,7 +50,9 @@ public class ArmorBreakSystem {
         if(attacker.getAttackCooldown()<0.25){
             return "not ready";
         }
+
         ItemStack itemInMainHand = attacker.getEquipment().getItemInMainHand();
+        if (itemInMainHand == null) return "";
         if(victim instanceof Player) {
             if (itemInMainHand.getType().name().contains("_PICKAXE")) {
                 event.setDamage(BASE, event.getDamage(BASE) * 0.75); //nerf pickaxes to account for armor

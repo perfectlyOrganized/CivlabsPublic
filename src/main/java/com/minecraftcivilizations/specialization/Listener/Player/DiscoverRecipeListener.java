@@ -9,7 +9,7 @@ import org.bukkit.event.player.PlayerRecipeDiscoverEvent;
 public class DiscoverRecipeListener implements Listener {
     @EventHandler
     public void onDiscoverRecipe(PlayerRecipeDiscoverEvent event){
-        if(RecipeBlocker.shouldBlockRecipe(event.getPlayer(), event.getRecipe())){
+        if(RecipeBlocker.INSTANCE.shouldBlockRecipe(event.getPlayer(), event.getRecipe())){
             event.setCancelled(true);
         }
     }

@@ -25,7 +25,7 @@ public class RecipesGUI extends GUI {
     public SkillType skillType;
     public CustomPlayer customPlayer;
     public RecipesGUI(CustomPlayer customPlayer, SkillType skillType) {
-        super(Component.text(skillType != null ? "Unlocked Recipes in " + SkillType.getDisplayName(skillType) : "Choose Recipe SkillTree To View").color(NamedTextColor.BLACK), 54, new HashMap<>() {
+        super(Component.text(skillType != null ? "Unlocked in " + SkillType.getDisplayName(skillType) : "Choose SkillTree To View").color(NamedTextColor.BLACK), 54, new HashMap<>() {
             {
                 put(45, new GUIItem(ItemStackUtils.makeItemGUIItem(new ItemStack(Material.ARROW), "Back to Class Menu").getItem(), () -> {
                     new ClassGUI().open(Bukkit.getPlayer(customPlayer.getUuid()));
@@ -130,7 +130,7 @@ public class RecipesGUI extends GUI {
                 LoreUtils.setLore(meta, LoreUtils.createDescriptionLoreLine("Click to view recipes you'll unlock"));
             }
             guiItem.setOnClick(() -> {
-                Set<NamespacedKey> stringHashSetPair = RecipeBlocker.getRecipes(skillType, requiredLevel);
+                Set<NamespacedKey> stringHashSetPair = RecipeBlocker.INSTANCE.getRecipes(skillType, requiredLevel);
                 ArrayList<ItemStack> itemStacks = new ArrayList<>(0);
                 if (stringHashSetPair != null) {
                     for (NamespacedKey namespacedKey : stringHashSetPair) {
@@ -153,7 +153,7 @@ public class RecipesGUI extends GUI {
             LoreUtils.setLore(meta, LoreUtils.createDescriptionLoreLine("Click to view recipes you've unlocked"));
         }
         guiItem.setOnClick(() -> {
-            Set<NamespacedKey> stringHashSetPair = RecipeBlocker.getRecipes(skillType, requiredLevel);
+            Set<NamespacedKey> stringHashSetPair = RecipeBlocker.INSTANCE.getRecipes(skillType, requiredLevel);
             ArrayList<ItemStack> itemStacks = new ArrayList<>(0);
             if (stringHashSetPair != null) {
                 for (NamespacedKey namespacedKey : stringHashSetPair) {

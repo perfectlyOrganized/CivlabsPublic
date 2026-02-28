@@ -6,6 +6,7 @@ import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
+import com.minecraftcivilizations.specialization.util.CooldownManager;
 import com.minecraftcivilizations.specialization.util.ItemStackUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import org.bukkit.GameMode;
@@ -219,7 +220,7 @@ public class HungerSystem implements Listener {
             return;
         }
 
-        if(PlayerUtil.isOnCooldown(player, "feedother")){
+        if(CooldownManager.INSTANCE.isOnCooldown(player, "feedother")){
             return;
         }
         int nutrition = ItemStackUtils.getFoodNutrition(handItem.getType());
@@ -241,7 +242,7 @@ public class HungerSystem implements Listener {
         );
         // Consume one item from hand
         handItem.setAmount(handItem.getAmount() - 1);
-        PlayerUtil.setCooldown(player, "feedother", 4);
+        CooldownManager.INSTANCE.setCooldown(player, "feedother", 4);
 //        PlayerUtil.message(player, "Force fed <gold>" + target.getName(), 1);
 //        PlayerUtil.message(target, "<gold>" + target.getName() + "</gold>force fed you", 1);
     }

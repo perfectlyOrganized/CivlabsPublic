@@ -34,14 +34,11 @@ public class ItemStackUtils {
 
         String keyString = namespace.toString();
 
-        // Check cache first
         if (itemCache.containsKey(keyString)) {
             return itemCache.get(keyString).clone();
         }
 
         ItemStack result = null;
-
-        if (namespace == null) return null;
 
         Material minecraftMaterial = Registry.MATERIAL.get(namespace);
 
@@ -63,7 +60,7 @@ public class ItemStackUtils {
             return result.clone();
         }
 
-        throw new NullPointerException(keyString+ " not found! Maybe typo?");
+        return result;
     }
     private static ItemStack getFromBukkitRecipe(NamespacedKey key) {
         try {

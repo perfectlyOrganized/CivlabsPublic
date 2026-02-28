@@ -3,6 +3,7 @@ package com.minecraftcivilizations.specialization.CustomItem;
 import com.minecraftcivilizations.specialization.Combat.CombatManager;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
+import com.minecraftcivilizations.specialization.util.CooldownManager;
 import com.minecraftcivilizations.specialization.util.ItemStackUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -192,7 +193,6 @@ public class CustomWeapon extends CustomItemBase {
         Player player = event.getPlayer();
         int lvl = CustomPlayerManager.INSTANCE.getCustomPlayer(player).getSkillLevel(SkillType.GUARDSMAN);
         if(isOnCooldown(player))return;
-        PlayerUtil playerUtil = PlayerUtil.getPlayerUtil(player);
 
         boolean metal = false;
         boolean scrap = false;
@@ -242,16 +242,16 @@ public class CustomWeapon extends CustomItemBase {
 
 
                 if(lvl>=4) {
-                    if (!playerUtil.isOnCooldown("unsheathe_sound")) {
+                    if (!CooldownManager.INSTANCE.isOnCooldown(player,"unsheathe_sound")) {
                         player.getWorld().playSound(player.getLocation(), "unsheathe", 0.35f, random(0.98f, 1.05f));
                     }
-                    playerUtil.setCooldown("unsheathe_sound", 400);
+                    CooldownManager.INSTANCE.setCooldown(player,"unsheathe_sound", 400);
                 }
             }
             applyCooldown(player, 10);
         }
         if(lvl>=1){
-            if (!playerUtil.isOnCooldown("guardsman_feeling")) {
+            if (!CooldownManager.INSTANCE.isOnCooldown(player,"guardsman_feeling")) {
                 String msg = null;
                 switch(lvl){
                     case 1: //Apprentice
@@ -275,7 +275,7 @@ public class CustomWeapon extends CustomItemBase {
                     PlayerUtil.sendActionBar(player,MiniMessage.miniMessage().deserialize(msg));
             }
             // TODO add level up listener for guardsman to reset this cooldown
-            playerUtil.setCooldown("guardsman_feeling", 1200*5);
+            CooldownManager.INSTANCE.setCooldown(player,"guardsman_feeling", 1200*5);
         }
     }
 

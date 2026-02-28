@@ -3,6 +3,7 @@ package com.minecraftcivilizations.specialization.Listener.Player.Blocks.Mining;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.CraftEngine.ItemGetterUtil;
 import com.minecraftcivilizations.specialization.Data.Pair;
+import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
@@ -31,6 +32,7 @@ import org.bukkit.inventory.ItemStack;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import static com.minecraftcivilizations.specialization.Reinforcement.ReinforcementManager.*;
@@ -136,7 +138,8 @@ public class BreakBlockListener implements Listener {
     }
 
     public void farmerListener(BlockBreakEvent event) {
-        CustomPlayer player = CustomPlayerManager.INSTANCE.getCustomPlayer(event.getPlayer());
+        Player player = event.getPlayer();
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
         Material materialName = event.getBlock().getType();
         Config CanFarmerBreak = SpecializationConfig.getCanFarmerBreakConfig().getConfig();
         String item = materialName.toString();
@@ -146,20 +149,23 @@ public class BreakBlockListener implements Listener {
 
         SkillLevel skillRequired = SkillLevel.valueOf(CanFarmerBreak.getString(materialName.toString()));
 
-        if (player.getSkillLevel(SkillType.FARMER) < skillRequired.getLevel()) {
+        if (customPlayer.getSkillLevel(SkillType.FARMER) < skillRequired.getLevel()) {
             event.setDropItems(false);
             PlayerUtil.message(event.getPlayer(), org.bukkit.ChatColor.RED + "You are unable to farm this");
         }
 
         List<Material> otherFarmables = List.of(Material.COCOA_BEANS, Material.SUGAR_CANE, Material.CACTUS, Material.MELON, Material.PUMPKIN);
-        double chance = SpecializationConfig.getFarmerConfig().getDouble("FARMER_GET_DROPS_CHANCE_" + player.getSkillLevelEnum(SkillType.FARMER));
-        double random = Math.random();
+        double chance = SpecializationConfig.getFarmerConfig().getDouble("FARMER_GET_DROPS_CHANCE_" + customPlayer.getSkillLevelEnum(SkillType.FARMER));
+        double random = ThreadLocalRandom.current().nextDouble();
 
         if (random < chance) {
             event.setDropItems(true);
         } else if (event.getBlock().getBlockData() instanceof Ageable || otherFarmables.contains(materialName)) {
             event.setDropItems(false);
         }
+        //if (random <= 0.01) {
+           // FarmerMinigame.INSTANCE.startGame(player);
+        //}
     }
 
     private List<Block> getMultiBlocks(Block b) {

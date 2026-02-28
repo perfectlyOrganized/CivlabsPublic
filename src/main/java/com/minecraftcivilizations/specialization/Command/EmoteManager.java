@@ -10,6 +10,7 @@ import com.minecraftcivilizations.specialization.CustomItem.CustomItemManager;
 import com.minecraftcivilizations.specialization.CustomItem.PacketListener;
 import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
+import com.minecraftcivilizations.specialization.util.CooldownManager;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -352,7 +353,7 @@ public class EmoteManager extends BaseCommand implements Listener {
     @Description("Launch yourself like a cannonball")
     public void onCannonball(Player player) {
 
-        if (PlayerUtil.isOnCooldown(player, "cannonballemote")) {
+        if (CooldownManager.INSTANCE.isOnCooldown(player, "cannonballemote")) {
             PlayerUtil.message(player, "You need a break from that", 1);
             return;
         }
@@ -512,7 +513,7 @@ public class EmoteManager extends BaseCommand implements Listener {
     // Cleanup
     private void stopCannonball(Player p) {
         ArmorStand seat = sittingStands.remove(p.getUniqueId());
-        PlayerUtil.setCooldown(p, "cannonballemote", 50);
+        CooldownManager.INSTANCE.setCooldown(p, "cannonballemote", 50);
         if (p.isInsideVehicle()) p.leaveVehicle();
         if (seat != null && seat.isValid()) seat.remove();
 
@@ -538,7 +539,7 @@ public class EmoteManager extends BaseCommand implements Listener {
             loc.add(loc.getDirection().multiply(-0.5));
 
             player.getWorld().spawnParticle(
-                    Particle.BLOCK_DUST,
+                    Particle.CLOUD,
                     loc,
                     20,
                     0.1, 0.1, 0.1,

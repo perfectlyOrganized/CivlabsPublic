@@ -1,6 +1,8 @@
 package com.minecraftcivilizations.specialization.Skill;
 
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -54,26 +56,19 @@ public class Skill {
     }
 
     public void applyXp(Player player, double appliedXp, boolean allowNegative) {
-        if(appliedXp!=0) {
-            if (!allowNegative) {
-                this.xp += Math.max(appliedXp, 0); //prevents unintentional negative xp gain
-            } else {
-                this.xp += appliedXp; //can potentially subtract xp
-                if (this.xp < 0) {
-                    this.xp = 0; //ensures xp does not get set below zero
-                }
-            }
-        }
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayerOrThrow(player);
+        boolean positiveXP = appliedXp > 0;
+        if (!customPlayer.getClassXPToggles().get(this.skillType) && positiveXP) return;
+        if(appliedXp == 0) return;
+
+        if (!allowNegative) appliedXp = Math.max(appliedXp, 0);
+        this.xp += appliedXp;
+        if (this.xp < 0) this.xp = 0;
+
         this.xp = Math.round(this.xp * 10.0) / 10.0;
-        boolean positive = appliedXp>0;
-        TextComponent valuecomp;
-        if(appliedXp>0){
-            valuecomp = Component.text("+"+appliedXp+" ").color(NamedTextColor.GREEN);
-        } else{
-            valuecomp = Component.text("-"+appliedXp+" ").color(NamedTextColor.RED);
-        }
+        TextComponent component = Component.text("+"+appliedXp+" ").color(positiveXP ? NamedTextColor.GREEN : NamedTextColor.RED);
         TextComponent comp = Component.text(" "+getSkillType().name()+" ").color(NamedTextColor.WHITE)
-                .append(valuecomp)
+                .append(component)
                 .append(Component.text("("+this.xp+")").color(NamedTextColor.GRAY));
         Debug.broadcast("xp_"+player.getName(), comp);
         this.lastUpdate = System.currentTimeMillis();

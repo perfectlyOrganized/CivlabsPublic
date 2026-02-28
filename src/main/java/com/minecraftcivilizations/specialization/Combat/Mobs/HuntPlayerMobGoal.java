@@ -187,7 +187,6 @@ public class HuntPlayerMobGoal implements Listener {
                     .filter(validGamemode)
                     .filter(p -> p.getLocation().distance(mob.getLocation()) <= followRange)
                     .filter(p -> {
-                        // Vertical check for non-spiders
                         if (!mob.hasLineOfSight(p)) {
                             return false;
                         }
@@ -197,7 +196,7 @@ public class HuntPlayerMobGoal implements Listener {
                         double verticalDistance = Math.abs(p.getLocation().getY() - mob.getLocation().getY());
                         return verticalDistance <= maxVertical;
                     })
-                    .collect(Collectors.toList());
+                    .toList();
 
             if (nearby.isEmpty()) return;
 
@@ -211,7 +210,7 @@ public class HuntPlayerMobGoal implements Listener {
             for (Player player : nearby) {
                 CustomPlayer cp = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
                 if (cp == null) continue;
-
+                if (cp.getCreation_date() < SpecializationConfig.getMobConfig().getDouble("NEW_PLAYER_GRACE_PERIOD")) continue;
                 int guardsmanLevel = cp.getSkillLevel(SkillType.GUARDSMAN);
                 double guardZone = guardsmanBaseRadius + (guardsmanLevel * guardsmanRadiusPerLevel);
                 double distance = player.getLocation().distance(mob.getLocation());

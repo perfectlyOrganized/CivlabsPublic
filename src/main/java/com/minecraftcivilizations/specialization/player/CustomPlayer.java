@@ -9,7 +9,6 @@ import com.minecraftcivilizations.specialization.Recipe.RecipeBlocker;
 import com.minecraftcivilizations.specialization.Skill.Skill;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.minecraftcivilizations.specialization.util.LoreUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import com.typesafe.config.Config;
@@ -29,8 +28,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static com.minecraftcivilizations.specialization.Skill.Skill.getXPNeededForLevel;
-import static com.minecraftcivilizations.specialization.Skill.Skill.mapValue;
+import static com.minecraftcivilizations.specialization.Skill.Skill.*;
 import static com.minecraftcivilizations.specialization.Skill.SkillType.getDisplayName;
 
 @Getter
@@ -40,7 +38,9 @@ public class CustomPlayer extends CustomPlayerBase {
     @Setter
     private SkillType preferredSkill = SkillType.values()[ThreadLocalRandom.current().nextInt(SkillType.values().length)];
     @Getter
-    List<Skill> skills = new ArrayList<>(0);
+    List<Skill> skills = new ArrayList<>();
+    @Getter
+    private final long creation_date = System.currentTimeMillis();
     @Setter
     @Getter
     private double height = 0;
@@ -70,15 +70,25 @@ public class CustomPlayer extends CustomPlayerBase {
     private final HashSet<UUID> leashedOtherPlayers = new HashSet<>();
     @Setter
     private UUID leashedTo = null;
+    @Getter
+    private Map<SkillType, Boolean> classXPToggles;
     private final Queue<Material> lastEatenFood = Queues.newConcurrentLinkedQueue();
+
 
     public CustomPlayer(UUID uuid) {
         super(uuid);
     }
 
-
-
-    /**
+    public void setClassXPToggles(SkillType skillType, Boolean value) {
+        classXPToggles.put(skillType, value);
+    }
+    public void migrate() {
+        if (classXPToggles == null) classXPToggles = new HashMap<>();
+        for (SkillType skill : SkillType.values()) {
+            classXPToggles.putIfAbsent(skill, true);
+        }
+    }
+     /**
      * Classic straightforward add XP
      */
     public void addSkillXp(SkillType skillType, double xp) {
@@ -104,19 +114,21 @@ public class CustomPlayer extends CustomPlayerBase {
     /**
      * Add XP with all parameters
      */
-    public void addSkillXp(SkillType skillType, double xp, Location soundLocation, boolean allowNegative, boolean silent) {
+    public void addSkillXp(@NotNull SkillType skillType, double xp, Location soundLocation, boolean allowNegative, boolean silent) {
         Player player = Bukkit.getPlayer(getUuid());
 
-        if (skillType == null || xp == 0) return;
+        if (xp == 0) return;
         int previousLevel = this.getSkillLevel(skillType);
-        double xpMultiplier = SpecializationConfig.getSkillsConfig().getDouble("XP_MULTIPLIER");
-        double xpClassMultiplier = SpecializationConfig.getSkillsConfig().getDouble(skillType+"_XP_MULTIPLIER");
-        double totalXpMultiplier = xpMultiplier * xpClassMultiplier;
-        xp *= totalXpMultiplier;
+        boolean negative = xp<0;
+        if (!negative) {
+            double xpMultiplier = SpecializationConfig.getSkillsConfig().getDouble("XP_MULTIPLIER");
+            double xpClassMultiplier = SpecializationConfig.getSkillsConfig().getDouble(skillType + "_XP_MULTIPLIER");
+            xp *= xpMultiplier * xpClassMultiplier;
+        }
         Skill skill = getSkill(skillType);
         skill.applyXp(player, xp, allowNegative);
 
-        boolean negative = xp<0;
+
         String color = (negative)?"red":"green";
         if(negative) {
             PlayerUtil.message(player,"XP LOSS: " + skillType.name() + ": " + skill.getXp() + " (+ " + ((xp > 0) ? ChatColor.GREEN : ChatColor.RED) + xp + ")");
@@ -138,19 +150,6 @@ public class CustomPlayer extends CustomPlayerBase {
         XpGainMonitor.handleXpGain(player, skillType, xp);
 
         // Debug XP if applicable
-        if (Debug.isListeningToChannel(player, "xp")){
-            try {
-                Debug.message(player, "xp",
-                        MiniMessage.miniMessage().deserialize("xp: ")
-                                .append(simple_xp_msg)
-                                .append(Component.space()),
-                        null
-                );
-            }catch(Exception e){
-                e.printStackTrace();
-                OpenLab.getInstance().getLogger().info("BAD DEBUG in CustomPlayer.java");
-            }
-        }
 
         // Update team assignment based on highest skill
 //        TeamManager.setTeam(Bukkit.getPlayer(getUuid()));
@@ -165,19 +164,17 @@ public class CustomPlayer extends CustomPlayerBase {
             if (previousLevel < currentLevel) {
                 player.playSound(player, Sound.ENTITY_PLAYER_LEVELUP, 100, 1);
                 PlayerUtil.message(player, LoreUtils.createLoreLine("You have leveled up " + skill_name + ", you are now " + getDisplayName(skillType) + " " + SkillLevel.getDisplayName(currentLevel), NamedTextColor.WHITE));
-                Debug.broadcast("levelup", player.getName()+" <gray>leveled up <yellow>"+skill_name+ "</yellow> to level <green>"+currentLevel);
             } else {
                 player.playSound(player, Sound.ITEM_BOTTLE_FILL_DRAGONBREATH, 100F, 1.5F);
                 PlayerUtil.message(player, LoreUtils.createLoreLine("Your " + skill_name + "ing ability has deteriorated, you are now " + getDisplayName(skillType) + " " + SkillLevel.getDisplayName(currentLevel), NamedTextColor.WHITE));
             }
             while (currentLevel > 0) {
-                Set<NamespacedKey> recipes = RecipeBlocker.getRecipes(skillType, currentLevel);
+                Set<NamespacedKey> recipes = RecipeBlocker.INSTANCE.getRecipes(skillType, currentLevel);
                 for (NamespacedKey entry : recipes) {
                     player.discoverRecipe(entry);
                 }
                 currentLevel--;
             }
-
         }
     }
 
