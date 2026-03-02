@@ -3,13 +3,13 @@ package com.minecraftcivilizations.specialization.Listener.Player.Blocks.Mining;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.CraftEngine.ItemGetterUtil;
 import com.minecraftcivilizations.specialization.Data.Pair;
-import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import com.typesafe.config.Config;
+import kotlin.Result;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -21,7 +21,9 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.type.Bed;
 import org.bukkit.block.data.type.Door;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -33,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static com.minecraftcivilizations.specialization.Reinforcement.ReinforcementManager.*;
@@ -136,36 +139,52 @@ public class BreakBlockListener implements Listener {
                 PlayerUtil.message(event.getPlayer(),"You are unable to mine this ore.");
         }
     }
-
+    public static ItemStack getFarmerDrop(Collection<ItemStack> drops) {
+        List<ItemStack> results = drops.stream().filter(
+                it -> !SpecializationConfig.getCanFarmerHarvestConfig().getConfig().hasPath(it.getType().toString())
+        ).toList();
+        if (results.isEmpty()) return null;
+        return results.get(0);
+    }
     public void farmerListener(BlockBreakEvent event) {
         Player player = event.getPlayer();
-        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
-        Material materialName = event.getBlock().getType();
-        Config CanFarmerBreak = SpecializationConfig.getCanFarmerBreakConfig().getConfig();
-        String item = materialName.toString();
-        if (!CanFarmerBreak.hasPath(item)) {
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayerOrThrow(player);
+        Config CanFarmerBreak = SpecializationConfig.getCanFarmerHarvestConfig().getObject("BREAK");
+        ItemStack result = getFarmerDrop(event.getBlock().getDrops());
+        if (result == null) return;
+
+        SkillLevel skillLevel = SkillLevel.valueOf(CanFarmerBreak.getString(result.getType().toString()));
+        if (customPlayer.getSkillLevel(SkillType.FARMER) < skillLevel.getLevel()) {
+            event.setCancelled(true);
+            PlayerUtil.message(player, org.bukkit.ChatColor.RED + "You are unable to farm this");
             return;
         }
-
-        SkillLevel skillRequired = SkillLevel.valueOf(CanFarmerBreak.getString(materialName.toString()));
-
-        if (customPlayer.getSkillLevel(SkillType.FARMER) < skillRequired.getLevel()) {
-            event.setDropItems(false);
-            PlayerUtil.message(event.getPlayer(), org.bukkit.ChatColor.RED + "You are unable to farm this");
+        if (event.getBlock().getBlockData() instanceof Ageable ageable) {
+            handleHarvest(result, (success) -> {
+                event.setDropItems(!success);
+            }, player, ageable);
+            return;
         }
+        handleHarvest(result, (success) -> {
+            event.setDropItems(!success);
+        }, player);
+    }
+    public static void handleHarvest(ItemStack item, Consumer<Boolean> success, Player player, Ageable ageable) {
+        if (ageable != null && ageable.getAge() != ageable.getMaximumAge()) {
+            //success.accept(false);
+            return;
+        }
+        handleHarvest(item,success,player);
+    }
 
-        List<Material> otherFarmables = List.of(Material.COCOA_BEANS, Material.SUGAR_CANE, Material.CACTUS, Material.MELON, Material.PUMPKIN);
+    public static void handleHarvest(ItemStack item, Consumer<Boolean> success, Player player) {
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayerOrThrow(player);
+
         double chance = SpecializationConfig.getFarmerConfig().getDouble("FARMER_GET_DROPS_CHANCE_" + customPlayer.getSkillLevelEnum(SkillType.FARMER));
         double random = ThreadLocalRandom.current().nextDouble();
 
-        if (random < chance) {
-            event.setDropItems(true);
-        } else if (event.getBlock().getBlockData() instanceof Ageable || otherFarmables.contains(materialName)) {
-            event.setDropItems(false);
-        }
-        //if (random <= 0.01) {
-           // FarmerMinigame.INSTANCE.startGame(player);
-        //}
+        success.accept(random < chance);
+        if (random <= 0.02) FarmerMinigameManager.INSTANCE.start(player, item.getType());
     }
 
     private List<Block> getMultiBlocks(Block b) {

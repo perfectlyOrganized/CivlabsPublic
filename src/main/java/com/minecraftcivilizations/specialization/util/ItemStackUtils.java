@@ -29,6 +29,13 @@ public class ItemStackUtils {
             itemCache.put(key, item.clone());
         }
     }
+
+    public static ItemStack getItemStack(NamespacedKey namespace, int amount) {
+        ItemStack item = getItemStack(namespace);
+        item.setAmount(amount);
+        return item;
+    }
+
     public static ItemStack getItemStack(NamespacedKey namespace) {
         if (namespace == null) return null;
 

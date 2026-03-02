@@ -133,7 +133,7 @@ public class BedListener implements Listener {
             player.getPersistentDataContainer().set(PLAYER_BED_Y, PersistentDataType.INTEGER, headBlock.getY());
             player.getPersistentDataContainer().set(PLAYER_BED_Z, PersistentDataType.INTEGER, headBlock.getZ());
 
-            EffectsUtil.playBlockBoundingBox(player, clickedBlock, Particle.VILLAGER_HAPPY, 0.25);
+            EffectsUtil.INSTANCE.playBlockBoundingBox(player, clickedBlock, Particle.VILLAGER_HAPPY, 0.25);
             float pitch = (float) ThreadLocalRandom.current().nextDouble(0.9, 1.3);
             clickedBlock.getWorld().playSound(clickedBlock.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 10f, pitch);
         }
