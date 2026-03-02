@@ -90,7 +90,7 @@ public class SpecializationConfig {
     @Getter
     private static ConfigFile canMinerLvlBreakConfig;
     @Getter
-    private static ConfigFile canFarmerBreakConfig;
+    private static ConfigFile canFarmerHarvestConfig;
     @Getter
     private static ConfigFile armorDamageReductionConfig;
     @Getter
@@ -363,7 +363,7 @@ public class SpecializationConfig {
         };
         downedConfig = new ConfigFile(OpenLab.getInstance(), "downedConfig", downedDefaults);
 
-        Supplier<Map<String, String>> canFarmerBreakDefaults = () -> {
+        Supplier<Map<String, String>> canFarmerHarvestDefaults = () -> {
             Map<String, String> data = new HashMap<>();
             for (Material inputMaterial : Material.values()) {
                 if (inputMaterial.isBlock()) {
@@ -372,7 +372,7 @@ public class SpecializationConfig {
             }
             return data;
         };
-        canFarmerBreakConfig = new ConfigFile(OpenLab.getInstance(), "canFarmerBreakConfig", canFarmerBreakDefaults);
+        canFarmerHarvestConfig = new ConfigFile(OpenLab.getInstance(), "canFarmerHarvestConfig", canFarmerHarvestDefaults);
 
         Supplier<Map<String, String>> canMinerLvlBreakDefaults = () -> {
             Map<String, String> data = new HashMap<>();

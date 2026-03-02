@@ -1,6 +1,7 @@
 package com.minecraftcivilizations.specialization.Listener.Player.Interactions;
 
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
+import com.minecraftcivilizations.specialization.Listener.Player.Blocks.Mining.BreakBlockListener;
 import com.minecraftcivilizations.specialization.Listener.Player.ReviveListener;
 import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.player.CustomPlayer;
@@ -11,13 +12,21 @@ import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.OvergearedUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import com.typesafe.config.Config;
+import de.tr7zw.changeme.nbtapi.NBT;
+import io.izzel.arclight.api.ArclightServer;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.minecraft.world.level.block.CropBlock;
+import net.minecraft.world.level.block.state.IBlockData;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.data.Ageable;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.craftbukkit.v1_20_R1.block.CraftBlock;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -28,6 +37,7 @@ import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffectType;
 
@@ -85,6 +95,29 @@ public class PlayerInteractListener implements Listener {
                 event.setCancelled(true);
             }
             OvergearedUtils.INSTANCE.handleOvergearedAnvilEvent(event,block, player);
+
+            ItemStack drop = BreakBlockListener.getFarmerDrop(block.getDrops());
+            if (drop != null && SpecializationConfig.getCanFarmerHarvestConfig().getObject("HARVEST").hasPath(drop.getType().toString())) {
+                if (drop.getType() == Material.SWEET_BERRIES) return;
+                SkillLevel skillLevel = SkillLevel.valueOf(SpecializationConfig.getCanFarmerHarvestConfig().getObject("HARVEST").getString(drop.getType().toString()));
+                if (customPlayer.getSkillLevel(SkillType.FARMER) < skillLevel.getLevel()) {
+                    event.setCancelled(true);
+                    PlayerUtil.message(player, org.bukkit.ChatColor.RED + "You are unable to farm this");
+                    return;
+                }
+                if (block.getBlockData() instanceof Ageable ageable) {
+                    BreakBlockListener.handleHarvest(drop, success -> {
+                        ageable.setAge(1);
+                        event.setCancelled(!success);
+                    },  player, ageable);
+                    block.setBlockData(ageable);
+                    return;
+                }
+                event.setCancelled(true);
+                PlayerUtil.message(player, org.bukkit.ChatColor.RED + "You must break this to harvest it");
+            }
+
+
         }
     }
 
@@ -228,16 +261,32 @@ public class PlayerInteractListener implements Listener {
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-    public void onSweetBerryHarvest(PlayerHarvestBlockEvent e) {
-        if (e.getHarvestedBlock().getType() != Material.SWEET_BERRY_BUSH) return;
-        boolean producedBerries = e.getItemsHarvested().stream()
+    public void onSweetBerryHarvest(PlayerHarvestBlockEvent event) {
+        if (event.getHarvestedBlock().getType() != Material.SWEET_BERRY_BUSH) return;
+        boolean producedBerries = event.getItemsHarvested().stream()
                 .anyMatch(item -> item.getType() == Material.SWEET_BERRIES);
         if (!producedBerries) return;
+        ItemStack item = event.getItemsHarvested().get(0);
+        SkillLevel skillLevel = SkillLevel.valueOf(SpecializationConfig.getCanFarmerHarvestConfig().getObject("HARVEST").getString(item.getType().toString()));
+        Player player = event.getPlayer();
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayerOrThrow(player);
+        Block block = event.getHarvestedBlock();
 
-        Player player = e.getPlayer();
-        CustomPlayer cp = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
-        if (cp != null) {
-            cp.addSkillXp(SkillType.FARMER, 3);
+        if (customPlayer.getSkillLevel(SkillType.FARMER) < skillLevel.getLevel()) {
+            event.setCancelled(true);
+            PlayerUtil.message(player, ChatColor.RED + "You are unable to farm this");
+            return;
+        }
+        if (block.getBlockData() instanceof Ageable ageable) {
+            BreakBlockListener.handleHarvest(item, success -> {
+                ageable.setAge(1);
+                event.setCancelled(!success);
+                if (success) {
+                    customPlayer.addSkillXp(SkillType.FARMER, 3);
+                }
+            },  player, ageable);
+            ageable.setAge(1);
+            block.setBlockData(ageable);
         }
     }
 

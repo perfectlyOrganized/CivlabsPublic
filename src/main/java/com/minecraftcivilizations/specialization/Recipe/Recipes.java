@@ -417,6 +417,7 @@ public class Recipes {
             // Bamboo - no wood block variant
             {"bamboo", "BAMBOO_BLOCK", "BAMBOO_PLANKS", "STRIPPED_BAMBOO_BLOCK", "STRIPPED_BAMBOO_BLOCK", "BAMBOO_BLOCK", "BAMBOO_STAIRS", "BAMBOO_SLAB", "BAMBOO_FENCE", "BAMBOO_FENCE_GATE"}
         };
+        count += addStonecuttingRecipe("stonecut_deepslate_bricks", Material.DEEPSLATE, Material.DEEPSLATE_BRICKS, 1, failedExceptions);
 
         for (String[] wood : woodTypes) {
             String woodName = wood[0];

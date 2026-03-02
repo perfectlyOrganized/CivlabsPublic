@@ -1,6 +1,5 @@
 package com.minecraftcivilizations.specialization;
-import com.minecraftcivilizations.specialization.Listener.Player.Blocks.Mining.FarmerMinigame;
-import com.minecraftcivilizations.specialization.Listener.Player.Blocks.Mining.MinerTressureChance;
+import com.minecraftcivilizations.specialization.Listener.Player.Blocks.Mining.*;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.network.chat.IChatBaseComponent;
 import net.minecraft.server.level.EntityPlayer;
@@ -22,8 +21,6 @@ import com.minecraftcivilizations.specialization.Data.DataManager;
 import com.minecraftcivilizations.specialization.Listener.Blocks.ReinforcementProtectionListener;
 import com.minecraftcivilizations.specialization.Listener.BurnListener;
 import com.minecraftcivilizations.specialization.Listener.Player.*;
-import com.minecraftcivilizations.specialization.Listener.Player.Blocks.Mining.BreakBlockListener;
-import com.minecraftcivilizations.specialization.Listener.Player.Blocks.Mining.PlayerMineListener;
 import com.minecraftcivilizations.specialization.Listener.Player.Blocks.PlaceBlockListener;
 import com.minecraftcivilizations.specialization.Listener.Player.Interactions.*;
 import com.minecraftcivilizations.specialization.Listener.Player.Inventories.CraftingListener;
@@ -184,7 +181,7 @@ public final class OpenLab extends JavaPlugin {
         getServer().getPluginManager().registerEvents(playerDownedListener, this);
         getServer().getPluginManager().registerEvents(reviveListener, this);
         getServer().getPluginManager().registerEvents(RecipeBlocker.INSTANCE, this);
-        getServer().getPluginManager().registerEvents(FarmerMinigame.INSTANCE, this);
+        getServer().getPluginManager().registerEvents(FarmerMinigameManager.INSTANCE, this);
         getServer().getPluginManager().registerEvents(foodDurationTicker, this);
         getServer().getPluginManager().registerEvents(huntPlayerMobGoalSystem, this);
         //town data does not need to wait anymore
