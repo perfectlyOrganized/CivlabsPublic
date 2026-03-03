@@ -181,13 +181,15 @@ public class HuntPlayerMobGoal implements Listener {
                             p.getGameMode() == GameMode.ADVENTURE;
 
             double maxVertical = SpecializationConfig.getMobConfig().getDouble("MOB_RULE_VERTICAL_FOLLOW_RANGE");
+            boolean ignoreLineOfSight = isFullMoon(mob.getWorld()) || isInvertedFullMoon(mob.getWorld());
+
 
             // Get nearby players
             List<Player> nearby = mob.getWorld().getPlayers().stream()
                     .filter(validGamemode)
                     .filter(p -> p.getLocation().distance(mob.getLocation()) <= followRange)
                     .filter(p -> {
-                        if (!mob.hasLineOfSight(p)) {
+                        if (!ignoreLineOfSight && !mob.hasLineOfSight(p)) {
                             return false;
                         }
                         if (mob.getType() == EntityType.SPIDER || mob.getType() == EntityType.CAVE_SPIDER) {
@@ -210,7 +212,7 @@ public class HuntPlayerMobGoal implements Listener {
             for (Player player : nearby) {
                 CustomPlayer cp = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
                 if (cp == null) continue;
-                if (cp.getCreation_date() < SpecializationConfig.getMobConfig().getDouble("NEW_PLAYER_GRACE_PERIOD")) continue;
+                if (cp.getCreation_date() < System.currentTimeMillis() + 1000*SpecializationConfig.getMobConfig().getDouble("NEW_PLAYER_GRACE_PERIOD")) continue;
                 int guardsmanLevel = cp.getSkillLevel(SkillType.GUARDSMAN);
                 double guardZone = guardsmanBaseRadius + (guardsmanLevel * guardsmanRadiusPerLevel);
                 double distance = player.getLocation().distance(mob.getLocation());
@@ -233,6 +235,20 @@ public class HuntPlayerMobGoal implements Listener {
             if (bestTarget != null) {
                 mob.setTarget(bestTarget);
             }
+        }
+
+        private boolean isFullMoon(World world) {
+            long time = world.getFullTime();
+            int days = (int) (time / 24000);
+            int phase = days % 8;
+            return phase == 0;
+        }
+
+        private boolean isInvertedFullMoon(World world) {
+            long time = world.getFullTime();
+            int days = (int) (time / 24000);
+            int phase = days % 8;
+            return phase == 4;
         }
 
         private void handleBlockBreaking() {

@@ -151,7 +151,7 @@ public class BreakBlockListener implements Listener {
         CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayerOrThrow(player);
         Config CanFarmerBreak = SpecializationConfig.getCanFarmerHarvestConfig().getObject("BREAK");
         ItemStack result = getFarmerDrop(event.getBlock().getDrops());
-        if (result == null) return;
+        if (result == null || !CanFarmerBreak.hasPath(result.getType().toString())) return;
 
         SkillLevel skillLevel = SkillLevel.valueOf(CanFarmerBreak.getString(result.getType().toString()));
         if (customPlayer.getSkillLevel(SkillType.FARMER) < skillLevel.getLevel()) {
@@ -184,7 +184,7 @@ public class BreakBlockListener implements Listener {
         double random = ThreadLocalRandom.current().nextDouble();
 
         success.accept(random < chance);
-        if (random <= 0.02) FarmerMinigameManager.INSTANCE.start(player, item.getType());
+        if (random <= 0.04) FarmerMinigameManager.INSTANCE.start(player, item.getType());
     }
 
     private List<Block> getMultiBlocks(Block b) {

@@ -1,5 +1,6 @@
 package com.minecraftcivilizations.specialization;
 import com.minecraftcivilizations.specialization.Listener.Player.Blocks.Mining.*;
+import com.minecraftcivilizations.specialization.Listener.Player.Inventories.AttributeCleaner;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.network.chat.IChatBaseComponent;
 import net.minecraft.server.level.EntityPlayer;
@@ -150,6 +151,7 @@ public final class OpenLab extends JavaPlugin {
         getServer().getPluginManager().registerEvents(CustomPlayerManager.INSTANCE, this);
         getServer().getPluginManager().registerEvents(guiManager, this);
         getServer().getPluginManager().registerEvents(playerClickListener, this);
+        getServer().getPluginManager().registerEvents(AttributeCleaner.INSTANCE, this);
         getServer().getPluginManager().registerEvents(new PlayerMineListener(), this);
         getServer().getPluginManager().registerEvents(new BreakBlockListener(), this);
         getServer().getPluginManager().registerEvents(new PlaceBlockListener(), this);

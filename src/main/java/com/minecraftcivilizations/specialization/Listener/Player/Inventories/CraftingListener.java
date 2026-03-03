@@ -6,13 +6,16 @@ import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Recipe.RecipeBlocker;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
-import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.ItemStackUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import com.typesafe.config.ConfigException;
+import de.tr7zw.changeme.nbtapi.*;
+import de.tr7zw.changeme.nbtapi.iface.ReadWriteNBT;
+import de.tr7zw.changeme.nbtapi.iface.ReadWriteNBTCompoundList;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.*;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -21,7 +24,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.*;
 import org.bukkit.inventory.*;
-import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
@@ -114,30 +116,6 @@ public class CraftingListener implements Listener {
         return !meta.getPersistentDataContainer().has(newPotionKey, PersistentDataType.BOOLEAN);
     }
 
-
-    public void keepGenericItem(CraftItemEvent event, Material material, ItemStack newItem) {
-        ItemStack[] matrix = event.getInventory().getMatrix();
-
-        for (int i = 0; i < matrix.length; i++) {
-            if (matrix[i] != null && matrix[i].getType() == material) {
-                int finalI = i;
-                Bukkit.getScheduler().runTaskLater(OpenLab.getInstance(), () -> {
-                    event.getInventory().setItem(finalI + 1, newItem);
-                }, 1L);
-            }
-        }
-    }
-
-    private String getRecipeKey(Recipe recipe) {
-        // for custom recipes like "bandage_recipe"
-        if (recipe instanceof ShapelessRecipe shapelessRecipe) {
-            return String.valueOf(shapelessRecipe.getKey());
-        } else if (recipe instanceof ShapedRecipe shapedRecipe) {
-            return String.valueOf(shapedRecipe.getKey());
-        }
-        return "";
-    }
-
     private Pair<SkillType, Double> getItemCraftXp(String itemName) {
         Double xp = 0.0;
         SkillType skillType = SkillType.BLACKSMITH;
@@ -162,14 +140,18 @@ public class CraftingListener implements Listener {
             return;
         }
 
-
         ItemStack crafted = event.getCurrentItem();
+        int craftedAmount = getCraftedAmount(event);
+        if (craftedAmount > 1 && ItemCategory.fromItem(crafted) != null) {
+            event.setResult(Event.Result.DENY);
+            event.setCancelled(true);
+            return;
+        }
 
         Pair<SkillType, Double> xp_pair = getItemCraftXp(getCraftId(event));
         SkillType skillType = xp_pair.key();
         double xp = xp_pair.value();
 
-        int craftedAmount = getCraftedAmount(event);
 
         CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player.getUniqueId());
 
@@ -233,22 +215,64 @@ public class CraftingListener implements Listener {
                 return;
             }
         }
+        applyRandomToolAttribute(crafted, player);
 
         SpecializationCraftItemEvent new_event = new SpecializationCraftItemEvent(event, player, craftedAmount, totalReduction, skillType, lvl);
         Bukkit.getPluginManager().callEvent(new_event);
         double xpToGive = xp * craftedAmount;
 
         int finalReduction = Math.max(totalReduction, 1);
-        SkillType finalSkillType = skillType;
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (player.isOnline()) {
                 player.setFoodLevel(player.getFoodLevel() - finalReduction);
                 if(!new_event.isXpCancelled()) {
-                    customPlayer.addSkillXp(finalSkillType, xpToGive);
+                    customPlayer.addSkillXp(skillType, xpToGive);
                 }
             }
         }, 1L);
 
+    }
+
+    @EventHandler
+    public void onInventoryMove(InventoryClickEvent event) {
+        Player player = (Player) event.getWhoClicked();
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayerOrThrow(player);
+        ItemStack currentItem = event.getCurrentItem();
+        if (currentItem == null) return;
+        int slot = event.getSlot();
+        int rawSlot = event.getRawSlot();
+
+        String topTitle = event.getView().getTitle();
+        boolean isShiftClick = event.isShiftClick();
+
+        if (!isShiftClick && topTitle.equals("Forging") && slot == 10) {
+            Pair<SkillType, Double> xp_pair = getItemCraftXp(currentItem.getType().name().toUpperCase(Locale.ROOT));
+            SkillType skillType = xp_pair.key();
+            double xp = xp_pair.value();
+            int craftedAmount = currentItem.getAmount();
+            applyRandomToolAttribute(currentItem, player);
+            double xpToGive = xp * craftedAmount;
+
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (player.isOnline()) {
+                    customPlayer.addSkillXp(skillType, xpToGive);
+                }
+            }, 1L);
+        }
+        if (topTitle.equals("Cooking Pot") && slot == 8) {
+            Pair<SkillType, Double> xp_pair = getItemCraftXp(currentItem.getType().name().toUpperCase(Locale.ROOT));
+            SkillType skillType = xp_pair.key();
+            double xp = xp_pair.value();
+            int craftedAmount = currentItem.getAmount();
+            applyRandomToolAttribute(currentItem, player);
+            double xpToGive = xp * craftedAmount;
+
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (player.isOnline()) {
+                    customPlayer.addSkillXp(skillType, xpToGive);
+                }
+            }, 1L);
+        }
     }
 
     private String getCraftId(CraftItemEvent event) {
@@ -511,10 +535,111 @@ public class CraftingListener implements Listener {
             LOGGER.info("Blocking recipe " + recipeKey + " for player " + player.getName());
             event.getInventory().setResult(new ItemStack(Material.AIR));
 
-            // Try to undiscover, but don't rely on it
             player.undiscoverRecipe(recipeKey);
             player.updateInventory();
         }
     }
 
+
+    private void applyRandomToolAttribute(ItemStack item, Player player) {
+        String attributeName = getAttribute(item);
+        if (attributeName == null) return;
+
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayerOrThrow(player);
+        int level = customPlayer.getSkillLevel(SkillType.BLACKSMITH) + 1;
+
+        if (ThreadLocalRandom.current().nextDouble() < 0.5) {
+            OpenLab.logger.info("No attribute applied (50% chance)");
+            return;
+        }
+
+        double rand = ThreadLocalRandom.current().nextDouble();
+        double value;
+
+        if (rand < 0.4) { // 40% of the 50% that get attributes = 20% total
+            value = ThreadLocalRandom.current().nextDouble(0.1, 0.2) * level;
+        } else if (rand < 0.5) { // 10% of the 50% that get attributes = 5% total
+            value = ThreadLocalRandom.current().nextDouble(0.3, 0.5) * level;
+        } else if (rand < 0.9) { // 40% of the 50% that get attributes = 20% total
+            value = -ThreadLocalRandom.current().nextDouble(0.1, 0.2) * level;
+        } else { // 10% of the 50% that get attributes = 5% total
+            value = -ThreadLocalRandom.current().nextDouble(0.3, 0.5) * level;
+        }
+
+        String slot = getSlotForItem(item);
+
+        NBT.modify(item, nbtItem -> {
+            ReadWriteNBTCompoundList modifiers = nbtItem.getCompoundList("AttributeModifiers");
+
+            for (int i = modifiers.size() - 1; i >= 0; i--) {
+                ReadWriteNBT mod = modifiers.get(i);
+                if (attributeName.equals(mod.getString("AttributeName"))) {
+                    modifiers.remove(i);
+                }
+            }
+
+            ReadWriteNBT modifier = modifiers.addCompound();
+            modifier.setString("Slot", slot); // Dynamic slot based on item type
+            modifier.setString("AttributeName", attributeName);
+            modifier.setInteger("Operation", 0);
+
+            UUID uuid = UUID.randomUUID();
+            modifier.setIntArray("UUID", new int[]{
+                    (int)(uuid.getMostSignificantBits() >> 32),
+                    (int)uuid.getMostSignificantBits(),
+                    (int)(uuid.getLeastSignificantBits() >> 32),
+                    (int)uuid.getLeastSignificantBits()
+            });
+
+            modifier.setDouble("Amount", (double) (Math.round(value*10)/10));
+            modifier.setString("Name", "specialization_" + attributeName.replace(":", "_").replace(".", "_"));
+
+            // Store quality tier in persistent data for reference
+            nbtItem.setString("crafted_by", player.getName());
+        });
+    }
+
+    private String getSlotForItem(ItemStack item) {
+        String type = item.getType().name().toLowerCase();
+
+        if (type.contains("sword") || type.contains("axe") ||
+                type.contains("pickaxe") || type.contains("shovel") ||
+                type.contains("hoe")) {
+            return "mainhand";
+        } else if (type.contains("helmet")) {
+            return "head";
+        } else if (type.contains("chestplate")) {
+            return "chest";
+        } else if (type.contains("leggings")) {
+            return "legs";
+        } else if (type.contains("boots")) {
+            return "feet";
+        } else if (type.contains("shield")) {
+            return "offhand";
+        } else if (type.contains("bow") || type.contains("crossbow")) {
+            return "mainhand";
+        }
+
+        return "mainhand"; // Default
+    }
+
+    private String getAttribute(ItemStack item) {
+        List<String> attributes = new ArrayList<>();
+
+        ItemCategory category = ItemCategory.fromItem(item);
+
+        if (category == null) {
+            OpenLab.logger.info("Item category null for: " + item.getType());
+            return null;
+        }
+
+        attributes.addAll(ItemCategory.CATEGORY_AFFIXES.getOrDefault(category, Collections.emptySet()));
+
+        if (attributes.isEmpty()) {
+            OpenLab.logger.info("No attributes for category: " + category);
+            return null;
+        }
+
+        return attributes.get(ThreadLocalRandom.current().nextInt(attributes.size()));
+    }
 }
