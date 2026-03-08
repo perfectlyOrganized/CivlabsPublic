@@ -1,11 +1,12 @@
 package com.minecraftcivilizations.specialization.Listener.Blocks;
 
+import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.Reinforcement.ReinforcementManager;
+import com.minecraftcivilizations.specialization.Skill.SkillType;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -135,14 +136,39 @@ public class ReinforcementProtectionListener implements Listener {
             }, 2L);
         }
     }
+    public boolean isBlockConnectedToFourSimilar(Block block) {
+        World world = block.getWorld();
+        Location location = block.getLocation();
 
+        Block centerBlock = world.getBlockAt(location);
+        Material blockType = centerBlock.getType();
+
+        Location[] directions = new Location[] {
+                location.clone().add(1, 0, 0),  // East
+                location.clone().add(-1, 0, 0), // West
+                location.clone().add(0, 0, 1),  // South
+                location.clone().add(0, 0, -1),  // North
+                location.clone().add(0, 1, 0),
+                location.clone().add(0, -1, 0)
+        };
+
+        int connectedCount = 0;
+        for (Location adjacentLoc : directions) {
+            if (world.getBlockAt(adjacentLoc).getType() == blockType) {
+                connectedCount++;
+                OpenLab.logger.info(String.valueOf(connectedCount));
+            }
+        }
+
+        return connectedCount >= 4;
+    }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBreak(BlockDamageEvent event) {
         Block block = event.getBlock();
 
         boolean reinforced = ReinforcementManager.isReinforced(block);
-        boolean ironType   = isIronBlock(block.getType());
+        boolean ironType = isIronBlock(block.getType());
         boolean isBrick = isBrickBlock(block.getType());
 
         if (!reinforced && !ironType && !isBrick) {
@@ -150,8 +176,12 @@ public class ReinforcementProtectionListener implements Listener {
         }
 
         Player player = event.getPlayer();
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayerOrThrow(player);
         Material item = player.getInventory().getItemInMainHand().getType();
-
+        if (customPlayer.getSkillLevel(SkillType.BUILDER) < 1 && isBlockConnectedToFourSimilar(block) && !player.isSneaking()) {
+            PlayerUtil.message(player, "This block is connected to 4 other blocks of the same type which makes it unbreakable", 1);
+            event.setCancelled(true);
+        }
         if (!isPickaxe(item)) {
             PlayerUtil.message(player, "Pickaxe is <gold>required</gold> to break reinforced blocks", 1);
             event.setCancelled(true);
@@ -163,7 +193,7 @@ public class ReinforcementProtectionListener implements Listener {
     }
 
     private boolean isIronBlock(Material mat) {
-        return mat.name().contains("IRON");
+        return mat.name().contains("IRON") && !mat.name().contains("WOOD");
     }
 
     private boolean isBrickBlock(Material mat) {

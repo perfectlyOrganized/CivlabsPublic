@@ -1,11 +1,17 @@
 package com.minecraftcivilizations.specialization.Listener.Player.Blocks.Mining
 
+import com.minecraftcivilizations.specialization.Config.SpecializationConfig
 import com.minecraftcivilizations.specialization.OpenLab
+import com.minecraftcivilizations.specialization.Skill.SkillLevel
+import com.minecraftcivilizations.specialization.Skill.SkillType
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager
 import com.minecraftcivilizations.specialization.util.EffectsUtil
 import com.minecraftcivilizations.specialization.util.ItemStackUtils
 import net.minecraft.world.item.ItemUtils
+import org.apache.logging.log4j.core.util.Integers
 import org.bukkit.Bukkit
 import org.bukkit.Material
+import org.bukkit.NamespacedKey
 import org.bukkit.Sound
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
@@ -16,7 +22,9 @@ import org.bukkit.event.inventory.InventoryInteractEvent
 import org.bukkit.inventory.Inventory
 import org.bukkit.inventory.InventoryView
 import org.bukkit.inventory.ItemStack
+import org.bukkit.loot.LootContext
 import org.bukkit.scheduler.BukkitTask
+import java.util.Random
 import java.util.UUID
 import java.util.concurrent.ThreadLocalRandom
 
@@ -140,14 +148,33 @@ class FarmerMinigame {
     fun end() {
         isActive = false
         val player = Bukkit.getPlayer(owner) ?: return
+        val customPlayer = CustomPlayerManager.getCustomPlayerOrThrow(player)
         player.playSound(player.location, Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1f)
         repeatingTask.cancel()
         task.cancel()
-        inventory = Bukkit.createInventory(null, 27, "Reward")
+
+
+        val level = customPlayer.getSkillLevel(SkillType.FARMER)
+        val tierWeights: Map<String, Int> = SpecializationConfig.farmerConfig.getConfigList("FARMER_TREASURE_TIERS").associate { config ->
+            config.getString("skill_level") to config.getInt("chance")
+        }
+
+        val maxTier = SkillLevel.getSkillLevelFromInt(level)
+        val tier = MinerTressureChance.selectWeightedTier(tierWeights, maxTier)
+
+        val lootKey = NamespacedKey("openlabs", "treasure/tiers/${tier.lowercase()}-farmer-treasure")
+        val lootTable = Bukkit.getLootTable(lootKey) ?: return OpenLab.logger.warning { "Missing ${tier}-farmer-treasure loot table" }
+
+        val lootContext = LootContext.Builder(player.location)
+            .killer(player)
+            .luck(0f)
+            .lootedEntity(player)
+            .build()
+        inventory = Bukkit.createInventory(null, 27, "Reward: ${tier.lowercase()}")
         player.closeInventory()
         player.openInventory(inventory)
-
-        inventory.setItem(13, ItemStackUtils.getItemStack(crop.key, score/2))
+        inventory.setItem(13, ItemStackUtils.getItemStack(crop.key, (score * ThreadLocalRandom.current().nextDouble(3.0)).toInt()))
+        lootTable.fillInventory(inventory, Random(), lootContext);
         val centerLocation = player.location.clone().add(0.5, 0.5, 0.5)
         EffectsUtil.spawnLootEffect(centerLocation, 200)
     }

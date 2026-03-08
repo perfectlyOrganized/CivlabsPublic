@@ -39,7 +39,7 @@ object RecipeBlocker : Listener {
 
 
     private val BLOCKED_RECIPES: MutableSet<NamespacedKey?> = HashSet<NamespacedKey?>()
-
+    private val ALL_RECIPES: MutableSet<NamespacedKey> = HashSet()
     private val recipeRequirements: MutableMap<NamespacedKey?, MutableList<String>?> =
         HashMap<NamespacedKey?, MutableList<String>?>()
     private var cacheLoaded = false
@@ -47,11 +47,24 @@ object RecipeBlocker : Listener {
     init {
         BLOCKED_RECIPES.add(NamespacedKey.minecraft("rail"))
     }
+    private fun loadAllRecipes() {
+        if (ALL_RECIPES.isNotEmpty()) return
+
+        Bukkit.getServer().recipeIterator().forEachRemaining { recipe ->
+            if (recipe is Keyed) {
+                ALL_RECIPES.add(recipe.key)
+            }
+        }
+        OpenLab.logger.info { "Loaded ${ALL_RECIPES.size} total recipes" }
+    }
 
     private fun ensureCacheLoaded() {
         if (cacheLoaded) return
 
         recipeRequirements.clear()
+
+        // Track which recipes are locked behind skills (these are the ones in config)
+        val lockedRecipesFromConfig = mutableSetOf<NamespacedKey?>()
 
         for (skillType in SkillType.entries) {
             for (skillLevel in SkillLevel.entries) {
@@ -62,6 +75,7 @@ object RecipeBlocker : Listener {
                     if (recipeStr == null) continue
 
                     val recipeKey = NamespacedKey.fromString(recipeStr) ?: continue
+                    lockedRecipesFromConfig.add(recipeKey)
 
                     val requirement = skillType.toString() + ":" + skillLevel.level
                     recipeRequirements.computeIfAbsent(recipeKey) { mutableListOf<String>() }?.add(requirement)
@@ -69,6 +83,12 @@ object RecipeBlocker : Listener {
             }
         }
 
+        // BLOCKED_RECIPES should only contain recipes that are in the config
+        // (since those are the ones that require skills to unlock)
+        BLOCKED_RECIPES.clear()
+        BLOCKED_RECIPES.addAll(lockedRecipesFromConfig)
+        OpenLab.logger.info { BLOCKED_RECIPES.toString() }
+        OpenLab.logger.info { recipeRequirements.toString() }
         cacheLoaded = true
     }
 
@@ -83,10 +103,12 @@ object RecipeBlocker : Listener {
 
     fun updateRecipes(player: Player) {
         ensureCacheLoaded()
+        loadAllRecipes()
 
         val customPlayer = getCustomPlayer(player.uniqueId) ?: return
 
-        val allowed: MutableSet<NamespacedKey?> = HashSet<NamespacedKey?>(customPlayer.additionUnlockedRecipes)
+        val allowed: MutableSet<NamespacedKey> = HashSet(ALL_RECIPES)
+        allowed.addAll(customPlayer.additionUnlockedRecipes)
 
         for (entry in recipeRequirements.entries) {
             val recipe = entry.key
@@ -104,7 +126,7 @@ object RecipeBlocker : Listener {
                 }
             }
 
-            if (canUse || requirements.isEmpty()) {
+            if (recipe != null && (canUse || requirements.isEmpty())) {
                 allowed.add(recipe)
             }
         }

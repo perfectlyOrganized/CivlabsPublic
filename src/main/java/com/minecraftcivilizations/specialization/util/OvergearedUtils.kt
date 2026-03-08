@@ -34,9 +34,9 @@ object OvergearedUtils {
         if (!block.state.type.toString().startsWith("OVERGEARED")) return
         val customPlayer = getCustomPlayer(player) ?: return
         val level = customPlayer.getSkillLevel(SkillType.BLACKSMITH)
-        val canUseIron = level > 2
-        val canUseGold = level > 3
-        val canUseSteel = level > 3
+        val canUseIron = level >= 2
+        val canUseGold = level >= 3
+        val canUseSteel = level >= 3
 
         try {
             NBT.get(block.state) { nbt: ReadableNBT ->

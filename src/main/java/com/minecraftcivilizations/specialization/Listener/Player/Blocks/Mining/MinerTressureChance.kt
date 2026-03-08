@@ -27,6 +27,31 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 class MinerTressureChance : Listener {
+    companion object {
+        fun selectWeightedTier(tierWeights: Map<String, Int>, maxTier: SkillLevel): String {
+            val allTiers = tierWeights.keys.toList()
+            val maxTierIndex = maxTier.ordinal
+
+            // Get tiers up to max level
+            val availableTiers = allTiers.take(maxTierIndex + 1)
+            val availableWeights = availableTiers.map { tierWeights[it] ?: 1 }
+
+            // Weighted random selection
+            val totalWeight = availableWeights.sum()
+            var randomWeight = ThreadLocalRandom.current().nextInt(totalWeight)
+            var cumulativeWeight = 0
+
+            for (i in availableWeights.indices) {
+                cumulativeWeight += availableWeights[i]
+                if (randomWeight < cumulativeWeight) {
+                    return availableTiers[i]
+                }
+            }
+
+            // Fallback (should never reach here)
+            return availableTiers.last()
+        }
+    }
     @EventHandler
     fun onBlockBreak(event: BlockBreakEvent) {
         if (event.block.y >= 64) return
@@ -79,31 +104,7 @@ class MinerTressureChance : Listener {
         }, 30L)
     }
 
-
 }
 
 
 
-fun selectWeightedTier(tierWeights: Map<String, Int>, maxTier: SkillLevel): String {
-    val allTiers = tierWeights.keys.toList()
-    val maxTierIndex = maxTier.ordinal
-
-    // Get tiers up to max level
-    val availableTiers = allTiers.take(maxTierIndex + 1)
-    val availableWeights = availableTiers.map { tierWeights[it] ?: 1 }
-
-    // Weighted random selection
-    val totalWeight = availableWeights.sum()
-    var randomWeight = ThreadLocalRandom.current().nextInt(totalWeight)
-    var cumulativeWeight = 0
-
-    for (i in availableWeights.indices) {
-        cumulativeWeight += availableWeights[i]
-        if (randomWeight < cumulativeWeight) {
-            return availableTiers[i]
-        }
-    }
-
-    // Fallback (should never reach here)
-    return availableTiers.last()
-}

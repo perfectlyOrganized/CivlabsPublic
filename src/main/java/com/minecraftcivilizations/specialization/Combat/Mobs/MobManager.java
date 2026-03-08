@@ -1,6 +1,7 @@
 package com.minecraftcivilizations.specialization.Combat.Mobs;
 
 import com.minecraftcivilizations.specialization.Combat.CombatManager;
+import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
@@ -12,6 +13,7 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.block.Biome;
+import org.bukkit.craftbukkit.v1_20_R1.entity.CraftEntity;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -26,6 +28,9 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
+import virtuoel.pehkui.api.ScaleData;
+import virtuoel.pehkui.api.ScaleType;
+import virtuoel.pehkui.api.ScaleTypes;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -621,9 +626,7 @@ public class MobManager implements Listener {
             if(variation!=null){
                 EntityType new_type = variation.rollType();
                 if(new_type == null){
-                    //apply the stats now, as we do not override type
                     convertEntityToVariation(living, variation);
-//                    Debug.broadcast("mob", MiniMessage.miniMessage().deserialize("<blue>[CHNK_NULL]</blue> <yellow>["+variation.getId()+"]</yellow> applying to <gray>"+living.getName()+"</gray> at ").append(Debug.formatLocationClickable(living.getLocation(),true)));
                 }else{
                     if(variation.doesReplaceOriginalMob()) {
                         living.remove(); // this deletes the existing mob
@@ -632,15 +635,9 @@ public class MobManager implements Listener {
                         loc = WorldUtils.getNextSafeVerticalPosition(loc).add(0, 1,0);
                     }
 
-                    //Spawn a new mob with the variation settings
                     Entity e = loc.getWorld().spawnEntity(loc, new_type);
-                    if(Debug.isAnyoneListening("mob", false)){
-                    Debug.broadcast("mob", MiniMessage.miniMessage().deserialize("<light_purple>🏔</light_purple>"+e.getName()+" <gray>applied: <green>"+variation.getId()+" ")
-                            .append(Debug.formatLocationClickable(e.getLocation(), true)));
-                    }
                     convertEntityToVariation(e, variation);
 
-//                    Debug.broadcast("mob", MiniMessage.miniMessage().deserialize("<light_purple>[CHNK_VALID]</light_purple> <yellow>["+variation.getId()+"]</yellow> <gray>"+living.getName()+"</gray> to <gray>"+e.getName()+"</gray> at ").append(Debug.formatLocationClickable(e.getLocation(),true)));
 
                 }
 //                Debug.broadcast("mob", "Chunk Gen Override:<light_purple>" + type_original.name() +
@@ -671,7 +668,42 @@ public class MobManager implements Listener {
         EntityType type = entity.getType();
         Location location = entity.getLocation();
         Biome biome = location.getWorld().getBiome(location.getBlockX(), location.getBlockY(), location.getBlockZ());
+        double uniqueMobChance = SpecializationConfig.getMobConfig().getDouble("unique_mob_chance");
+        double randomMobChance = ThreadLocalRandom.current().nextDouble();
 
+        if ((HuntPlayerMobGoal.isFullMoon(entity.getWorld()) || HuntPlayerMobGoal.isInvertedFullMoon(entity.getWorld())) && uniqueMobChance > randomMobChance) {
+            net.minecraft.world.entity.Entity mcEntity = ((CraftEntity) entity).getHandle();
+            List<String> uniqueScaleType = List.of(
+                    "height", "width", "base"
+            );
+            float modifier = ThreadLocalRandom.current().nextFloat(2);
+            if (uniqueMobChance * 0.1 > randomMobChance) {
+                modifier *= 10;
+            }
+            AttributeInstance maxHealthAttribute = entity.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+            AttributeInstance armorToughnessAttribute = entity.getAttribute(Attribute.GENERIC_ARMOR_TOUGHNESS);
+            double maxHealthAttributeValue = maxHealthAttribute.getValue();
+            double armorToughnessAttributeValue = armorToughnessAttribute.getValue();
+            maxHealthAttribute.setBaseValue(maxHealthAttributeValue * modifier);
+            armorToughnessAttribute.setBaseValue(armorToughnessAttributeValue * modifier);
+
+            switch (uniqueScaleType.get(ThreadLocalRandom.current().nextInt(uniqueScaleType.size()))) {
+                case "height":
+                    ScaleData heightScaleData = ScaleTypes.HEIGHT.getScaleData(mcEntity);
+                    heightScaleData.setScale(modifier);
+                    break;
+
+                case "width":
+                    ScaleData widthScaleData = ScaleTypes.WIDTH.getScaleData(mcEntity);
+                    widthScaleData.setScale(modifier);
+                    break;
+
+                case "base":
+                    ScaleData baseScaleData = ScaleTypes.BASE.getScaleData(mcEntity);
+                    baseScaleData.setScale(modifier);
+                    break;
+            }
+        }
         if (event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.CUSTOM) {
             //THIS IS A NATURAL GAME SPAWN
             if(isMobVariation(event.getEntity())){
@@ -689,10 +721,6 @@ public class MobManager implements Listener {
                     Location loc = entity.getLocation();
                     if (new_type == null) {
                         //apply the stats now, as we do not override type
-                        if(Debug.isAnyoneListening("mob", false)) {
-                            Debug.broadcast("mob", MiniMessage.miniMessage().deserialize("<green>🔌</green> " + "<white>" + entity.getName() + " <gray>applied: <green>" + variation.getId() + " ")
-                                    .append(Debug.formatLocationClickable(entity.getLocation(), true)));
-                        }
                         convertEntityToVariation(entity, variation);
                     } else {
                         if (variation.doesReplaceOriginalMob()) {
@@ -705,10 +733,6 @@ public class MobManager implements Listener {
                         Entity e = loc.getWorld().spawnEntity(loc, new_type);
                         if (e instanceof LivingEntity le) {
                             convertEntityToVariation(le, variation);
-                            if(Debug.isAnyoneListening("mob", false)) {
-                                Debug.broadcast("mob", MiniMessage.miniMessage().deserialize("<green>📲</green> " + "<white>" + entity.getName() + " <gray>converted: <green>" + variation.getId() + " ")
-                                        .append(Debug.formatLocationClickable(entity.getLocation(), true)));
-                            }
                             MobVariation mount_variation = variation.getMount();
                             if (mount_variation != null) {
                                 if (variation.getMountChance() > ThreadLocalRandom.current().nextDouble()) {

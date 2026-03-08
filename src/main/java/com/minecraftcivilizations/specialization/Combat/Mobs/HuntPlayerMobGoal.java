@@ -85,7 +85,19 @@ public class HuntPlayerMobGoal implements Listener {
             data.tick();
         }
     }
+    public static boolean isFullMoon(World world) {
+        long time = world.getFullTime();
+        int days = (int) (time / 24000);
+        int phase = days % 8;
+        return phase == 0;
+    }
 
+    public static boolean isInvertedFullMoon(World world) {
+        long time = world.getFullTime();
+        int days = (int) (time / 24000);
+        int phase = days % 8;
+        return phase == 4;
+    }
     /**
      * Event listener to handle target changes
      */
@@ -208,11 +220,11 @@ public class HuntPlayerMobGoal implements Listener {
 
             Player bestTarget = null;
             double bestScore = Double.MAX_VALUE;
-
+            double gracePeriod = SpecializationConfig.getMobConfig().getDouble("PLAYER_GRACE_PERIOD");
             for (Player player : nearby) {
                 CustomPlayer cp = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
                 if (cp == null) continue;
-                if (cp.getCreation_date() < System.currentTimeMillis() + 1000*SpecializationConfig.getMobConfig().getDouble("NEW_PLAYER_GRACE_PERIOD")) continue;
+                if (cp.getGracePeriodStart() + 1000*gracePeriod > System.currentTimeMillis()) continue;
                 int guardsmanLevel = cp.getSkillLevel(SkillType.GUARDSMAN);
                 double guardZone = guardsmanBaseRadius + (guardsmanLevel * guardsmanRadiusPerLevel);
                 double distance = player.getLocation().distance(mob.getLocation());
@@ -237,19 +249,7 @@ public class HuntPlayerMobGoal implements Listener {
             }
         }
 
-        private boolean isFullMoon(World world) {
-            long time = world.getFullTime();
-            int days = (int) (time / 24000);
-            int phase = days % 8;
-            return phase == 0;
-        }
 
-        private boolean isInvertedFullMoon(World world) {
-            long time = world.getFullTime();
-            int days = (int) (time / 24000);
-            int phase = days % 8;
-            return phase == 4;
-        }
 
         private void handleBlockBreaking() {
             Entity target = mob.getTarget();

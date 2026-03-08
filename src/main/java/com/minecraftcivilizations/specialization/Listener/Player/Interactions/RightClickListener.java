@@ -44,13 +44,13 @@ public class RightClickListener implements Listener {
         ConfigFile config = SpecializationConfig.getCanUseItemConfig();
         List<String> blacklist = SpecializationConfig.getCanUseItemConfig().getStringList("blacklist");
         List<String> modBlacklist = SpecializationConfig.getCanUseItemConfig().getStringList("mod_blacklist");
-        if (!bypass && (blacklist.contains(mainKey) ||
-                blacklist.contains(offKey))) {
+        if (!bypass && (blacklist.contains(mainKey) || blacklist.contains(offKey))) {
             PlayerUtil.sendActionBar(player, Component.text("You are unable to use "+ mainKey + " or " + offKey).color(NamedTextColor.RED) );
             event.setCancelled(true);
             return;
         }
-        boolean hit = false;
+
+        boolean itemFoundInConfig = false;
         boolean canUse = false; // Start as false, change to true if ANY requirement is met
 
         for (Skill skill : customPlayer.getSkills()) {
@@ -61,17 +61,15 @@ public class RightClickListener implements Listener {
                 boolean mainAllowed = allowed.contains(mainKey);
                 boolean offAllowed = allowed.contains(offKey);
 
-                if ((mainAllowed || offAllowed)) {
-                    hit = true;
-                    // This skill+level combination allows this item
+                if (mainAllowed || offAllowed) {
+                    itemFoundInConfig = true;
                     if (customPlayer.getSkillLevel(skill.getSkillType()) >= level.getLevel()) {
-                        // AND player meets the level requirement
                         canUse = true;
-                        break; // Break inner loop
+                        break;
                     }
                 }
             }
-            if (canUse) break; // Break outer loop
+            if (canUse) break; // Break outer loop if we've found a valid combination
         }
 
         if (!canUse && !bypass && (modBlacklist.stream().anyMatch(mainKey::startsWith) && !player.hasCooldown(mainType)) ||
@@ -81,7 +79,7 @@ public class RightClickListener implements Listener {
             return;
         }
 
-        if (!canUse && hit && !bypass) {
+        if (!canUse && itemFoundInConfig && !bypass) {
             PlayerUtil.sendActionBar(player, Component.text("You are unable to use "+ mainKey + " or " + offKey).color(NamedTextColor.RED) );
             event.setCancelled(true);
         }
@@ -90,7 +88,7 @@ public class RightClickListener implements Listener {
         Block clicked = event.getClickedBlock();
         if(clicked == null) return;
 
-
+        if (clicked.getType().name().equals("FARMERSDELIGHT_CUTTING_BOARD")) return;
         // Handle wooden reinforcement first - prevent placing logs when sneaking with logs in off-hand
         if (ReinforcementManager.isLog(player.getInventory().getItemInOffHand().getType()) && player.isSneaking()) {
             event.setCancelled(true); // Always prevent placing when sneaking with logs in off-hand
@@ -114,13 +112,6 @@ public class RightClickListener implements Listener {
         }
 
         if (ReinforcementManager.isReinforced(clicked)) return;
-
-        CustomPlayer cPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
-        if(clicked.getBlockData() instanceof Ageable bush && cPlayer.getSkillLevel(SkillType.FARMER) < 2){
-            if(bush.getAge() >= 3 && Math.random() < 0.2){
-                player.damage(1);
-            }
-        }
 
         // Light reinforcement (copper ingot) - check main hand first, then off-hand
         if (mainType == Material.COPPER_INGOT || offType == Material.COPPER_INGOT) {

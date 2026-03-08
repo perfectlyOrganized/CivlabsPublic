@@ -12,23 +12,13 @@ import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.OvergearedUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import com.typesafe.config.Config;
-import de.tr7zw.changeme.nbtapi.NBT;
-import de.tr7zw.changeme.nbtapi.iface.ReadWriteNBTCompoundList;
-import io.izzel.arclight.api.ArclightServer;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import net.minecraft.world.level.block.CropBlock;
-import net.minecraft.world.level.block.state.IBlockData;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.BlockState;
 import org.bukkit.block.data.Ageable;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.craftbukkit.v1_20_R1.block.CraftBlock;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.HumanEntity;
-import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -37,12 +27,9 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockPhysicsEvent;
-import org.bukkit.event.inventory.*;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffectType;
 
@@ -73,7 +60,8 @@ public class PlayerInteractListener implements Listener {
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
             Block block = event.getClickedBlock();
             if (block == null) return;
-            boolean typeClassLocked = false;
+            boolean hit = false;
+            boolean canAccess = false;
             String type = block.getType().toString();
             Player player = event.getPlayer();
             CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
@@ -86,16 +74,14 @@ public class PlayerInteractListener implements Listener {
                     List<String> types = SpecializationConfig.getCanUseBlockConfig().getStringList(configKey);
                     if (types == null) continue;
                     if (!types.contains(type)) continue;
-
+                    hit = true;
                     if (OvergearedUtils.INSTANCE.isOvergearedAnvilConversion(player,block)) return;
                     if (playerSkillLevel >= skillLevel.getLevel()) {
-                        break;
-                    } else {
-                        typeClassLocked = true;
+                        canAccess = true;
                     }
                 }
             }
-            if (typeClassLocked && !bypass) {
+            if (!canAccess && hit && !bypass) {
                 event.getPlayer().sendMessage("You are unable to access: "+ type + ", report if this is a bug.");
                 event.setCancelled(true);
             }

@@ -51,7 +51,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.*;
@@ -162,6 +161,8 @@ public final class OpenLab extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ExplodeListener(), this);
         getServer().getPluginManager().registerEvents(new PlayerInteractListener(), this);
         getServer().getPluginManager().registerEvents(new PlayerInteractEntityListener(), this);
+        getServer().getPluginManager().registerEvents(MappingListener.INSTANCE, this);
+
         combatManager = new CombatManager(this); // Guardsman Damage Output
         new FoodInteractionListener(this);
         getServer().getPluginManager().registerEvents(new HungerSystem(this, emoteManager), this);
@@ -193,8 +194,8 @@ public final class OpenLab extends JavaPlugin {
 //        World nether = Bukkit.getWorlds().get(1);
 
         for(World world : Bukkit.getWorlds()) {
-            world.setGameRule(GameRule.SPAWN_RADIUS, 350);
-            world.setDifficulty(Difficulty.HARD);
+            //world.setGameRule(GameRule.SPAWN_RADIUS, 350);
+            //world.setDifficulty(Difficulty.HARD);
             world.setGameRule(GameRule.REDUCED_DEBUG_INFO, true);
             world.setGameRule(GameRule.DO_IMMEDIATE_RESPAWN, true);
             world.setGameRule(GameRule.NATURAL_REGENERATION, false);
