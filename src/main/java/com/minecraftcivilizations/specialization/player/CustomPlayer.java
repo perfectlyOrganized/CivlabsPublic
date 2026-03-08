@@ -12,6 +12,7 @@ import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.util.LoreUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import com.typesafe.config.Config;
+import it.unimi.dsi.fastutil.Hash;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -40,7 +41,10 @@ public class CustomPlayer extends CustomPlayerBase {
     @Getter
     List<Skill> skills = new ArrayList<>();
     @Getter
-    private final long creation_date = System.currentTimeMillis();
+    private final long creationDate = System.currentTimeMillis();
+    @Getter
+    @Setter
+    private long gracePeriodStart = System.currentTimeMillis();
     @Setter
     @Getter
     private double height = 0;
@@ -71,6 +75,9 @@ public class CustomPlayer extends CustomPlayerBase {
     @Setter
     private UUID leashedTo = null;
     @Getter
+    @Setter
+    private HashSet<String> visitedWorldSectors = new HashSet<>();
+    @Getter
     private Map<SkillType, Boolean> classXPToggles;
     private final Queue<Material> lastEatenFood = Queues.newConcurrentLinkedQueue();
 
@@ -87,6 +94,10 @@ public class CustomPlayer extends CustomPlayerBase {
         for (SkillType skill : SkillType.values()) {
             classXPToggles.putIfAbsent(skill, true);
         }
+        if (visitedWorldSectors == null) visitedWorldSectors = new HashSet<>();
+    }
+    public Player getPlayer() {
+        return Bukkit.getPlayer(uuid);
     }
      /**
      * Classic straightforward add XP
@@ -116,7 +127,7 @@ public class CustomPlayer extends CustomPlayerBase {
      */
     public void addSkillXp(@NotNull SkillType skillType, double xp, Location soundLocation, boolean allowNegative, boolean silent) {
         Player player = Bukkit.getPlayer(getUuid());
-
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayerOrThrow(player);
         if (xp == 0) return;
         int previousLevel = this.getSkillLevel(skillType);
         boolean negative = xp<0;
@@ -131,8 +142,9 @@ public class CustomPlayer extends CustomPlayerBase {
 
         String color = (negative)?"red":"green";
         if(negative) {
-            PlayerUtil.message(player,"XP LOSS: " + skillType.name() + ": " + skill.getXp() + " (+ " + ((xp > 0) ? ChatColor.GREEN : ChatColor.RED) + xp + ")");
+            PlayerUtil.message(player,"XP LOSS: " + skillType.name() + ": " + skill.getXp() + " (+ " + ChatColor.RED + xp + ")");
         }
+        if (!customPlayer.getClassXPToggles().get(skillType) && !negative) return;
         Component simple_xp_msg = MiniMessage.miniMessage().deserialize(
                 "<gray>"+skill.getXp()+"</gray> " +
                 "<"+color+">(" +(negative?"":"+") +xp+")</"+color+"> " +

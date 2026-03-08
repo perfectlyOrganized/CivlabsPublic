@@ -49,7 +49,7 @@ public class Bandage extends CustomItemBase {
         ShapelessRecipe bandage_recipe = new ShapelessRecipe(RECIPE_KEY, createItemStack(1));
         bandage_recipe.addIngredient(8, Material.PAPER);
         bandage_recipe.addIngredient(Material.SUGAR_CANE);
-        Bukkit.addRecipe(bandage_recipe);
+       // Bukkit.addRecipe(bandage_recipe);
         }
 
 //            Bukkit.removeRecipe(RECIPE_KEY);

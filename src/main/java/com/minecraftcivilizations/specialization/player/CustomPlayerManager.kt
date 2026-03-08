@@ -82,12 +82,6 @@ object CustomPlayerManager : Listener {
         if (!hasCustomPlayer(uuid)) {
             return createNewPlayer(uuid)
         }
-        println("=== load CALLED ===")
-        println("Call stack:")
-        val stackTrace = Thread.currentThread().stackTrace
-        for (i in 2..<min(stackTrace.size, 10)) { // Skip first 2
-            println("  " + stackTrace[i])
-        }
 
         return playerFile.bufferedReader().use { reader ->
             val customPlayer = gson.fromJson(reader, customPlayerClass)

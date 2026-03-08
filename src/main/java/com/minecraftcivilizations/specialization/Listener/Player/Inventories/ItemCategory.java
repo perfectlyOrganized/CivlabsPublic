@@ -18,7 +18,7 @@ enum ItemCategory {
         if (name.contains("_leggings")) return LEGGINGS;
         if (name.contains("_boots") || name.contains("_shoes")) return BOOTS;
         if (name.contains("shield")) return SHIELD;
-        if (name.contains("bow")) return RANGED;
+        if (name.equals("bow") || name.equals("crossbow")) return RANGED;
         return null;
     }
     static final Map<ItemCategory, Set<String>> CATEGORY_AFFIXES = new EnumMap<>(ItemCategory.class);

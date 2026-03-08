@@ -95,7 +95,7 @@ public class EmoteManager extends BaseCommand implements Listener {
         Location loc = getSeatLocation(block);
         Interaction seat = block.getWorld().spawn(loc, Interaction.class, i -> {
             i.setInteractionWidth(0.6f);
-            i.setInteractionHeight(0f);
+            i.setInteractionHeight(0.1f);
             i.setResponsive(false);
             i.setInvulnerable(true);
             i.setGravity(false);
@@ -129,7 +129,6 @@ public class EmoteManager extends BaseCommand implements Listener {
         // Only cancel if the player is sitting and losing food
         if (isPlayerSitting(p) && e.getFoodLevel() < p.getFoodLevel()) {
             e.setCancelled(true);
-            Debug.broadcast("emote", "stopped food loss");
         }
     }
 

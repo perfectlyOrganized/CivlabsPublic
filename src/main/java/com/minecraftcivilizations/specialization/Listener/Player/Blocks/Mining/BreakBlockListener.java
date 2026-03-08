@@ -160,14 +160,10 @@ public class BreakBlockListener implements Listener {
             return;
         }
         if (event.getBlock().getBlockData() instanceof Ageable ageable) {
-            handleHarvest(result, (success) -> {
-                event.setDropItems(!success);
-            }, player, ageable);
+            handleHarvest(result, event::setDropItems, player, ageable);
             return;
         }
-        handleHarvest(result, (success) -> {
-            event.setDropItems(!success);
-        }, player);
+        handleHarvest(result, event::setDropItems, player);
     }
     public static void handleHarvest(ItemStack item, Consumer<Boolean> success, Player player, Ageable ageable) {
         if (ageable != null && ageable.getAge() != ageable.getMaximumAge()) {
@@ -184,7 +180,7 @@ public class BreakBlockListener implements Listener {
         double random = ThreadLocalRandom.current().nextDouble();
 
         success.accept(random < chance);
-        if (random <= 0.04) FarmerMinigameManager.INSTANCE.start(player, item.getType());
+        if (random <= 0.01) FarmerMinigameManager.INSTANCE.start(player, item.getType());
     }
 
     private List<Block> getMultiBlocks(Block b) {

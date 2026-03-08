@@ -38,45 +38,6 @@ public class CraftingListener implements Listener {
     private static final Logger LOGGER = Logger.getLogger(CraftingListener.class.getName());
     private final Plugin plugin;
 
-    private static final Set<Material> COMPLEX_ITEMS = Arrays.stream(Material.values())
-            .filter(material -> {
-                String name = material.name();
-                if (
-                        (
-                                name.startsWith("IRON_") || name.startsWith("GOLDEN_") ||
-                                        name.startsWith("DIAMOND_") || name.startsWith("NETHERITE_")
-                        )
-                                &&
-                                (
-                                        name.endsWith("_PICKAXE") || name.endsWith("_AXE") ||
-                                                name.endsWith("_SHOVEL") || name.endsWith("_HOE") || name.endsWith("_SWORD")
-                                )
-                ) {
-                    return true;
-                }
-                return (name.startsWith("CHAINMAIL_") || name.startsWith("IRON_") ||
-                        name.startsWith("GOLDEN_") || name.startsWith("DIAMOND_") ||
-                        name.startsWith("NETHERITE_")) &&
-                        (name.endsWith("_HELMET") || name.endsWith("_CHESTPLATE") ||
-                                name.endsWith("_LEGGINGS") || name.endsWith("_BOOTS"));
-            })
-            .collect(Collectors.collectingAndThen(
-                    Collectors.toSet(),
-                    set -> {
-                        set.addAll(Set.of(
-                                Material.ANVIL, Material.SMITHING_TABLE, Material.BLAST_FURNACE, Material.GRINDSTONE,
-                                Material.PISTON, Material.STICKY_PISTON, Material.DISPENSER, Material.DROPPER,
-                                Material.OBSERVER, Material.HOPPER, Material.COMPARATOR, Material.REPEATER,
-                                Material.DAYLIGHT_DETECTOR, Material.SCAFFOLDING, Material.JUKEBOX, Material.CAMPFIRE,
-                                Material.ENCHANTING_TABLE, Material.BOOKSHELF, Material.LECTERN,
-                                Material.BREWING_STAND, Material.GLISTERING_MELON_SLICE, Material.GOLDEN_CARROT, Material.GOLDEN_APPLE,
-                                Material.BEACON, Material.ENDER_CHEST, Material.SHIELD, Material.CROSSBOW, Material.TNT, Material.TARGET,
-                                Material.CAKE, Material.PUMPKIN_PIE, Material.RABBIT_STEW
-                        ));
-                        return Set.copyOf(set);
-                    }
-            ));
-
     public CraftingListener(Plugin plugin) {
         this.plugin = plugin;
     }
@@ -215,7 +176,7 @@ public class CraftingListener implements Listener {
                 return;
             }
         }
-        applyRandomToolAttribute(crafted, player);
+        //applyRandomToolAttribute(crafted, player);
 
         SpecializationCraftItemEvent new_event = new SpecializationCraftItemEvent(event, player, craftedAmount, totalReduction, skillType, lvl);
         Bukkit.getPluginManager().callEvent(new_event);
@@ -250,7 +211,7 @@ public class CraftingListener implements Listener {
             SkillType skillType = xp_pair.key();
             double xp = xp_pair.value();
             int craftedAmount = currentItem.getAmount();
-            applyRandomToolAttribute(currentItem, player);
+            //applyRandomToolAttribute(currentItem, player);
             double xpToGive = xp * craftedAmount;
 
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
@@ -264,7 +225,6 @@ public class CraftingListener implements Listener {
             SkillType skillType = xp_pair.key();
             double xp = xp_pair.value();
             int craftedAmount = currentItem.getAmount();
-            applyRandomToolAttribute(currentItem, player);
             double xpToGive = xp * craftedAmount;
 
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
@@ -542,6 +502,7 @@ public class CraftingListener implements Listener {
 
 
     private void applyRandomToolAttribute(ItemStack item, Player player) {
+
         String attributeName = getAttribute(item);
         if (attributeName == null) return;
 

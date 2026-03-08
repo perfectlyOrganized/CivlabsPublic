@@ -2,6 +2,8 @@ package com.minecraftcivilizations.specialization.Listener.Player;
 
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.OpenLab;
+import com.minecraftcivilizations.specialization.player.CustomPlayer;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.EffectsUtil;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import org.bukkit.*;
@@ -199,8 +201,13 @@ public class BedListener implements Listener {
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
         String bedId = player.getPersistentDataContainer().get(PLAYER_BED_ID, PersistentDataType.STRING);
-
-        if (bedId == null) return; // vanilla handles spawn naturally
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayerOrThrow(player);
+        if (bedId == null) {
+            customPlayer.setGracePeriodStart(System.currentTimeMillis());
+            int time = (int) (SpecializationConfig.getMobConfig().getDouble("PLAYER_GRACE_PERIOD")/60);
+            player.sendMessage("You have " + time + " minutes of grace period");
+            return; // vanilla handles spawn naturally
+        }
 
         Integer x = player.getPersistentDataContainer().get(PLAYER_BED_X, PersistentDataType.INTEGER);
         Integer y = player.getPersistentDataContainer().get(PLAYER_BED_Y, PersistentDataType.INTEGER);

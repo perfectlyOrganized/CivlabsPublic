@@ -74,7 +74,7 @@ public class SpecializationConfig {
     @Getter
     private static ConfigFile mobDropsConfig;
     @Getter
-    private static ConfigFile guardsmanConfig;
+    public static ConfigFile guardsmanConfig;
     @Getter
     private static ConfigFile berserkConfig;
     @Getter
@@ -313,7 +313,7 @@ public class SpecializationConfig {
             data.put("BLOCK_BREAK_CHANCE_PERCENTAGE", 30);
             data.put("BLOCK_BREAK_IGNORE_LIST_REGEX", List.of(".*BRICK.*", "OBSIDIAN"));
             data.put("VISUAL_BREAKING_INCREASE_PER_TICK_PERCENTAGE", 1.0);
-            data.put("NEW_PLAYER_GRACE_PERIOD", 600.0); // seconds
+            data.put("PLAYER_GRACE_PERIOD", 600.0); // seconds
             return data;
         };
         mobConfig = new ConfigFile(OpenLab.getInstance(), "mobConfig", mobDefaults);

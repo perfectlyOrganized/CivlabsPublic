@@ -15,7 +15,6 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
-import org.bukkit.Statistic;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -866,7 +865,7 @@ public class LocalNameGenerator implements Listener {
     private static final long MILLIS_PER_MINUTE = 60 * 1000; // 60,000 ms per minute
 
     public long getRemainingTime(CustomPlayer customPlayer) {
-        long elapsedMillis = System.currentTimeMillis() - customPlayer.getCreation_date();
+        long elapsedMillis = System.currentTimeMillis() - customPlayer.getCreationDate();
         long elapsedMinutes = elapsedMillis / MILLIS_PER_MINUTE;
 
         long remaining = TIME_LIMIT_MINUTES - elapsedMinutes;
