@@ -12,7 +12,6 @@ import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.util.LoreUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import com.typesafe.config.Config;
-import it.unimi.dsi.fastutil.Hash;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -76,7 +75,7 @@ public class CustomPlayer extends CustomPlayerBase {
     private UUID leashedTo = null;
     @Getter
     @Setter
-    private HashSet<String> visitedWorldSectors = new HashSet<>();
+    private HashSet<String> mappedAreas = new HashSet<>();
     @Getter
     private Map<SkillType, Boolean> classXPToggles;
     private final Queue<Material> lastEatenFood = Queues.newConcurrentLinkedQueue();
@@ -94,7 +93,7 @@ public class CustomPlayer extends CustomPlayerBase {
         for (SkillType skill : SkillType.values()) {
             classXPToggles.putIfAbsent(skill, true);
         }
-        if (visitedWorldSectors == null) visitedWorldSectors = new HashSet<>();
+        if (mappedAreas == null) mappedAreas = new HashSet<>();
     }
     public Player getPlayer() {
         return Bukkit.getPlayer(uuid);
@@ -170,15 +169,15 @@ public class CustomPlayer extends CustomPlayerBase {
         if (previousLevel != currentLevel) {
             SkillLevelChangeEvent level_change_event = new SkillLevelChangeEvent(this, player, skillType, previousLevel, currentLevel, xp);
             Bukkit.getPluginManager().callEvent(level_change_event);
-            applyEffects(player); //disabled for testing new combat
+            applyEffects(player);
             //applyMaxHealth(player);
             String skill_name = getDisplayName(skillType);
             if (previousLevel < currentLevel) {
                 player.playSound(player, Sound.ENTITY_PLAYER_LEVELUP, 100, 1);
-                PlayerUtil.message(player, LoreUtils.createLoreLine("You have leveled up " + skill_name + ", you are now " + getDisplayName(skillType) + " " + SkillLevel.getDisplayName(currentLevel), NamedTextColor.WHITE));
+                PlayerUtil.message(player, LoreUtils.createLoreLine("You have leveled up " + skill_name + ", you are now " + getDisplayName(skillType) + " " + SkillLevel.Companion.getDisplayName(currentLevel), NamedTextColor.WHITE));
             } else {
                 player.playSound(player, Sound.ITEM_BOTTLE_FILL_DRAGONBREATH, 100F, 1.5F);
-                PlayerUtil.message(player, LoreUtils.createLoreLine("Your " + skill_name + "ing ability has deteriorated, you are now " + getDisplayName(skillType) + " " + SkillLevel.getDisplayName(currentLevel), NamedTextColor.WHITE));
+                PlayerUtil.message(player, LoreUtils.createLoreLine("Your " + skill_name + "ing ability has deteriorated, you are now " + getDisplayName(skillType) + " " + SkillLevel.Companion.getDisplayName(currentLevel), NamedTextColor.WHITE));
             }
             while (currentLevel > 0) {
                 Set<NamespacedKey> recipes = RecipeBlocker.INSTANCE.getRecipes(skillType, currentLevel);
@@ -191,23 +190,68 @@ public class CustomPlayer extends CustomPlayerBase {
     }
 
 
-    public void applyEffects(Player player){
-        for (SkillType skill : SkillType.values()) {
-            List<? extends Config> potionList = SpecializationConfig.getClassSkillEffectsConfig().getConfigList(skill.name() + "_" + getSkillLevelEnum(skill).name());
-            for (Config potionConfig : potionList) {
-                int amplifier = potionConfig.getInt("amplifier");
-                NamespacedKey effectKey = NamespacedKey.fromString(potionConfig.getString("effect"));
+    public void applyEffects(Player player) {
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayerOrThrow(player);
 
-                assert effectKey != null;
-                PotionEffectType potionEffectType =  PotionEffectType.getByKey(effectKey);
-                if(amplifier < 0) continue;
-                if(potionEffectType == null) throw new IllegalStateException("invalid potion effect type in config" + effectKey);
-                if(player.getActivePotionEffects().stream().anyMatch(effect -> effect.getType().equals(potionEffectType) && effect.getDuration() == -1)){
-                    player.removePotionEffect(potionEffectType);
-                }
-                if(player.getActivePotionEffects().stream().noneMatch(effect -> effect.getType().equals(potionEffectType) && effect.getAmplifier() > amplifier)){
-                    player.removePotionEffect(potionEffectType);
-                    player.addPotionEffect(new PotionEffect(potionEffectType,-1, amplifier, false, false, true));
+        for (SkillType skill : SkillType.values()) {
+            SkillLevel currentLevel = customPlayer.getSkillLevelEnum(skill);
+
+            // Get all available levels for this skill
+            List<SkillLevel> allLevels = SkillLevel.Companion.getValues();
+
+            // Sort levels by their level number (ensure they're in ascending order)
+            allLevels.sort((a, b) -> Integer.compare(a.getLevel(), b.getLevel()));
+
+            // Iterate through each level up to current level
+            for (SkillLevel level : allLevels) {
+                // Only process levels up to the current level
+                if (level.getLevel() <= currentLevel.getLevel()) {
+
+                    String key = skill.name() + "_" + level.getName();
+                    Config config = SpecializationConfig.getClassSkillEffectsConfig().getConfig();
+
+                    if (!config.hasPath(key)) continue;
+
+                    List<? extends Config> potionList = SpecializationConfig.getClassSkillEffectsConfig().getConfigList(key);
+
+                    for (Config potionConfig : potionList) {
+                        int amplifier = potionConfig.getInt("amplifier");
+                        NamespacedKey effectKey = NamespacedKey.fromString(potionConfig.getString("effect"));
+
+                        assert effectKey != null;
+                        PotionEffectType potionEffectType = PotionEffectType.getByKey(effectKey);
+
+                        if (amplifier < 0) continue;
+                        if (potionEffectType == null)
+                            throw new IllegalStateException("invalid potion effect type in config" + effectKey);
+
+                        // Check if this effect should be applied
+                        boolean shouldApply = true;
+
+                        // Check if there's already a higher amplifier effect active
+                        for (PotionEffect activeEffect : player.getActivePotionEffects()) {
+                            if (activeEffect.getType().equals(potionEffectType)) {
+                                if (activeEffect.getAmplifier() > amplifier) {
+                                    shouldApply = false; // Higher level exists, don't apply
+                                    break;
+                                } else if (activeEffect.getAmplifier() == amplifier) {
+                                    // Same amplifier exists, still apply (will replace)
+                                    player.removePotionEffect(potionEffectType);
+                                    break;
+                                } else {
+                                    // This effect is stronger, remove the weaker one
+                                    player.removePotionEffect(potionEffectType);
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Apply the effect if it should be applied
+                        if (shouldApply) {
+                            player.removePotionEffect(potionEffectType);
+                            player.addPotionEffect(new PotionEffect(potionEffectType, -1, amplifier, false, false, true));
+                        }
+                    }
                 }
             }
         }
@@ -216,10 +260,10 @@ public class CustomPlayer extends CustomPlayerBase {
     public SkillLevel getSkillLevelEnumByXpOnly(SkillType skillType) {
         double xp = getSkill(skillType).getXp();
         int level = 0;
-        while (level < SkillLevel.values().length && xp >= getXPNeededForLevel(level + 1)) {
+        while (level < SkillLevel.Companion.getValues().size() && xp >= Companion.getXPNeededForLevel(level + 1)) {
             level++;
         }
-        return SkillLevel.getSkillLevelFromInt(level);
+        return SkillLevel.Companion.getSkillLevelFromInt(level);
     }
 
 
@@ -247,16 +291,16 @@ public class CustomPlayer extends CustomPlayerBase {
         int level;
         // So, so sorry if you have to read this, it was fixed about 10 times and I forgot to call it, so now it looks like this :sad:
         level = 0;
-        while (level < SkillLevel.values().length && !isMissingXpForLevel(skillType, level+1) && !isMissingPercentForLevel(skillType, level+1)) {
+        while (level < SkillLevel.Companion.getValues().size() && !isMissingXpForLevel(skillType, level+1) && !isMissingPercentForLevel(skillType, level+1)) {
             level++;
         }
 
-        return Math.min(5, level); // prevents levels above 5
+        return Math.min(Companion.getMAX_LEVEL()-1, level); // prevents levels above 5
     }
 
 
     public SkillLevel getSkillLevelEnum(SkillType skillType) {
-        return SkillLevel.getSkillLevelFromInt(getSkillLevel(skillType));
+        return SkillLevel.Companion.getSkillLevelFromInt(getSkillLevel(skillType));
     }
 
     public double getTotalXp() {
@@ -268,36 +312,39 @@ public class CustomPlayer extends CustomPlayerBase {
     }
 
     private boolean isMissingXpForLevel(SkillType skillType, int level) {
-        return getSkill(skillType).getXp() < getXPNeededForLevel(level);
+        return getSkill(skillType).getXp() < Companion.getXPNeededForLevel(level);
     }
 
     private boolean isMissingPercentForLevel(SkillType skillType, int level) {
-        return getPercentOfTotal(skillType) < SpecializationConfig.getSkillsConfig().getDouble(skillType + "_" + SkillLevel.getSkillLevelFromInt(level) + "_REQUIREMENT");
+        return getPercentOfTotal(skillType) < SkillLevel.Companion.getSkillLevelFromInt(level).getXpRequirement();
     }
 
     public double getGUIDistributionOfTotalSkills(SkillType skillType) {
-        return mapValue(getSkill(skillType).getXp(), 0, getTotalXp(), 0, 3);
+        return Companion.mapValue(getSkill(skillType).getXp(), 0, getTotalXp(), 0, 3);
     }
 
     public double getGUIDistributionOfTotalLevels(SkillType skillType) {
         int level = getSkillLevel(skillType);
-        double XPMin = level == 0 ? 0 : getXPNeededForLevel(level);
-        double XPMax = getXPNeededForLevel(level + 1);
-
+        double XPMin = level == 0 ? 0 : Companion.getXPNeededForLevel(level);
+        double XPMax = Companion.getXPNeededForLevel(level + 1);
+        SkillLevel minLevel = SkillLevel.Companion.getSkillLevelFromInt(level);
+        SkillLevel maxLevel = SkillLevel.Companion.getSkillLevelFromInt(Math.min(level+1, Companion.getMAX_LEVEL()));
         Skill skill = getSkill(skillType);
-        double percentageNeededMin = SpecializationConfig.getSkillsConfig().getDouble(skill.getSkillType() + "_" + SkillLevel.getSkillLevelFromInt(level) + "_REQUIREMENT");
-        double percentageNeededMax = SpecializationConfig.getSkillsConfig().getDouble(skill.getSkillType() + "_" + SkillLevel.getSkillLevelFromInt(level + 1) + "_REQUIREMENT");
+
+        double percentageNeededMin = minLevel.getXpRequirement();
+        double percentageNeededMax = maxLevel.getXpRequirement();
+
         double currentPercentage = getPercentOfTotal(skillType);
 
         double XPProgressAsPercentage;
         if(skill.getXp() <= XPMax) {
-            XPProgressAsPercentage = mapValue(skill.getXp() - XPMin, 0, XPMax - XPMin, 0, 100);
+            XPProgressAsPercentage = Companion.mapValue(skill.getXp() - XPMin, 0, XPMax - XPMin, 0, 100);
         }else XPProgressAsPercentage = 100.0;
 
         double percentageProgressAsPercentage;
 
         if(currentPercentage <= percentageNeededMax) {
-            percentageProgressAsPercentage = mapValue(currentPercentage - percentageNeededMin, 0, percentageNeededMax - percentageNeededMin,0,100);
+            percentageProgressAsPercentage = Companion.mapValue(currentPercentage - percentageNeededMin, 0, percentageNeededMax - percentageNeededMin,0,100);
         }else if(getTotalXp() == 0){
             percentageProgressAsPercentage = 0;
         } else percentageProgressAsPercentage = 100.0;
@@ -312,7 +359,7 @@ public class CustomPlayer extends CustomPlayerBase {
     }
 
     public double getPercentOfTotal(SkillType skillType) {
-        return mapValue(getSkill(skillType).getXp(), 0, getTotalXp(), 0, 100);
+        return Companion.mapValue(getSkill(skillType).getXp(), 0, getTotalXp(), 0, 100);
     }
 
     public void setDowned(boolean downed) {

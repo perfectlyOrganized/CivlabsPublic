@@ -159,7 +159,7 @@ class FarmerMinigame {
             config.getString("skill_level") to config.getInt("chance")
         }
 
-        val maxTier = SkillLevel.getSkillLevelFromInt(level)
+        val maxTier = SkillLevel.Companion.getSkillLevelFromInt(level)
         val tier = MinerTressureChance.selectWeightedTier(tierWeights, maxTier)
 
         val lootKey = NamespacedKey("openlabs", "treasure/tiers/${tier.lowercase()}-farmer-treasure")

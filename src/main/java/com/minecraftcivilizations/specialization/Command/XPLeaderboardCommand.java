@@ -56,7 +56,7 @@ public class XPLeaderboardCommand extends BaseCommand {
 
                     String skillInfo = "";
                     if (topSkill != null) {
-                        String tier = cp.getSkillLevelEnumByXpOnly(topSkill).name();
+                        String tier = cp.getSkillLevelEnumByXpOnly(topSkill).getName();
                         skillInfo = topSkill.name() + " (" + tier + ")";
                     }
 
@@ -95,7 +95,7 @@ public class XPLeaderboardCommand extends BaseCommand {
         Component message = buildLeaderboard("XP Leaderboard (" + type.name() + ")", customPlayers,
                 cp -> {
                     long xp = Math.round(cp.getSkill(type).getXp());
-                    String tier = cp.getSkillLevelEnum(type).name();
+                    String tier = cp.getSkillLevelEnum(type).getName();
                     return xp + " XP (" + tier + ")";
                 }, type);
         PlayerUtil.sendMessage(sender, message);
@@ -118,7 +118,7 @@ public class XPLeaderboardCommand extends BaseCommand {
                 Component message = buildLeaderboard("XP Leaderboard (" + type.name() + ")", classPlayers,
                         cp -> {
                             long xp = Math.round(cp.getSkill(type).getXp());
-                            String tier = cp.getSkillLevelEnum(type).name();
+                            String tier = cp.getSkillLevelEnum(type).getName();
                             return xp + " XP (" + tier + ")";
                         }, type);
                 PlayerUtil.sendMessage(sender, message);

@@ -407,7 +407,7 @@ public class PlayerDownedListener implements Listener {
                 downStands.put(id, stand);
             } else {
                 // Use Interaction for precise sitting
-                Location locInteraction = targetLoc.clone().add(0, -0.5, 0); // ensure player sits just above the block
+                Location locInteraction = targetLoc.clone().add(0, 0.1, 0); // ensure player sits just above the block
 //                player.sendMessage("interaction: " + distance);
                 Interaction inter = player.getWorld().spawn(locInteraction, Interaction.class, i -> {
                     i.setInteractionWidth(0.6f);

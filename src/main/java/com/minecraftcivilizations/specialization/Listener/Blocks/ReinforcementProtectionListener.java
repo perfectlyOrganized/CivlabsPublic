@@ -156,7 +156,6 @@ public class ReinforcementProtectionListener implements Listener {
         for (Location adjacentLoc : directions) {
             if (world.getBlockAt(adjacentLoc).getType() == blockType) {
                 connectedCount++;
-                OpenLab.logger.info(String.valueOf(connectedCount));
             }
         }
 
@@ -176,9 +175,13 @@ public class ReinforcementProtectionListener implements Listener {
         }
 
         Player player = event.getPlayer();
+        if (player.isSneaking()) {
+            PlayerUtil.message(player, "You can't sneak break this block", 1);
+            event.setCancelled(true);
+        }
         CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayerOrThrow(player);
         Material item = player.getInventory().getItemInMainHand().getType();
-        if (customPlayer.getSkillLevel(SkillType.BUILDER) < 1 && isBlockConnectedToFourSimilar(block) && !player.isSneaking()) {
+        if (customPlayer.getSkillLevel(SkillType.BUILDER) < 1 && isBlockConnectedToFourSimilar(block)) {
             PlayerUtil.message(player, "This block is connected to 4 other blocks of the same type which makes it unbreakable", 1);
             event.setCancelled(true);
         }

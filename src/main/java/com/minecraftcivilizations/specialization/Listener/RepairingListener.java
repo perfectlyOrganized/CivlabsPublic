@@ -80,8 +80,8 @@ public class RepairingListener implements Listener {
 
         // --- Cancel equip events if armor ---
         Material type = item.getType();
-        if (type.name().contains("HELMET") || type.name().contains("CHESTPLATE") ||
-                type.name().contains("LEGGINGS") || type.name().contains("BOOTS")) {
+        if (type.name().contains("_HELMET") || type.name().contains("_CHESTPLATE") ||
+                type.name().contains("_LEGGINGS") || type.name().contains("_BOOTS")) {
             event.setCancelled(true);
         }
 

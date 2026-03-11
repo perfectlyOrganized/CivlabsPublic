@@ -30,7 +30,7 @@ public enum SkillType {
     public static int getLevelFromXP(double xp) {
         if (xp <= 0) return 0;
 
-        if (Skill.CACHED_LEVELS == null) Skill.InitCacheXPLevelFormula();
+        if (Skill.CACHED_LEVELS == null) Skill.Companion.initCacheXPLevelFormula();
         double[] cached_levels = Skill.CACHED_LEVELS;
         int last_level = cached_levels.length - 1;
 

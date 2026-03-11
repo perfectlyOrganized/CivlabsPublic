@@ -232,14 +232,6 @@ public class HungerSystem implements Listener {
 
         float pitch = 0.8f + (float) (Math.random() * 0.4f); // 0.8–1.2
         target.getWorld().playSound(target.getLocation(), Sound.ENTITY_PLAYER_BURP, SoundCategory.PLAYERS, 1f, pitch);
-        target.getWorld().spawnParticle(
-                Particle.BLOCK_DUST,
-                target.getEyeLocation(),
-                8,
-                0.2, 0, 0.5,
-                0,
-                held
-        );
         // Consume one item from hand
         handItem.setAmount(handItem.getAmount() - 1);
         CooldownManager.INSTANCE.setCooldown(player, "feedother", 4);

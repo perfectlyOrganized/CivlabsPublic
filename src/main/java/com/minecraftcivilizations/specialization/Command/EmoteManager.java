@@ -93,6 +93,7 @@ public class EmoteManager extends BaseCommand implements Listener {
 
     private void sit(Player player, Block block) {
         Location loc = getSeatLocation(block);
+        loc.setY(loc.getY() - 0.5);
         Interaction seat = block.getWorld().spawn(loc, Interaction.class, i -> {
             i.setInteractionWidth(0.6f);
             i.setInteractionHeight(0.1f);
@@ -275,9 +276,8 @@ public class EmoteManager extends BaseCommand implements Listener {
         }
 
         // consistent offset above the block
-        double offsetY = 1.02; // adjust as needed
 
-        Location spawnLoc = support.getLocation().add(0.5, offsetY, 0.5);
+        Location spawnLoc = support.getLocation().add(0.5, 0.25, 0.5);
 
         // match player facing
         spawnLoc.setYaw(player.getLocation().getYaw());
@@ -298,7 +298,7 @@ public class EmoteManager extends BaseCommand implements Listener {
         loc.setPitch(0f);
 
         return world.spawn(loc, ArmorStand.class, as -> {
-            as.setGravity(true);
+            as.setGravity(false);
             as.setInvulnerable(true);
             as.setPersistent(false);
             as.setVisible(false);
@@ -378,7 +378,7 @@ public class EmoteManager extends BaseCommand implements Listener {
             player.sendMessage("Cannonball!");
         }
 
-        Location spawnLoc = support.getLocation().add(0.5, 1.02, 0.5);
+        Location spawnLoc = support.getLocation().add(0.5, 0.02, 0.5);
         spawnLoc.setYaw(player.getLocation().getYaw());
         spawnLoc.setPitch(0);
 

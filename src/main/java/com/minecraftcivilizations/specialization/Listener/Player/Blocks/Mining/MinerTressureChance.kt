@@ -7,11 +7,7 @@ import com.minecraftcivilizations.specialization.Skill.SkillType
 import com.minecraftcivilizations.specialization.player.CustomPlayerManager
 import com.minecraftcivilizations.specialization.util.EffectsUtil
 import org.bukkit.Bukkit
-import org.bukkit.Location
 import org.bukkit.NamespacedKey
-import org.bukkit.Particle
-import org.bukkit.Sound
-import org.bukkit.World
 import org.bukkit.block.Block
 import org.bukkit.enchantments.Enchantment
 import org.bukkit.entity.Player
@@ -19,21 +15,17 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.loot.LootContext
-import org.bukkit.scheduler.BukkitRunnable
-import org.bukkit.scheduler.BukkitTask
 import java.util.*
 import java.util.concurrent.ThreadLocalRandom
-import kotlin.math.cos
-import kotlin.math.sin
 
 class MinerTressureChance : Listener {
     companion object {
         fun selectWeightedTier(tierWeights: Map<String, Int>, maxTier: SkillLevel): String {
             val allTiers = tierWeights.keys.toList()
-            val maxTierIndex = maxTier.ordinal
+            val maxTierLevel = maxTier.level
 
             // Get tiers up to max level
-            val availableTiers = allTiers.take(maxTierIndex + 1)
+            val availableTiers = allTiers.take(maxTierLevel)
             val availableWeights = availableTiers.map { tierWeights[it] ?: 1 }
 
             // Weighted random selection
@@ -83,7 +75,7 @@ class MinerTressureChance : Listener {
             config.getString("skill_level") to config.getInt("chance")
         }
 
-        val maxTier = SkillLevel.getSkillLevelFromInt(level)
+        val maxTier = SkillLevel.Companion.getSkillLevelFromInt(level)
         val tier = selectWeightedTier(tierWeights, maxTier)
 
         val lootKey = NamespacedKey("openlabs", "treasure/tiers/${tier.lowercase()}-miner-treasure") ?: return  OpenLab.logger.warning { "invalid key" }

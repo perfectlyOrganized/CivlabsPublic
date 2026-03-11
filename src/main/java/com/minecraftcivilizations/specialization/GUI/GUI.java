@@ -10,6 +10,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.*;
 
@@ -88,7 +89,7 @@ public abstract class GUI {
     private void fillEmptySlots() {
         for (int i = 0; i < size; i++) {
             if (!this.items.containsKey(i)) {
-                this.items.put(i, ItemStackUtils.makeGUIItemOfType(Material.LIGHT_GRAY_STAINED_GLASS_PANE, ""));
+                this.items.put(i, ItemStackUtils.makeGUIItemOfType(Material.BLACK_STAINED_GLASS_PANE, ""));
             }
         }
     }
@@ -105,14 +106,14 @@ public abstract class GUI {
             });
             this.items.put(this.size - 6, back);
         } else if (option.getKey() == GUIPlaceOption.SHOULD_PLACE_EXIT && option.getValue()) {
-            GUIItem exit = ItemStackUtils.makeGUIItemOfType(Material.BARRIER, "Exit");
+            GUIItem exit = ItemStackUtils.makeGUIItemOfType(Material.valueOf("CREATEDECO_DECAL_CROSS"), "Exit");
             exit.setOnClick(new Runnable() {
                 @Override
                 public void run() {
                     closeGUI();
                 }
             });
-            this.items.put(this.size - 5, exit);
+            this.items.put(8, exit);
         } else if (option.getKey() == GUIPlaceOption.SHOULD_PLACE_SEARCH && option.getValue()) {
             GUIItem search = ItemStackUtils.makeGUIItemOfType(Material.OAK_SIGN, "Search");
             search.setOnClick(() -> {

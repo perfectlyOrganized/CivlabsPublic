@@ -22,7 +22,7 @@ public class SpecializationConfig {
     @Getter
     private static ConfigFile playerConfig;
     @Getter
-    private static ConfigFile skillsConfig;
+    public static ConfigFile skillsConfig;
     @Getter
     private static ConfigFile blockHardnessConfig;
     @Getter
@@ -50,7 +50,7 @@ public class SpecializationConfig {
     @Getter
     private static ConfigFile classSkillEffectsConfig;
     @Getter
-    private static ConfigFile librarianConfig;
+    public static ConfigFile librarianConfig;
     @Getter
     public static ConfigFile farmerConfig;
     @Getter
@@ -146,7 +146,7 @@ public class SpecializationConfig {
         Supplier<Map<String, Object>> unlockedRecipesDefaults = () -> {
             Map<String, Object> data = new HashMap<>();
             for (SkillType skillType : SkillType.values()) {
-                for (SkillLevel skillLevel : SkillLevel.values()) {
+                for (SkillLevel skillLevel : SkillLevel.Companion.getValues()) {
                     data.put(skillType + "_" + skillLevel, new HashSet<NamespacedKey>());
                 }
             }
@@ -155,42 +155,6 @@ public class SpecializationConfig {
             return data;
         };
         unlockedRecipesConfig = new ConfigFile(OpenLab.getInstance(), "unlockedRecipesConfig", unlockedRecipesDefaults);
-
-        Supplier<Map<String, List<Object>>> cookingConfigDefaults = () -> {
-            Map<String, List<Object>> data = new HashMap<>();
-            data.put("possible_recipients", List.of("minecraft:bread"));
-            data.put("possible_ingredients", List.of("minecraft:apple", "minecraft:golden_apple", "minecraft:enchanted_golden_apple",
-                    "minecraft:melon_slice", "minecraft:glistering_melon_slice", "minecraft:sweet_berries",
-                    "minecraft:glow_berries", "minecraft:sea_pickle", "minecraft:carrot", "minecraft:golden_carrot",
-                    "minecraft:potato", "minecraft:baked_potato", "minecraft:beetroot", "minecraft:nether_wart",
-                    "minecraft:pitcher_pod", "minecraft:brown_mushroom", "minecraft:red_mushroom",
-                    "minecraft:warped_fungus", "minecraft:crimson_fungus", "minecraft:wheat", "minecraft:egg",
-                    "minecraft:turtle_egg", "minecraft:sniffer_egg", "minecraft:milk_bucket", "minecraft:chicken",
-                    "minecraft:cooked_chicken", "minecraft:rabbit", "minecraft:cooked_rabbit", "minecraft:mutton",
-                    "minecraft:cooked_mutton", "minecraft:beef", "minecraft:cooked_beef", "minecraft:cod",
-                    "minecraft:cooked_cod", "minecraft:salmon", "minecraft:cooked_salmon", "minecraft:tropical_fish",
-                    "minecraft:pufferfish", "minecraft:dried_kelp"));
-            data.put("possible_seasonings", List.of("specialization:salt", "minecraft:sugar", "minecraft:cocoa_beans", "minecraft:honey_bottle",
-                    "minecraft:glow_lichen", "minecraft:blaze_powder"));
-            data.put("possible_sauces", List.of("minecraft:glow_ink_sac", "minecraft:ink_sac", "minecraft:ghast_tear"));
-            // Default sound id to play when cooking finishes (can be overridden in cookingConfig.json)
-            data.put("finish_sound", Collections.singletonList("specialization:cooking_success"));
-            for (SkillType skillType : SkillType.values()) {
-                for (SkillLevel skillLevel : SkillLevel.values()) {
-                    data.put(skillType + "_" + skillLevel, new ArrayList<>());
-                }
-            }
-            List<Object> farmer = data.get(SkillType.FARMER.name() + "_" + SkillLevel.JOURNEYMAN.name());
-            Map<String, Object> recipeData = new HashMap<>();
-            recipeData.put("exp", 25);
-            recipeData.put("cooking_time", 25);
-            recipeData.put("ingredients", List.of("minecraft:apple"));
-            recipeData.put("recipient", "minecraft:bread");
-            recipeData.put("result", "specialization:apple_bread");
-            farmer.add(recipeData);
-            return data;
-        };
-        cookingConfig = new ConfigFile(OpenLab.getInstance(), "cookingConfig", cookingConfigDefaults);
 
         Supplier<Map<String, Map<String, Object>>> xpGainFromCraftingDefaults = () -> {
             Map<String, Map<String, Object>> data = new HashMap<>();
@@ -367,7 +331,7 @@ public class SpecializationConfig {
             Map<String, String> data = new HashMap<>();
             for (Material inputMaterial : Material.values()) {
                 if (inputMaterial.isBlock()) {
-                    data.put(inputMaterial.toString(), SkillLevel.NOVICE.name());
+                    data.put(inputMaterial.toString(), "NOVICE");
                 }
             }
             return data;
@@ -378,7 +342,7 @@ public class SpecializationConfig {
             Map<String, String> data = new HashMap<>();
             for (Material inputMaterial : Material.values()) {
                 if (inputMaterial.isBlock()) {
-                    data.put(inputMaterial.toString(), SkillLevel.NOVICE.name());
+                    data.put(inputMaterial.toString(), "NOVICE");
                 }
             }
             return data;
@@ -499,7 +463,7 @@ public class SpecializationConfig {
             data.put("blacklist", List.of());
             data.put("mod_blacklist", List.of());
             for (SkillType skillType : SkillType.values()) {
-                for (SkillLevel skillLevel : SkillLevel.values()) {
+                for (SkillLevel skillLevel : SkillLevel.Companion.getValues()) {
                     data.put(skillType + "_" + skillLevel, new ArrayList<>());
                 }
             }
@@ -516,7 +480,7 @@ public class SpecializationConfig {
             Map<String, List<String>> data = new HashMap<>();
             data.put("default", Arrays.asList(InventoryType.CRAFTING.toString(), InventoryType.FURNACE.toString()));
             for (SkillType skillType : SkillType.values()) {
-                for (SkillLevel skillLevel : SkillLevel.values()) {
+                for (SkillLevel skillLevel : SkillLevel.Companion.getValues()) {
                     data.put(skillType + "_" + skillLevel, new ArrayList<>());
                 }
             }
@@ -532,7 +496,7 @@ public class SpecializationConfig {
         Supplier<Map<String, List<Map<String, Object>>>> classSkillEffectsDefaults = () -> {
             Map<String, List<Map<String, Object>>> data = new HashMap<>();
             for (SkillType skillType : SkillType.values()) {
-                for (SkillLevel skillLevel : SkillLevel.values()) {
+                for (SkillLevel skillLevel : SkillLevel.Companion.getValues()) {
                     Map<String, Object> effectMap = new HashMap<>();
                     effectMap.put("effect", "minecraft:haste");
                     effectMap.put("amplifier", 0);
@@ -654,9 +618,6 @@ public class SpecializationConfig {
                 data.put(skillType + "_XP_DECAY", 0.05D);
                 data.put(skillType + "_LEVEL_XP_ARRAY", new ArrayList<>() {
                 });
-                for (SkillLevel skillLevel : SkillLevel.values()) {
-                    data.put(skillType + "_" + skillLevel + "_REQUIREMENT", 0D);
-                }
 
             }
             data.put("XP_MULTIPLIER", 1.0);
@@ -689,13 +650,6 @@ public class SpecializationConfig {
             Map<String, Object> data = new HashMap<>();
             data.put("TRESSURE_TRIGGERING_BLOCKS", new HashMap<>());
             List<Object> tiers = new ArrayList<>();
-
-            for (SkillLevel skillLevel : SkillLevel.values()) {
-                Map<String, Object> tier = new HashMap<>();
-                tier.put("skill_level", skillLevel.name());
-                tier.put("chance", 100);
-                tiers.add(tier);
-            }
             data.put("MINER_TREASURE_TIERS", tiers);
 
             return data;
@@ -708,10 +662,10 @@ public class SpecializationConfig {
 
         Supplier<Map<String, Object>> farmerDefaults = () -> {
             Map<String, Object> data = new HashMap<>();
-            for (EntityType animal : BREEDABLE) {
-                data.put("FARMER_BREED_LEVEL_" + animal, SkillLevel.JOURNEYMAN.getLevel());
-            }
-            for (SkillLevel skillLevel : SkillLevel.values()) {
+//            for (EntityType animal : BREEDABLE) {
+//                data.put("FARMER_BREED_LEVEL_" + animal, SkillLevel.JOURNEYMAN.getLevel());
+//            }
+            for (SkillLevel skillLevel : SkillLevel.Companion.getValues()) {
                 data.put("FARMER_GET_DROPS_CHANCE_" + skillLevel, 0.5);
             }
             return data;
@@ -728,9 +682,9 @@ public class SpecializationConfig {
                 data.put(skillType.name(), new HashMap<>());
             }
             Map<String, Object> skillType = data.get(SkillType.FARMER.name());
-            for (EntityType tameable : TAMEABLE) {
-                skillType.put("TAME_" + tameable, SkillLevel.NOVICE.getLevel());
-            }
+//            for (EntityType tameable : TAMEABLE) {
+//                skillType.put("TAME_" + tameable, SkillLevel.NOVICE.getLevel());
+//            }
             return data;
         };
         tameableConfig = new ConfigFile(
