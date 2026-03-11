@@ -1,5 +1,6 @@
 package com.minecraftcivilizations.specialization.Listener.Player;
 
+import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
@@ -91,14 +92,13 @@ public final class LeashListener implements Listener {
     }
 
     private void leashPlayer(Player targetPlayer, Player leasher) {
-        CustomPlayer h = CustomPlayerManager.INSTANCE.getCustomPlayer(leasher);
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(leasher);
 
-        int lvl = h.getSkillLevel(SkillType.GUARDSMAN);
+        int level = customPlayer.getSkillLevel(SkillType.GUARDSMAN);
 
-        if (lvl == SkillLevel.APPRENTICE.getLevel()) {
+        if (level <= SpecializationConfig.skillsConfig.getInt("guardsman_level_to_leash_player")) {
             OpenLab.message(leasher, "You are not skilled enough for that");
-        }else if (lvl < SkillLevel.APPRENTICE.getLevel()) {
-            return; // too low level to leash players
+            return;
         }
 
         if (!downedListener.isDowned(targetPlayer)) {

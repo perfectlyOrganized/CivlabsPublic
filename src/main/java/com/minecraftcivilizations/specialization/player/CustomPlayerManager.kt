@@ -98,9 +98,7 @@ object CustomPlayerManager : Listener {
                 .decoration(TextDecoration.ITALIC, false)
             height = Skill.mapValue(Math.random(), 0.0, 1.0, .85, 1.0)
             skills = SkillType.entries.map {
-                Skill(it, 0.0, System.currentTimeMillis()).apply {
-                    skillType = it
-                }
+                Skill(it, 0.0, System.currentTimeMillis())
             }.toMutableList()
             migrate()
         }
@@ -140,10 +138,24 @@ object CustomPlayerManager : Listener {
     fun onJoin(event: PlayerJoinEvent) {
         event.joinMessage = null
         val player = event.getPlayer()
-        val customPlayer = getCustomPlayerOrThrow(player.uniqueId)
-        OpenLab.getInstance().applyCustomName(player, customPlayer.name)
-        applyPlayerCustomizations(player)
-
+        val customPlayer = getCustomPlayer(player.uniqueId)
+        if (customPlayer != null) {
+            OpenLab.getInstance().applyCustomName(player, customPlayer.name)
+            applyPlayerCustomizations(player)
+        } else {
+            Bukkit.getScheduler().runTaskLater(OpenLab.getInstance(), Runnable {
+                if (player.isOnline) {
+                    val retryPlayer = getCustomPlayer(player.uniqueId)
+                    if (retryPlayer != null) {
+                        OpenLab.getInstance().applyCustomName(player, retryPlayer.name)
+                        applyPlayerCustomizations(player)
+                    } else {
+                        OpenLab.logger.warning("CustomPlayer still not found for ${player.name} after delay")
+                        player.kickPlayer("Player data could not be properly loaded.")
+                    }
+                }
+            }, 1L)
+        }
     }
 
     @EventHandler

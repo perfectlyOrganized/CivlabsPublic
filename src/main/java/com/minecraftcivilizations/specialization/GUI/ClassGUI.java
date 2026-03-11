@@ -18,9 +18,7 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 
 public class ClassGUI extends GUI {
@@ -109,16 +107,19 @@ public class ClassGUI extends GUI {
         return new GUIItem(itemStack, null);
     }
 
+    private static final List<String> COLOR_PALETTE = Arrays.asList(
+            "WHITE", "RED", "ORANGE", "YELLOW", "LIME", "PURPLE", "BLACK", "MAGENTA"
+    );
+
     private Material getPaneMaterial(int tier, int type){
-        String color = switch (tier) {
-            case 0 -> "WHITE";
-            case 1 -> "RED";
-            case 2 -> "ORANGE";
-            case 3 -> "YELLOW";
-            case 4 -> "LIME";
-            case 5 -> "PURPLE";
-            default -> "BLACK";
-        };
+        int maxTier = Skill.Companion.getMAX_LEVEL();
+        int safeTier = Math.max(0, Math.min(tier, maxTier));
+
+        // Calculate color index based on position in gradient
+        double progress = (double) safeTier / maxTier;
+        int colorIndex = (int) Math.round(progress * (COLOR_PALETTE.size() - 1));
+
+        String color = COLOR_PALETTE.get(colorIndex);
         String materialType = switch (type){
             case 0 -> "CARPET";
             case 1 -> "DYE";
@@ -127,9 +128,9 @@ public class ClassGUI extends GUI {
         };
         return Objects.requireNonNull(Material.getMaterial(color + "_" + materialType));
     }
-
     private void advancedClassGUI(CustomPlayer customPlayer) {
         int i = 37;
+
         for (Skill skill : customPlayer.getSkills()) {
             int temp = i;
             for (int score = 0; score < 3; score++) {
@@ -150,12 +151,10 @@ public class ClassGUI extends GUI {
 
             int currentSkillLevel = customPlayer.getSkillLevel(skill.getSkillType());
 
-            if (currentSkillLevel < SkillLevel.values().length) {
+            if (currentSkillLevel < SkillLevel.Companion.getValues().size()) {
                 double currentXp = Math.round(skill.getXp() * 100) / 100D;
-                double xpToNextLevel = Math.round((Skill.getXPNeededForLevel(currentSkillLevel + 1) - skill.getXp()) * 100) / 100D ;
-                double percentOfTotalForNextLevel = Math.round(
-                        SpecializationConfig.getSkillsConfig().getDouble(
-                                skill.getSkillType() + "_" + SkillLevel.getSkillLevelFromInt(currentSkillLevel + 1) + "_REQUIREMENT") * 100) / 100D;
+                double xpToNextLevel = Math.round((Skill.Companion.getXPNeededForLevel(currentSkillLevel + 1) - skill.getXp()) * 100) / 100D ;
+                double percentOfTotalForNextLevel = Math.round(SkillLevel.Companion.getSkillLevelFromInt(currentSkillLevel + 1).getXpRequirement() * 100) / 100D;
 
                 ItemStack itemStack = new ItemStack(skill.getSkillType().getSkillWorkstation());
                 ItemMeta itemMeta = itemStack.getItemMeta();
@@ -165,7 +164,7 @@ public class ClassGUI extends GUI {
                         .color(NamedTextColor.WHITE));
                 LoreUtils.setLore(itemMeta,new ArrayList<>() {
                     {
-                        add(Component.text(SkillLevel.getDisplayName(currentSkillLevel))
+                        add(Component.text(SkillLevel.Companion.getDisplayName(currentSkillLevel))
                                 .decoration(TextDecoration.ITALIC, false)
                                 .color(NamedTextColor.WHITE)
                                 .append(Component.text("(lvl " + currentSkillLevel + ")"))
@@ -174,7 +173,7 @@ public class ClassGUI extends GUI {
                         add(Component.text("Current xp: " + (int) Math.round(skill.getXp())).decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
                         add(Component.empty());
                         add(Component.text("Requirements for level " + (currentSkillLevel + 1) + ":").decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
-                        add(Component.text((int) Math.round(Skill.getXPNeededForLevel(currentSkillLevel + 1)) + "xp").decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
+                        add(Component.text((int) Math.round(Skill.Companion.getXPNeededForLevel(currentSkillLevel + 1)) + "xp").decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
                         add(Component.text(percentOfTotalForNextLevel + "% of your total xp to level up").decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
                         add(Component.empty());
                         add(Component.text("You are missing: ").decoration(TextDecoration.ITALIC, false).color(NamedTextColor.GRAY));
@@ -197,7 +196,7 @@ public class ClassGUI extends GUI {
                 this.getItems().put(i++, new GUIItem(itemStack, () -> {
                     new RecipesGUI(customPlayer, skill.getSkillType()).open(Bukkit.getPlayer(customPlayer.getUuid()));
                 }));
-            } else if (currentSkillLevel == SkillLevel.values().length) {
+            } else if (currentSkillLevel == SkillLevel.Companion.getValues().size()-1) {
                 double currentXp = Math.round(skill.getXp() * 100) / 100D;
                 ItemStack itemStack = new ItemStack(skill.getSkillType().getSkillWorkstation());
                 ItemMeta itemMeta = itemStack.getItemMeta();
@@ -209,7 +208,7 @@ public class ClassGUI extends GUI {
                     {
                         add(Component.text("A").decorations(Map.of(TextDecoration.OBFUSCATED, TextDecoration.State.TRUE, TextDecoration.ITALIC, TextDecoration.State.FALSE, TextDecoration.BOLD, TextDecoration.State.TRUE))
                                 .color(NamedTextColor.WHITE)
-                                .append(Component.text(SkillLevel.getDisplayName(currentSkillLevel))
+                                .append(Component.text(SkillLevel.Companion.getDisplayName(currentSkillLevel))
                                 .decorations(Map.of(TextDecoration.OBFUSCATED, TextDecoration.State.FALSE, TextDecoration.ITALIC, TextDecoration.State.FALSE, TextDecoration.BOLD, TextDecoration.State.TRUE))
                                 .color(NamedTextColor.WHITE))
                                 .append(Component.text("A").decorations(Map.of(TextDecoration.OBFUSCATED, TextDecoration.State.TRUE, TextDecoration.ITALIC, TextDecoration.State.FALSE, TextDecoration.BOLD, TextDecoration.State.TRUE))
@@ -235,8 +234,7 @@ public class ClassGUI extends GUI {
         for (Skill skill : customPlayer.getSkills()) {
             int temp = i;
             double distribution = customPlayer.getGUIDistributionOfTotalLevels(skill.getSkillType());
-            int currentSkillLevel =  Math.min(customPlayer.getSkillLevel(skill.getSkillType()), SkillLevel.values().length-1);
-
+            int currentSkillLevel = Math.min(customPlayer.getSkillLevel(skill.getSkillType()), SkillLevel.Companion.getValues().size()-1);
             for (int score = 0; score < 3; score++) {
                 if((distribution * .03 - score) < 0 ) break;
                 int type = Math.min((int) (distribution * .09 - score * 3), 2);
@@ -244,9 +242,9 @@ public class ClassGUI extends GUI {
             }
 
             double currentXp = Math.round(skill.getXp() * 100) / 100D;
-            double percentOfTotalForNextLevel = Math.round(SpecializationConfig.getSkillsConfig().getDouble(skill.getSkillType() + "_" + SkillLevel.getSkillLevelFromInt(currentSkillLevel + 1) + "_REQUIREMENT") * 100) / 100D;
+            double percentOfTotalForNextLevel = Math.round(SkillLevel.Companion.getSkillLevelFromInt(currentSkillLevel + 1).getXpRequirement() * 100) / 100D;
             double xpToNextLevel = Math.max(
-                    Math.round((Skill.getXPNeededForLevel(currentSkillLevel + 1) - skill.getXp()) * 100) / 100D,
+                    Math.round((Skill.Companion.getXPNeededForLevel(currentSkillLevel + 1) - skill.getXp()) * 100) / 100D,
                     Math.round((percentOfTotalForNextLevel / 100 * customPlayer.getTotalXp() - currentXp) / (1.0 - percentOfTotalForNextLevel / 100))
             );
 
@@ -258,7 +256,7 @@ public class ClassGUI extends GUI {
                     .color(NamedTextColor.WHITE));
             LoreUtils.setLore(itemMeta,new ArrayList<>() {
                 {
-                    add(Component.text(SkillLevel.getDisplayName(currentSkillLevel))
+                    add(Component.text(SkillLevel.Companion.getDisplayName(currentSkillLevel))
                             .decoration(TextDecoration.ITALIC, false)
                             .color(NamedTextColor.WHITE)
                             .append(Component.text("(lvl " + currentSkillLevel + ")"))
@@ -266,7 +264,7 @@ public class ClassGUI extends GUI {
                             .decoration(TextDecoration.ITALIC, false));
                     add(Component.text("Current xp: " + (int) Math.round(skill.getXp())).decoration(TextDecoration.ITALIC, false).color(NamedTextColor.WHITE));
                     add(Component.empty());
-                    if(currentSkillLevel < 5) {
+                    if(currentSkillLevel < Skill.Companion.getMAX_LEVEL()-1) {
                         add(Component.text("You are missing: ").decoration(TextDecoration.ITALIC, false).color(NamedTextColor.GRAY));
                         if (xpToNextLevel > 0) {
                             add(Component.text(xpToNextLevel + "xp to level up").decoration(TextDecoration.ITALIC, false).color(NamedTextColor.GRAY));

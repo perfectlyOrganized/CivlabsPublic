@@ -661,9 +661,6 @@ public class MobManager implements Listener {
     public void onCreatureSpawn(CreatureSpawnEvent event) {
         if(event.isCancelled())return;
 
-        if (Debug.isAnyoneListening("mob", false) || Debug.isAnyoneListening("mobrule", false)) {
-            populateEntityMappings();
-        }
         LivingEntity entity = event.getEntity();
         EntityType type = entity.getType();
         Location location = entity.getLocation();

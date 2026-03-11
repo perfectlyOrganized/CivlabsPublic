@@ -68,10 +68,10 @@ public class PlayerInteractListener implements Listener {
             for (Skill skill : customPlayer.getSkills()) {
                 SkillType skillType = skill.getSkillType();
                 int playerSkillLevel = customPlayer.getSkillLevel(skillType);
-
-            for (SkillLevel skillLevel : SkillLevel.values()) {
+            Config config = SpecializationConfig.getCanUseBlockConfig().getConfig();
+            for (SkillLevel skillLevel : SkillLevel.Companion.getValues()) {
                     String configKey = skillType + "_" + skillLevel;
-                    List<String> types = SpecializationConfig.getCanUseBlockConfig().getStringList(configKey);
+                    List<String> types = config.hasPath(configKey) ? config.getStringList(configKey) : List.of();
                     if (types == null) continue;
                     if (!types.contains(type)) continue;
                     hit = true;
@@ -90,7 +90,7 @@ public class PlayerInteractListener implements Listener {
             ItemStack drop = BreakBlockListener.getFarmerDrop(block.getDrops());
             if (drop != null && SpecializationConfig.getCanFarmerHarvestConfig().getObject("HARVEST").hasPath(drop.getType().toString())) {
                 if (drop.getType() == Material.SWEET_BERRIES) return;
-                SkillLevel skillLevel = SkillLevel.valueOf(SpecializationConfig.getCanFarmerHarvestConfig().getObject("HARVEST").getString(drop.getType().toString()));
+                SkillLevel skillLevel = SkillLevel.Companion.valueOf(SpecializationConfig.getCanFarmerHarvestConfig().getObject("HARVEST").getString(drop.getType().toString()));
                 if (customPlayer.getSkillLevel(SkillType.FARMER) < skillLevel.getLevel()) {
                     event.setCancelled(true);
                     PlayerUtil.message(player, org.bukkit.ChatColor.RED + "You are unable to farm this");
@@ -126,7 +126,7 @@ public class PlayerInteractListener implements Listener {
 //            SkillType skillType = skill.getSkillType();
 //            int playerSkillLevel = player.getSkillLevel(skillType);
 //
-//            for (SkillLevel skillLevel : SkillLevel.values()) {
+//            for (SkillLevel skillLevel : SkillLevel.Companion.getValues()) {
 //                if (skillLevel.getLevel() <= playerSkillLevel) {
 //                    String configKey = skillType + "_" + skillLevel;
 //                    List<String> types = SpecializationConfig.getCanUseBlockConfig().getStringList(configKey);
@@ -258,7 +258,7 @@ public class PlayerInteractListener implements Listener {
                 .anyMatch(item -> item.getType() == Material.SWEET_BERRIES);
         if (!producedBerries) return;
         ItemStack item = event.getItemsHarvested().get(0);
-        SkillLevel skillLevel = SkillLevel.valueOf(SpecializationConfig.getCanFarmerHarvestConfig().getObject("HARVEST").getString(item.getType().toString()));
+        SkillLevel skillLevel = SkillLevel.Companion.valueOf(SpecializationConfig.getCanFarmerHarvestConfig().getObject("HARVEST").getString(item.getType().toString()));
         Player player = event.getPlayer();
         CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayerOrThrow(player);
         Block block = event.getHarvestedBlock();
@@ -390,17 +390,21 @@ public class PlayerInteractListener implements Listener {
 
     @EventHandler
     public void onBucketEmpty(PlayerBucketEmptyEvent e) {
-        if (e.getBucket().equals(Material.LAVA_BUCKET)) {
-            CustomPlayer player = CustomPlayerManager.INSTANCE.getCustomPlayer(e);
-            if (player.getSkillLevel(SkillType.BLACKSMITH) < SkillLevel.EXPERT.getLevel()) e.setCancelled(true);
-        }
+        if (!e.getBucket().equals(Material.LAVA_BUCKET)) return;
+        CustomPlayer player = CustomPlayerManager.INSTANCE.getCustomPlayerOrThrow(e);
+        if (player.getSkillLevel(SkillType.BLACKSMITH) < SpecializationConfig.skillsConfig.getInt("blacksmith_level_to_use_lava_bucket")) e.setCancelled(true);
+
     }
 
     @EventHandler
     public void onBucketFill(PlayerBucketFillEvent e) {
-        if (e.getBucket().equals(Material.LAVA_BUCKET)) {
-            CustomPlayer player = CustomPlayerManager.INSTANCE.getCustomPlayer(e);
-            if (player.getSkillLevel(SkillType.BLACKSMITH) < SkillLevel.EXPERT.getLevel()) e.setCancelled(true);
+        CustomPlayer player = CustomPlayerManager.INSTANCE.getCustomPlayerOrThrow(e.getPlayer());
+
+        ItemStack result = e.getItemStack();
+        if (result != null && result.getType() == Material.LAVA_BUCKET) {
+            if (player.getSkillLevel(SkillType.BLACKSMITH) < SpecializationConfig.skillsConfig.getInt("blacksmith_level_to_use_lava_bucket")) {
+                e.setCancelled(true);
+            }
         }
     }
 

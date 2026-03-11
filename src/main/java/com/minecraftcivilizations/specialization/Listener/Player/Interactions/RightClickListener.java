@@ -54,8 +54,9 @@ public class RightClickListener implements Listener {
         boolean canUse = false; // Start as false, change to true if ANY requirement is met
 
         for (Skill skill : customPlayer.getSkills()) {
-            for (SkillLevel level : SkillLevel.values()) {
-                List<String> allowed = config.getStringList(skill.getSkillType() + "_" + level);
+            for (SkillLevel level : SkillLevel.Companion.getValues()) {
+                String key = skill.getSkillType() + "_" + level;
+                List<String> allowed = config.getConfig().hasPath(key) ? config.getStringList(key) : List.of();
                 if (allowed.isEmpty()) continue;
 
                 boolean mainAllowed = allowed.contains(mainKey);

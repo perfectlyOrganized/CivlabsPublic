@@ -12,7 +12,6 @@ import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.ComponentUtils;
 import net.kyori.adventure.platform.AudienceProvider;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
-import org.bukkit.Difficulty;
 import co.aikar.commands.PaperCommandManager;
 import com.minecraftcivilizations.specialization.Combat.*;
 import com.minecraftcivilizations.specialization.Command.*;
@@ -86,8 +85,6 @@ public final class OpenLab extends JavaPlugin {
     private XPMonitoringCommand xpMonitoringCommand;
 
     @Getter
-    private FoodDurationTicker foodDurationTicker;
-    @Getter
     private PlayerDownedListener playerDownedListener;
     @Getter
     public HuntPlayerMobGoal huntPlayerMobGoalSystem;
@@ -116,11 +113,11 @@ public final class OpenLab extends JavaPlugin {
     @Override
     public void onEnable() {
         logger = getLogger();
-        Skill.InitCacheXPLevelFormula();
         debug = new Debug(this);
         saveResource("first_names.txt", true);
         saveResource("last_names.txt", true);
         SpecializationConfig.initialize();
+        Skill.Companion.initCacheXPLevelFormula();
         // TODO PDC-xp-hotfix
         //  Skill.InitializeSkillKeys(this);
 
@@ -139,7 +136,6 @@ public final class OpenLab extends JavaPlugin {
         emoteManager = new EmoteManager(customItemManager, this);
         pvpManager = new PVPManager(playerDownedListener, this);
         armorTrimSystem = new BlacksmithArmorTrim();
-        foodDurationTicker = new FoodDurationTicker();
         huntPlayerMobGoalSystem = new HuntPlayerMobGoal(this);
 //      emoteListener = new EmoteListener(this);
 
@@ -185,7 +181,6 @@ public final class OpenLab extends JavaPlugin {
         getServer().getPluginManager().registerEvents(reviveListener, this);
         getServer().getPluginManager().registerEvents(RecipeBlocker.INSTANCE, this);
         getServer().getPluginManager().registerEvents(FarmerMinigameManager.INSTANCE, this);
-        getServer().getPluginManager().registerEvents(foodDurationTicker, this);
         getServer().getPluginManager().registerEvents(huntPlayerMobGoalSystem, this);
         //town data does not need to wait anymore
         //TownManager.scanAllPlayersForTownsAsync();

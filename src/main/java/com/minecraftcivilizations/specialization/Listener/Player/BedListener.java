@@ -159,7 +159,6 @@ public class BedListener implements Listener {
         if (bedOwnerUUID != null && !bedOwnerUUID.equals(player.getUniqueId().toString())) {
             PlayerUtil.message(player, "§7This bed is already claimed by another player");
             event.setCancelled(true);
-            return;
         }
     }
 

@@ -16,8 +16,6 @@ public class XPReductionTask extends BukkitRunnable {
     @Override
     public void run() {
         for (CustomPlayer customPlayer : CustomPlayerManager.INSTANCE.getPlayers()) {
-            if (customPlayer == null) continue;
-
             List<Skill> skills = customPlayer.getSkills();
             HashMap<SkillType, Double> xp_table = lastXpArray.getOrDefault(customPlayer.getUuid(),
                     customPlayer.getSkills().stream()

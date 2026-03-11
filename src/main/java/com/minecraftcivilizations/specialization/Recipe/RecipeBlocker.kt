@@ -67,10 +67,10 @@ object RecipeBlocker : Listener {
         val lockedRecipesFromConfig = mutableSetOf<NamespacedKey?>()
 
         for (skillType in SkillType.entries) {
-            for (skillLevel in SkillLevel.entries) {
+            for (skillLevel in SkillLevel.values) {
                 val key = skillType.toString() + "_" + skillLevel
+                if (!SpecializationConfig.unlockedRecipesConfig.config.hasPath(key)) continue;
                 val recipes = SpecializationConfig.unlockedRecipesConfig.getStringList(key)
-
                 for (recipeStr in recipes) {
                     if (recipeStr == null) continue
 
@@ -87,8 +87,6 @@ object RecipeBlocker : Listener {
         // (since those are the ones that require skills to unlock)
         BLOCKED_RECIPES.clear()
         BLOCKED_RECIPES.addAll(lockedRecipesFromConfig)
-        OpenLab.logger.info { BLOCKED_RECIPES.toString() }
-        OpenLab.logger.info { recipeRequirements.toString() }
         cacheLoaded = true
     }
 
@@ -135,8 +133,10 @@ object RecipeBlocker : Listener {
     }
 
     fun getRecipes(skillType: SkillType?, level: Int): MutableSet<NamespacedKey?> {
+        val key = skillType.toString() + "_" + SkillLevel.getSkillLevelFromInt(level)
+        if (!SpecializationConfig.unlockedRecipesConfig.config.hasPath(key)) return LinkedHashSet()
         return SpecializationConfig.unlockedRecipesConfig
-            .getStringList(skillType.toString() + "_" + SkillLevel.getSkillLevelFromInt(level))
+            .getStringList(key)
             .stream()
             .filter { obj: String? -> Objects.nonNull(obj) }
             .map<NamespacedKey?> { string: String? ->

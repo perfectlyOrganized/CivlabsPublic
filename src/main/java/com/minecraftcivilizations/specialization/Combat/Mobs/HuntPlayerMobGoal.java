@@ -44,7 +44,7 @@ public class HuntPlayerMobGoal implements Listener {
             public void run() {
                 tickAllMobs();
             }
-        }.runTaskTimer(plugin, 0L, 1L);
+        }.runTaskTimer(plugin, 0L, 3L);
     }
 
     /**
@@ -70,19 +70,32 @@ public class HuntPlayerMobGoal implements Listener {
 
     private void tickAllMobs() {
         Iterator<Map.Entry<UUID, HuntData>> iterator = huntingMobs.entrySet().iterator();
+        int processed = 0;
+        int MAX_MOBS_PER_TICK = 50; // Limit to 50 mobs per tick
+        List<UUID> mobsToProcess = new ArrayList<>(huntingMobs.keySet());
 
-        while (iterator.hasNext()) {
-            Map.Entry<UUID, HuntData> entry = iterator.next();
-            HuntData data = entry.getValue();
+        for (UUID mobId : mobsToProcess) {
+            if (processed >= MAX_MOBS_PER_TICK) {
+                break;
+            }
 
-            // Remove if mob is dead or invalid
+            HuntData data = huntingMobs.get(mobId);
+            if (data == null) continue; // Mob was removed since we took the snapshot
+
+            processed++;
+
+            // Check if mob is dead/invalid
             if (data.mob == null || !data.mob.isValid() || data.mob.isDead()) {
-                iterator.remove();
+                huntingMobs.remove(mobId);
                 continue;
             }
 
-            // Tick this mob's hunting behavior
             data.tick();
+
+            // Check again after tick
+            if (!data.mob.isValid() || data.mob.isDead()) {
+                huntingMobs.remove(mobId);
+            }
         }
     }
     public static boolean isFullMoon(World world) {
@@ -201,7 +214,7 @@ public class HuntPlayerMobGoal implements Listener {
                     .filter(validGamemode)
                     .filter(p -> p.getLocation().distance(mob.getLocation()) <= followRange)
                     .filter(p -> {
-                        if (!ignoreLineOfSight && !mob.hasLineOfSight(p)) {
+                        if (!mob.hasLineOfSight(p)) {
                             return false;
                         }
                         if (mob.getType() == EntityType.SPIDER || mob.getType() == EntityType.CAVE_SPIDER) {
@@ -273,8 +286,9 @@ public class HuntPlayerMobGoal implements Listener {
                     return;
                 }
 
-                // Try to find a block between mob and target
-                findBlockToBreak(target, reachDistance);
+                if (mob.getTicksLived() % 5 == 0) {
+                    findBlockToBreak(target, reachDistance);
+                }
             }
 
             // If we have a block, break it

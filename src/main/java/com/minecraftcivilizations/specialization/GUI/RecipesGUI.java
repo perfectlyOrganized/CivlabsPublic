@@ -1,10 +1,12 @@
 package com.minecraftcivilizations.specialization.GUI;
 
+import com.minecraftcivilizations.specialization.Skill.Skill;
 import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Recipe.RecipeBlocker;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
+import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.ItemStackUtils;
 import com.minecraftcivilizations.specialization.util.LoreUtils;
 import net.kyori.adventure.text.Component;
@@ -21,17 +23,15 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.*;
 
+import static com.minecraftcivilizations.specialization.Skill.Skill.Companion;
+
 public class RecipesGUI extends GUI {
     public SkillType skillType;
     public CustomPlayer customPlayer;
+    private int page = 1;
+    private final int maxPage = (int) Math.ceil((Skill.Companion.getMAX_LEVEL()-1)/5.0);
     public RecipesGUI(CustomPlayer customPlayer, SkillType skillType) {
-        super(Component.text(skillType != null ? "Unlocked in " + SkillType.getDisplayName(skillType) : "Choose SkillTree To View").color(NamedTextColor.BLACK), 54, new HashMap<>() {
-            {
-                put(45, new GUIItem(ItemStackUtils.makeItemGUIItem(new ItemStack(Material.ARROW), "Back to Class Menu").getItem(), () -> {
-                    new ClassGUI().open(Bukkit.getPlayer(customPlayer.getUuid()));
-                }));
-            }
-        }, new HashMap<>() {
+        super(Component.text(skillType != null ? "Unlocked in " + SkillType.getDisplayName(skillType) : "Choose SkillTree To View").color(NamedTextColor.BLACK), 54, new HashMap<>(), new HashMap<>() {
             {
                 put(GUIPlaceOption.SHOULD_PLACE_EXIT, true);
                 put(GUIPlaceOption.SHOULD_PLACE_BACK, true);
@@ -43,67 +43,61 @@ public class RecipesGUI extends GUI {
 
     @Override
     public void open(Player player) {
-        for (int i = 0; i < SkillType.values().length; i++) {
-            SkillType skillType1 = SkillType.values()[i];
-            GUIItem put = new GUIItem(ItemStackUtils.makeItemGUIItem(new ItemStack(skillType1.getSkillWorkstation()), SkillType.getDisplayName(skillType1)).getItem(), () -> {
-                if (skillType == skillType1) {
-                    return;
-                }
-                new RecipesGUI(customPlayer, skillType1).setParentGUI(RecipesGUI.this).open(Bukkit.getPlayer(customPlayer.getUuid()));
-            });
-            ItemMeta meta = put.getItem().getItemMeta();
-            if (meta != null) {
-                LoreUtils.setLore(meta, LoreUtils.createDescriptionLoreLine(skillType1.getSkillDescription()));
+        if (page < maxPage-1) {
+            getItems().put(1, new GUIItem(ItemStackUtils.makeItemGUIItem(new ItemStack(Material.valueOf("CREATEDECO_DECAL_RIGHT")), "Next page ("+ (page+1) +")").getItem(), () -> {
+                page++;
+                this.open(player);
+            }));
+        } else {
+            getItems().put(1,ItemStackUtils.makeItemGUIItem(new ItemStack(Material.BLACK_STAINED_GLASS_PANE), ""));
+        }
+        getItems().put(0, new GUIItem(ItemStackUtils.makeItemGUIItem(new ItemStack(Material.valueOf("CREATEDECO_DECAL_LEFT")), page > 1 ? "Previous page ("+ (page-1) +")" : "Back to Class Menu").getItem(), () -> {
+            if (page > 1) {
+                page--;
+                this.open(player);
+            } else {
+                new ClassGUI().open(Bukkit.getPlayer(customPlayer.getUuid()));
             }
-            getItems().put(i + 1, put);
+        }));
+
+
+        for (int index = 0; index < Math.min(5,Skill.Companion.getMAX_LEVEL()-1-(page-1)*5); index++) {
+            getItems().put(45+index*2, viewRecipesItem(index+1+(page-1)*5));
         }
-        if (skillType == null) {
-            super.open(player);
-            return;
+        double levelPercentage;
+        int playerLevel = customPlayer.getSkillLevel(skillType);
+        int pageStart = (page - 1) * 5 + 1;
+        int pageEnd = page * 5;
+
+        if (playerLevel < pageStart) {
+            levelPercentage = 0.0;
+        } else if (playerLevel >= pageEnd) {
+            levelPercentage = 100.0;
+        } else {
+            int levelsOnThisPage = playerLevel - pageStart + 1;
+            levelPercentage = (levelsOnThisPage / 5.0) * 100;
         }
-        for (int i = 9; i < 18; i++) {
-            getItems().put(i, ItemStackUtils.makeItemGUIItem(new ItemStack(Material.YELLOW_STAINED_GLASS_PANE), "Your path"));
+
+        for (int index = 0; index < 18; index++) {
+            boolean isUnlocked = levelPercentage > ((double) index /18) * 100;
+            getItems().put(18+index, ItemStackUtils.makeItemGUIItem(isUnlocked ?
+                new ItemStack(Material.LIME_STAINED_GLASS_PANE) :
+                new ItemStack(Material.GRAY_STAINED_GLASS_PANE), levelPercentage +"%"
+            ));
         }
+
         GUIItem guiItem = ItemStackUtils.makeGUIItemOfType(skillType.getSkillWorkstation(), SkillType.getDisplayName(skillType));
         ItemMeta meta = guiItem.getItem().getItemMeta();
-        if (meta != null) {
-            LoreUtils.setLore(meta, LoreUtils.createDescriptionLoreLine(skillType.getSkillDescription()));
-        }
-        getItems().put(13, guiItem);
-        if (!customPlayer.isNewRecipeGUIIteration()) {
-            getItems().put(21, ItemStackUtils.makeItemGUIItem(new ItemStack(Material.YELLOW_STAINED_GLASS_PANE), "Your path"));
-            getItems().put(22, ItemStackUtils.makeItemGUIItem(new ItemStack(Material.YELLOW_STAINED_GLASS_PANE), "Your path"));
-            getItems().put(23, ItemStackUtils.makeItemGUIItem(new ItemStack(Material.YELLOW_STAINED_GLASS_PANE), "Your path"));
-        }
+        if (meta != null) LoreUtils.setLore(meta, LoreUtils.createDescriptionLoreLine(skillType.getSkillDescription()));
 
-        getItems().put(18, recipeItem(1));
-        getItems().put(27, recipeItem(1));
-        getItems().put(36, viewRecipesItem(1));
-
-        getItems().put(20, recipeItem(2));
-        getItems().put(29, recipeItem(2));
-        getItems().put(38, viewRecipesItem(2));
-
-        if (customPlayer.isNewRecipeGUIIteration()) getItems().put(22, recipeItem(3));
-        getItems().put(31, recipeItem(3));
-        getItems().put(40, viewRecipesItem(3));
-
-        getItems().put(24, recipeItem(4));
-        getItems().put(33, recipeItem(4));
-        getItems().put(42, viewRecipesItem(4));
-
-        getItems().put(26, recipeItem(5));
-        getItems().put(35, recipeItem(5));
-        getItems().put(44, viewRecipesItem(5));
-
+        getItems().put(4, guiItem);
         super.open(player);
     }
-
     public GUIItem recipeItem(int level) {
         if (customPlayer.getSkillLevel(skillType) >= level) {
-            return ItemStackUtils.makeItemGUIItem(new ItemStack(Material.LIME_STAINED_GLASS_PANE), SkillLevel.getDisplayName(level) + " Unlocked");
+            return ItemStackUtils.makeItemGUIItem(new ItemStack(Material.LIME_STAINED_GLASS_PANE), SkillLevel.Companion.getDisplayName(level) + " Unlocked");
         }
-        return ItemStackUtils.makeItemGUIItem(new ItemStack(Material.RED_STAINED_GLASS_PANE), SkillLevel.getDisplayName(level) + " Not Unlocked");
+        return ItemStackUtils.makeItemGUIItem(new ItemStack(Material.RED_STAINED_GLASS_PANE), SkillLevel.Companion.getDisplayName(level) + " Not Unlocked");
     }
 
     public GUIItem viewRecipesItem(int requiredLevel) {
@@ -117,14 +111,14 @@ public class RecipesGUI extends GUI {
 //        }
 
         if (customPlayer.getSkillLevel(skillType) < requiredLevel - 1) {
-            guiItem = ItemStackUtils.makeItemGUIItem(new ItemStack(Material.BOOK), SkillLevel.getDisplayName(requiredLevel) + " Not Unlocked");
+            guiItem = ItemStackUtils.makeItemGUIItem(new ItemStack(Material.BOOK), SkillLevel.Companion.getDisplayName(requiredLevel) + " Not Unlocked");
             ItemMeta meta = guiItem.getItem().getItemMeta();
             if (meta != null) {
                 LoreUtils.setLore(meta, LoreUtils.createDescriptionLoreLine("You can't view recipes yet, you'll be able to see it once you're one level under the requirement (" + (requiredLevel - 1) + ")"));
             }
             return guiItem;
         } else if (customPlayer.getSkillLevel(skillType) == requiredLevel - 1) {
-            guiItem = ItemStackUtils.makeItemGUIItem(new ItemStack(Material.BOOK), SkillLevel.getDisplayName(requiredLevel) + " Not Unlocked");
+            guiItem = ItemStackUtils.makeItemGUIItem(new ItemStack(Material.BOOK), SkillLevel.Companion.getDisplayName(requiredLevel) + " Not Unlocked");
             ItemMeta meta = guiItem.getItem().getItemMeta();
             if (meta != null) {
                 LoreUtils.setLore(meta, LoreUtils.createDescriptionLoreLine("Click to view recipes you'll unlock"));
@@ -147,7 +141,7 @@ public class RecipesGUI extends GUI {
             });
             return guiItem;
         }
-        guiItem = ItemStackUtils.makeItemGUIItem(new ItemStack(Material.WRITABLE_BOOK), SkillLevel.getDisplayName(requiredLevel) + " Unlocked");
+        guiItem = ItemStackUtils.makeItemGUIItem(new ItemStack(Material.WRITABLE_BOOK), SkillLevel.Companion.getDisplayName(requiredLevel) + " Unlocked");
         ItemMeta meta = guiItem.getItem().getItemMeta();
         if (meta != null) {
             LoreUtils.setLore(meta, LoreUtils.createDescriptionLoreLine("Click to view recipes you've unlocked"));

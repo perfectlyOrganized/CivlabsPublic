@@ -8,6 +8,7 @@ import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
+import com.typesafe.config.Config;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.ChatColor;
@@ -51,8 +52,7 @@ public class FoodInteractionListener implements Listener {
         if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
             if (item == null) return;
             if (item.getType().isEdible() && player.isSneaking()) {
-                if (customPlayer.getSkillLevel(SkillType.HEALER) > SkillLevel.APPRENTICE.getLevel()) {
-
+                if (customPlayer.getSkillLevel(SkillType.HEALER) > SpecializationConfig.skillsConfig.getInt("healer_level_to_bless_food")) {
                     // Prevent blessing of golden apples and enchanted golden apples
                     if (item.getType() == Material.GOLDEN_APPLE || item.getType() == Material.ENCHANTED_GOLDEN_APPLE) {
                         PlayerUtil.message(player, ChatColor.RED + "This food is too holy for this...");
@@ -177,18 +177,11 @@ public class FoodInteractionListener implements Listener {
 
             customItem = new CustomItem(item.getType(),
                     Component.text("Blessed " + itemname).color(NamedTextColor.GOLD));
-
-            String effectSummary;
-            if (healerLevel >= SkillLevel.GRANDMASTER.getLevel()) {
-                effectSummary = "Regeneration I 20s, Absorption I 20s";
-            } else if (healerLevel >= SkillLevel.MASTER.getLevel()) {
-                effectSummary = "Regeneration I 15s, Absorption I 15s";
-            } else if (healerLevel >= SkillLevel.EXPERT.getLevel()) {
-                effectSummary = "Regeneration I 10s, Absorption I 10s";
-            } else { // Journeyman
-                effectSummary = "Regeneration I 5s, Absorption I 5s";
+            List<? extends Config> configList = SpecializationConfig.skillsConfig.getConfig().getConfigList("blessing_effects");
+            if (configList.size()-1 < healerLevel) {
+                healerLevel = configList.size() -1;
             }
-
+            String effectSummary = SpecializationConfig.skillsConfig.getStringList("blessing_effects").get(healerLevel);
             customItem.addLore(OpenLab.getInstance(), List.of(
                     Component.empty(),
                     Component.text("Blessed Food").color(NamedTextColor.YELLOW),
@@ -211,30 +204,23 @@ public class FoodInteractionListener implements Listener {
         Integer absorptionDurationTicks = null;
         Integer absorptionAmplifier = null;
 
-        if (healerLevel >= SkillLevel.GRANDMASTER.getLevel()) {
-            regenDurationTicks = 20 * 20;
-            regenAmplifier = 0;
-            absorptionDurationTicks = 50 * 20;
-            absorptionAmplifier = 1;
-        } else if (healerLevel >= SkillLevel.MASTER.getLevel()) {
-            regenDurationTicks = 15 * 20;
-            regenAmplifier = 0;
-            absorptionDurationTicks = 40 * 20;
-            absorptionAmplifier = 0;
-        } else if (healerLevel >= SkillLevel.EXPERT.getLevel()) {
-            regenDurationTicks = 10 * 20;
-            regenAmplifier = 0;
-            absorptionDurationTicks = 15 * 20;
-            absorptionAmplifier = 0;
-        } else if (healerLevel >= SkillLevel.JOURNEYMAN.getLevel()) {
-            regenDurationTicks = 5 * 20;
-            regenAmplifier = 0;
-            absorptionDurationTicks = 10 * 20;
-            absorptionAmplifier = 0;
-        } else {
+        String effectSummary = SpecializationConfig.skillsConfig.getStringList("blessing_effects").get(healerLevel).toLowerCase();
+        for (String effect : effectSummary.split(",")) {
+            List<String> props = List.of(effect.split(" "));
 
-            // Below Journeyman shouldn’t be able to bless; safe no-op
-            return;
+            String attribute = props.get(0);
+            int strength = Integer.parseInt(props.get(1));
+            int duration =  Integer.parseInt(props.get(2).replace("s", ""));
+            // probably should be done better but meh
+            
+            if (attribute.equals("regeneration")) {
+                regenAmplifier = strength;
+                regenDurationTicks = duration * 20;
+            }
+            if (attribute.equals("absorption")) {
+                absorptionAmplifier = strength;
+                absorptionDurationTicks = duration * 20;
+            }
         }
 
         boolean saturate = false;

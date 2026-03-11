@@ -131,7 +131,7 @@ public class BreakBlockListener implements Listener {
             return;
         }
 
-        SkillLevel skillRequired = SkillLevel.valueOf(CanMinerLvlBreak.getString(materialName.toString()));
+        SkillLevel skillRequired = SkillLevel.Companion.valueOf(CanMinerLvlBreak.getString(materialName.toString()));
 
         if (player.getSkillLevel(SkillType.MINER) < skillRequired.getLevel()) {
             event.setDropItems(false);
@@ -153,7 +153,7 @@ public class BreakBlockListener implements Listener {
         ItemStack result = getFarmerDrop(event.getBlock().getDrops());
         if (result == null || !CanFarmerBreak.hasPath(result.getType().toString())) return;
 
-        SkillLevel skillLevel = SkillLevel.valueOf(CanFarmerBreak.getString(result.getType().toString()));
+        SkillLevel skillLevel = SkillLevel.Companion.valueOf(CanFarmerBreak.getString(result.getType().toString()));
         if (customPlayer.getSkillLevel(SkillType.FARMER) < skillLevel.getLevel()) {
             event.setCancelled(true);
             PlayerUtil.message(player, org.bukkit.ChatColor.RED + "You are unable to farm this");

@@ -15,15 +15,16 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ReinforcementManager {
 
     public static final NamespacedKey namespacedKey = new NamespacedKey(OpenLab.getInstance(), "reinforcedBlocks");
 
     private static final Map<Vector, Long> lastTimeSpawnedParticle = new HashMap<>();
-    private static final Map<Chunk, Set<Reinforcement>> cachedReinforcements = new HashMap<>();
-    private static final Map<Chunk, Long> cacheTime = new HashMap<>();
-    private static final Map<Chunk, Integer> chunkIndices = new HashMap<>();
+    private static final Map<Chunk, Set<Reinforcement>> cachedReinforcements = new ConcurrentHashMap<>();
+    private static final Map<Chunk, Long> cacheTime = new ConcurrentHashMap<>();
+    private static final Map<Chunk, Integer> chunkIndices = new ConcurrentHashMap<>();
 
     private static final long cooldown = 1000L; // per-block particle cooldown
     private static final long CACHE_EXPIRE_MS = 2 * 60 * 1000L; // 2 minutes
@@ -162,7 +163,7 @@ public class ReinforcementManager {
 
 
             // REDSTONE particle with no gravity and slight drift
-            player.spawnParticle(Particle.BLOCK_DUST, loc, 1);
+            player.spawnParticle(Particle.SCRAPE, loc, 1);
         }
     }
 
