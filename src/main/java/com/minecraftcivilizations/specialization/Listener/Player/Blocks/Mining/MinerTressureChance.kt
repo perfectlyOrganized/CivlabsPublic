@@ -4,10 +4,8 @@ import com.minecraftcivilizations.specialization.Config.SpecializationConfig
 import com.minecraftcivilizations.specialization.OpenLab
 import com.minecraftcivilizations.specialization.Skill.SkillLevel
 import com.minecraftcivilizations.specialization.Skill.SkillType
-import com.minecraftcivilizations.specialization.player.CustomPlayerManager
 import com.minecraftcivilizations.specialization.util.EffectsUtil
 import org.bukkit.Bukkit
-import org.bukkit.NamespacedKey
 import org.bukkit.block.Block
 import org.bukkit.enchantments.Enchantment
 import org.bukkit.entity.Player
@@ -20,28 +18,29 @@ import java.util.concurrent.ThreadLocalRandom
 
 class MinerTressureChance : Listener {
     companion object {
-        fun selectWeightedTier(tierWeights: Map<String, Int>, maxTier: SkillLevel): String {
+        fun selectWeightedTier(tierWeights: Map<String, Int>, maxTier: SkillLevel): SkillLevel {
             val allTiers = tierWeights.keys.toList()
             val maxTierLevel = maxTier.level
-
+            if (maxTierLevel == 0) {
+                return SkillLevel.values[0]
+            }
             // Get tiers up to max level
             val availableTiers = allTiers.take(maxTierLevel)
             val availableWeights = availableTiers.map { tierWeights[it] ?: 1 }
 
             // Weighted random selection
             val totalWeight = availableWeights.sum()
-            var randomWeight = ThreadLocalRandom.current().nextInt(totalWeight)
+            val randomWeight = ThreadLocalRandom.current().nextInt(totalWeight)
             var cumulativeWeight = 0
 
             for (i in availableWeights.indices) {
                 cumulativeWeight += availableWeights[i]
                 if (randomWeight < cumulativeWeight) {
-                    return availableTiers[i]
+                    return SkillLevel.valueOf(availableTiers[i]) ?: throw Exception("${availableTiers[i]} is not a valid SkillLevel")
                 }
             }
 
-            // Fallback (should never reach here)
-            return availableTiers.last()
+            return SkillLevel.valueOf(availableTiers.last()) ?: throw Exception("${availableTiers.last()} is not a valid SkillLevel")
         }
     }
     @EventHandler
@@ -66,31 +65,21 @@ class MinerTressureChance : Listener {
         }
     }
 
+
     private fun triggerTreasure(player: Player, block: Block) {
-        val customPlayer = CustomPlayerManager.getCustomPlayer(player) ?: return
-        val level = customPlayer.getSkillLevel(SkillType.MINER)
+        val tier = Tressure.getTier(SkillType.MINER, player)
+        val lootTable = Tressure.getLootTable(SkillType.MINER, tier)
 
-        // get tier between level i.e level = 3 -> random between 1-3
-        val tierWeights: Map<String, Int> = SpecializationConfig.minerConfig.getConfigList("MINER_TREASURE_TIERS").associate { config ->
-            config.getString("skill_level") to config.getInt("chance")
-        }
-
-        val maxTier = SkillLevel.Companion.getSkillLevelFromInt(level)
-        val tier = selectWeightedTier(tierWeights, maxTier)
-
-        val lootKey = NamespacedKey("openlabs", "treasure/tiers/${tier.lowercase()}-miner-treasure") ?: return  OpenLab.logger.warning { "invalid key" }
-        val lootTable = Bukkit.getLootTable(lootKey) ?: return OpenLab.logger.warning { "Missing ${tier}-miner-treasure loot table" }
-
-        val lootContext = LootContext.Builder(block.location)
+        val lootContext = LootContext.Builder(player.location)
             .killer(player)
             .luck(0f)
-            .lootedEntity(player)
             .build()
 
-        val inventory = Bukkit.createInventory(null, 27, "Treasure Chest: ${tier.lowercase()}")
+        val inventory = Bukkit.createInventory(null, 27, "Treasure Chest: ${tier.name.lowercase()}")
         val centerLocation = block.location.clone().add(0.5, 0.5, 0.5)
         EffectsUtil.spawnLootEffect(centerLocation, 100)
         lootTable.fillInventory(inventory, Random(), lootContext);
+
         Bukkit.getScheduler().runTaskLater(OpenLab.getInstance(), Runnable {
             player.openInventory(inventory)
         }, 30L)
