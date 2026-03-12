@@ -36,6 +36,7 @@ public class FoodInteractionListener implements Listener {
     OpenLab plugin;
 
     static NamespacedKey BLESSED_FOOD_KEY = new NamespacedKey(OpenLab.getInstance(), "BLESSED_FOOD");
+    static NamespacedKey BLESSED_FOOD_LEVEL_KEY =new NamespacedKey(OpenLab.getInstance(), "BLESSED_FOOD_LEVEL");
 
     public FoodInteractionListener(OpenLab plugin) {
         this.plugin = plugin;
@@ -131,7 +132,6 @@ public class FoodInteractionListener implements Listener {
             // Apply blessed food effects
             int healerLevel = getBlessedFoodLevel(consumed);
             applyBlessedFoodEffects(player, healerLevel, consumed.getType());
-
             // Set cooldown **only on items that are actually blessed food**
             for (ItemStack invItem : player.getInventory().getContents()) {
                 if (isBlessedFood(invItem)) {
@@ -190,6 +190,7 @@ public class FoodInteractionListener implements Listener {
             ));
             ItemMeta meta = customItem.getItem().getItemMeta();
             meta.getPersistentDataContainer().set(BLESSED_FOOD_KEY, PersistentDataType.BOOLEAN, true);
+            meta.getPersistentDataContainer().set(BLESSED_FOOD_LEVEL_KEY, PersistentDataType.INTEGER, healerLevel);
             item.setItemMeta(meta);
         }
 
@@ -205,14 +206,18 @@ public class FoodInteractionListener implements Listener {
         Integer absorptionAmplifier = null;
 
         String effectSummary = SpecializationConfig.skillsConfig.getStringList("blessing_effects").get(healerLevel).toLowerCase();
-        for (String effect : effectSummary.split(",")) {
-            List<String> props = List.of(effect.split(" "));
+            for (String effect : effectSummary.split(",")) {
+                String trimmed = effect.trim();
+                if (trimmed.isEmpty()) continue;
 
-            String attribute = props.get(0);
-            int strength = Integer.parseInt(props.get(1));
-            int duration =  Integer.parseInt(props.get(2).replace("s", ""));
-            // probably should be done better but meh
-            
+                List<String> props = List.of(trimmed.split("\\s+"));
+                if (props.size() < 3) continue;
+
+                String attribute = props.get(0).toLowerCase();
+                int strength = Integer.parseInt(props.get(1));
+                int duration = Integer.parseInt(props.get(2).replace("s", ""));
+                // probably should be done better but meh - rodft - yeah it was wrong updated
+        
             if (attribute.equals("regeneration")) {
                 regenAmplifier = strength;
                 regenDurationTicks = duration * 20;
@@ -254,19 +259,9 @@ public class FoodInteractionListener implements Listener {
 
     private int getBlessedFoodLevel(ItemStack item) {
         if (item == null || item.getItemMeta() == null) return 0;
-        List<String> lore = item.getItemMeta().getLore();
-        if (lore == null) return 0;
-        for (String line : lore) {
-            if (line.contains("Healer Level: ")) {
-                String levelStr = line.replace("Healer Level: ", "");
-                try {
-                    return Integer.parseInt(levelStr);
-                } catch (NumberFormatException e) {
-                    return 0;
-                }
-            }
-        }
-        return 0;
+        Integer level = item.getItemMeta().getPersistentDataContainer().get(BLESSED_FOOD_LEVEL_KEY, PersistentDataType.INTEGER);
+        
+        return level != null ? level : 0;
     }
 
 
