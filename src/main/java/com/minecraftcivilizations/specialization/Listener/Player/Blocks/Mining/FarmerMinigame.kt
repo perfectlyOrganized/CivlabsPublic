@@ -148,29 +148,19 @@ class FarmerMinigame {
     fun end() {
         isActive = false
         val player = Bukkit.getPlayer(owner) ?: return
-        val customPlayer = CustomPlayerManager.getCustomPlayerOrThrow(player)
         player.playSound(player.location, Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1f)
         repeatingTask.cancel()
         task.cancel()
 
-
-        val level = customPlayer.getSkillLevel(SkillType.FARMER)
-        val tierWeights: Map<String, Int> = SpecializationConfig.farmerConfig.getConfigList("FARMER_TREASURE_TIERS").associate { config ->
-            config.getString("skill_level") to config.getInt("chance")
-        }
-
-        val maxTier = SkillLevel.Companion.getSkillLevelFromInt(level)
-        val tier = MinerTressureChance.selectWeightedTier(tierWeights, maxTier)
-
-        val lootKey = NamespacedKey("openlabs", "treasure/tiers/${tier.lowercase()}-farmer-treasure")
-        val lootTable = Bukkit.getLootTable(lootKey) ?: return OpenLab.logger.warning { "Missing ${tier}-farmer-treasure loot table" }
-
+        val tier = Tressure.getTier(SkillType.FARMER, player)
+        val lootTable = Tressure.getLootTable(SkillType.FARMER, tier)
         val lootContext = LootContext.Builder(player.location)
             .killer(player)
             .luck(0f)
             .lootedEntity(player)
             .build()
-        inventory = Bukkit.createInventory(null, 27, "Reward: ${tier.lowercase()}")
+
+        inventory = Bukkit.createInventory(null, 27, "Reward: ${tier.name.lowercase()}")
         player.closeInventory()
         player.openInventory(inventory)
         inventory.setItem(13, ItemStackUtils.getItemStack(crop.key, (score * ThreadLocalRandom.current().nextDouble(3.0)).toInt()))

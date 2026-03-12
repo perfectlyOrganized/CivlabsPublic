@@ -23,9 +23,12 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.potion.PotionData;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.potion.PotionType;
 
 import java.util.List;
 import java.util.Objects;
@@ -50,65 +53,100 @@ public class FoodInteractionListener implements Listener {
         if (customPlayer == null) return;
         Action action = event.getAction();
         if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
-            if (item == null) return;
-            if (item.getType().isEdible() && player.isSneaking()) {
-                if (customPlayer.getSkillLevel(SkillType.HEALER) > SpecializationConfig.skillsConfig.getInt("healer_level_to_bless_food")) {
-                    // Prevent blessing of golden apples and enchanted golden apples
-                    if (item.getType() == Material.GOLDEN_APPLE || item.getType() == Material.ENCHANTED_GOLDEN_APPLE) {
-                        PlayerUtil.message(player, ChatColor.RED + "This food is too holy for this...");
-                        event.setCancelled(true);
+            if (item == null || item.getAmount() < 1 || !player.isSneaking()) return;
+
+
+            if (isWaterBottle(item))  {
+                int requiredLevel = SpecializationConfig.skillsConfig.getInt("librarian_level_to_create_xp_bottle");
+                if (customPlayer.getSkillLevel(SkillType.LIBRARIAN) < requiredLevel) return;
+                event.setCancelled(true);
+
+                // permanently temporary fix
+                int blessXp = SpecializationConfig.skillsConfig.getInt("create_xp_bottle_xp");
+                int hungerCost = SpecializationConfig.skillsConfig.getInt("create_xp_bottle_food_cost");
+
+                if (player.getFoodLevel() < hungerCost +1) {
+                    PlayerUtil.message(player, ChatColor.RED + "You're too hungry to do that...", 1);
+                    return;
+                }
+                player.setFoodLevel(player.getFoodLevel() - hungerCost);
+
+                item.setAmount(item.getAmount() - 1);
+                player.setFoodLevel(player.getFoodLevel() - hungerCost);
+                if (player.getInventory().firstEmpty() != -1) {
+                    player.getInventory().addItem(new ItemStack(Material.EXPERIENCE_BOTTLE));
+                } else {
+                    player.getWorld().dropItemNaturally(player.getLocation(), new ItemStack(Material.EXPERIENCE_BOTTLE));
+                    PlayerUtil.sendActionBar(player, Component.text( "Your pockets are full. You dropped it", NamedTextColor.YELLOW));
+                }
+                customPlayer.addSkillXp(SkillType.LIBRARIAN, blessXp);
+            }
+
+            if (!item.getType().isEdible()) return;
+            event.setCancelled(true);
+
+            int requiredLevel = SpecializationConfig.skillsConfig.getInt("healer_level_to_bless_food");
+            if (customPlayer.getSkillLevel(SkillType.HEALER) < requiredLevel) return;
+
+            // Prevent blessing of golden apples and enchanted golden apples
+            if (item.getType() == Material.GOLDEN_APPLE || item.getType() == Material.ENCHANTED_GOLDEN_APPLE) {
+                PlayerUtil.message(player, ChatColor.RED + "This food is too holy for this...");
+                return;
+            }
+
+            if (item.getType() == Material.ROTTEN_FLESH || item.getType() == Material.KELP) {
+                PlayerUtil.message(player, ChatColor.RED + "This food is too filthy for that...");
+                return;
+            }
+
+            if (player.getFoodLevel() < 10) {
+                PlayerUtil.message(player, ChatColor.RED + "You're too hungry to do that...", 1);
+                return;
+            }
+
+            int healerLevel = customPlayer.getSkillLevel(SkillType.HEALER);
+
+            ItemMeta meta = item.getItemMeta();
+            if (meta != null && meta.hasLore()) {
+                for (String line : meta.getLore()) {
+                    if (ChatColor.stripColor(line).toLowerCase().contains("blessed")) {
+                        PlayerUtil.message(player, ChatColor.RED + "This is already #blessed", 1);
                         return;
                     }
-
-                    if (item.getType() == Material.ROTTEN_FLESH || item.getType() == Material.KELP) {
-                        PlayerUtil.message(player, ChatColor.RED + "This food is too filthy for that...");
-                        event.setCancelled(true);
-                        return;
-                    }
-
-                    if (player.getFoodLevel() < 10) {
-                        PlayerUtil.message(player, ChatColor.RED + "You're too hungry to do that...", 1);
-                        event.setCancelled(true);
-                        return;
-                    }
-
-                    int healerLevel = customPlayer.getSkillLevel(SkillType.HEALER);
-                    if (item.getAmount() >= 1) {
-                        ItemMeta meta = item.getItemMeta();
-                        if (meta != null && meta.hasLore()) {
-                            for (String line : meta.getLore()) {
-                                if (ChatColor.stripColor(line).toLowerCase().contains("blessed")) {
-                                    PlayerUtil.message(player, ChatColor.RED + "This is already #blessed", 1);
-                                    event.setCancelled(true);
-                                    return;
-                                }
-                            }
-                        }
-
-                        int blessXp = SpecializationConfig.getHealthConfig().getInt("BLESSED_FOOD_HEALER_XP");
-                        int hungerCost = SpecializationConfig.getHealthConfig().getInt("BLESSED_FOOD_HUNGER_COST");
-
-                        ItemStack singleItem = item.clone();
-                        singleItem.setAmount(1);
-                        blessFood(singleItem, healerLevel);
-                        item.setAmount(item.getAmount() - 1);
-                        player.setFoodLevel(player.getFoodLevel() - hungerCost);
-                        if (player.getInventory().firstEmpty() != -1) {
-                            player.getInventory().addItem(singleItem);
-                        } else {
-                            player.getWorld().dropItemNaturally(player.getLocation(), singleItem);
-                            PlayerUtil.message(player, ChatColor.YELLOW + "Your pockets are full. You dropped it");
-                        }
-                        customPlayer.addSkillXp(SkillType.HEALER, blessXp);
-//                        PlayerUtil.message(player,ChatColor.GOLD + "You have blessed one " + getItemName(singleItem));
-                    }
-
-                    event.setCancelled(true);
                 }
             }
+
+            int blessXp = SpecializationConfig.getHealthConfig().getInt("BLESSED_FOOD_HEALER_XP");
+            int hungerCost = SpecializationConfig.getHealthConfig().getInt("BLESSED_FOOD_HUNGER_COST");
+
+            ItemStack singleItem = item.clone();
+            singleItem.setAmount(1);
+            blessFood(singleItem, healerLevel);
+            item.setAmount(item.getAmount() - 1);
+            player.setFoodLevel(player.getFoodLevel() - hungerCost);
+            if (player.getInventory().firstEmpty() != -1) {
+                player.getInventory().addItem(singleItem);
+            } else {
+                player.getWorld().dropItemNaturally(player.getLocation(), singleItem);
+                PlayerUtil.message(player, ChatColor.YELLOW + "Your pockets are full. You dropped it");
+            }
+            customPlayer.addSkillXp(SkillType.HEALER, blessXp);
         }
     }
 
+    public boolean isWaterBottle(ItemStack item) {
+        if (item == null || item.getType() != Material.POTION) {
+            return false;
+        }
+
+        if (item.getItemMeta() instanceof PotionMeta meta) {
+            PotionData data = meta.getBasePotionData();
+            return data.getType() == PotionType.WATER
+                    && !data.isUpgraded()
+                    && !data.isExtended();
+        }
+        return false;
+    }
     @EventHandler
     public void onPlayerConsume(PlayerItemConsumeEvent event) {
         Player player = event.getPlayer();
