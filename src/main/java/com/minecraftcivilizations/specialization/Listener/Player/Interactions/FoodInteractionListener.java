@@ -177,7 +177,7 @@ public class FoodInteractionListener implements Listener {
 
             customItem = new CustomItem(item.getType(),
                     Component.text("Blessed " + itemname).color(NamedTextColor.GOLD));
-            List<? extends Config> configList = SpecializationConfig.skillsConfig.getConfig().getConfigList("blessing_effects");
+            List<String> configList = SpecializationConfig.skillsConfig.getConfig().getStringList("blessing_effects");
             if (configList.size()-1 < healerLevel) {
                 healerLevel = configList.size() -1;
             }
