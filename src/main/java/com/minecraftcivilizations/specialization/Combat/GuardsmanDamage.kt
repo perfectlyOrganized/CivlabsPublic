@@ -1,5 +1,5 @@
 package com.minecraftcivilizations.specialization.Combat
-
+import org.bukkit.entity.LivingEntity
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig
 import com.minecraftcivilizations.specialization.OpenLab
 import com.minecraftcivilizations.specialization.Skill.SkillType
@@ -14,6 +14,9 @@ import org.bukkit.event.entity.EntityDeathEvent
 import java.util.concurrent.ThreadLocalRandom
 import kotlin.math.ln
 import kotlin.math.min
+import org.bukkit.entity.Animals
+import org.bukkit.entity.ArmorStand
+import kotlin.math.roundToInt
 
 class GuardsmanDamage(combatManager: CombatManager) : Listener {
     var plugin: OpenLab
@@ -39,6 +42,32 @@ class GuardsmanDamage(combatManager: CombatManager) : Listener {
             val reducedDamage = originalDamage * (1.0-damageReduction)
             event.damage = reducedDamage
         }
+    }
+
+    @EventHandler
+    fun onEntityDamageByPlayer(event: EntityDamageByEntityEvent) {
+        val player = event.damager as? Player ?: return
+        val victim = event.entity as? LivingEntity ?: return
+        val customPlayer = CustomPlayerManager.getCustomPlayerOrThrow(player)
+        val damageDealt = event.finalDamage
+        if (victim is Player) return
+        if (victim is ArmorStand) return
+        if (damageDealt <= 0.0) return
+        var xp = damageDealt
+        when (victim) {
+            is Monster -> {
+                xp *= 1.0
+            }
+            is Animals -> {
+                xp *= 0.5
+            }
+            else -> return
+        }
+
+        xp = xp.roundToInt().toDouble()
+        // player.sendMessage("damage=${event.finalDamage}")
+        customPlayer.addSkillXp(SkillType.GUARDSMAN, xp)
+
     }
 
     @EventHandler
