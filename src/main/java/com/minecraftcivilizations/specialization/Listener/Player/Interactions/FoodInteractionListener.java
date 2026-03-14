@@ -71,8 +71,10 @@ public class FoodInteractionListener implements Listener {
                     if (meta == null) return;
                     meta.getPersistentDataContainer().set(ENGRAVED_EMERALD_KEY, PersistentDataType.STRING, skillType.name());
                     meta.setDisplayName(ComponentUtils.serializeComponentAsString(Component.text( SkillType.getDisplayName(skillType) + " Engraved Emerald", NamedTextColor.GREEN)));
-                    List<String> lore = ArrayList<String>();
-                    meta.setLore();
+                    List<String> lore = new ArrayList<>();
+                    lore.add("§fStored:");
+                    lore.add("§f0 §6Cxp");
+                    meta.setLore(lore);
 
                     item.setAmount(item.getAmount() - 1);
                     if (player.getInventory().firstEmpty() != -1) {
