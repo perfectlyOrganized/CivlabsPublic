@@ -17,6 +17,7 @@ import kotlin.math.min
 import org.bukkit.entity.Animals
 import org.bukkit.entity.ArmorStand
 import kotlin.math.roundToInt
+import org.bukkit.entity.Projectile
 
 class GuardsmanDamage(combatManager: CombatManager) : Listener {
     var plugin: OpenLab
@@ -43,16 +44,26 @@ class GuardsmanDamage(combatManager: CombatManager) : Listener {
             event.damage = reducedDamage
         }
     }
-
+    
     @EventHandler
     fun onEntityDamageByPlayer(event: EntityDamageByEntityEvent) {
-        val player = event.damager as? Player ?: return
+        var player: Player? = null
+
+        when (val damager = event.damager) {
+            is Player -> player = damager
+            is Projectile -> player = damager.shooter as? Player
+        }
+
+        player ?: return
+
         val victim = event.entity as? LivingEntity ?: return
-        val customPlayer = CustomPlayerManager.getCustomPlayerOrThrow(player)
-        val damageDealt = event.finalDamage
         if (victim is Player) return
         if (victim is ArmorStand) return
+
+        val customPlayer = CustomPlayerManager.getCustomPlayerOrThrow(player)
+        val damageDealt = event.finalDamage
         if (damageDealt <= 0.0) return
+
         var xp = damageDealt
         when (victim) {
             is Monster -> {
@@ -64,10 +75,10 @@ class GuardsmanDamage(combatManager: CombatManager) : Listener {
             else -> return
         }
 
-        xp = xp.roundToInt().toDouble()
-        // player.sendMessage("damage=${event.finalDamage}")
-        customPlayer.addSkillXp(SkillType.GUARDSMAN, xp)
+        xp = xp.toInt().toDouble()
+        if (xp <= 0.0) return
 
+        customPlayer.addSkillXp(SkillType.GUARDSMAN, xp)
     }
 
     @EventHandler
