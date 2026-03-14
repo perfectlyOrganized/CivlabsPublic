@@ -2,15 +2,18 @@ package com.minecraftcivilizations.specialization.Listener.Player.Interactions;
 
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.CustomItem.CustomItem;
+import com.minecraftcivilizations.specialization.GUI.ClassSelectionGUI;
 import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.player.CustomPlayerManager;
+import com.minecraftcivilizations.specialization.util.ComponentUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import com.typesafe.config.Config;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -21,6 +24,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
@@ -30,9 +34,8 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Random;
+import java.util.*;
+import java.util.function.Consumer;
 
 public class FoodInteractionListener implements Listener {
 
@@ -40,6 +43,8 @@ public class FoodInteractionListener implements Listener {
 
     static NamespacedKey BLESSED_FOOD_KEY = new NamespacedKey(OpenLab.getInstance(), "BLESSED_FOOD");
     static NamespacedKey BLESSED_FOOD_LEVEL_KEY =new NamespacedKey(OpenLab.getInstance(), "BLESSED_FOOD_LEVEL");
+    static NamespacedKey ENGRAVED_EMERALD_KEY =new NamespacedKey(OpenLab.getInstance(), "ENGRAVED_EMERALD");
+
 
     public FoodInteractionListener(OpenLab plugin) {
         this.plugin = plugin;
@@ -55,7 +60,30 @@ public class FoodInteractionListener implements Listener {
         Action action = event.getAction();
         if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
             if (item == null || item.getAmount() < 1 || !player.isSneaking()) return;
+            if (item.getType().equals(Material.EMERALD)) {
+                int requiredLevel = SpecializationConfig.skillsConfig.getInt("librarian_level_to_create_cxp_transfer");
+                if (customPlayer.getSkillLevel(SkillType.LIBRARIAN) < requiredLevel) return;
 
+                new ClassSelectionGUI(Component.text("Select class to engrave the emerald with"), new HashMap<>(), skillType -> {
+                    ItemStack engraved = item.clone();
+                    engraved.setAmount(1);
+                    ItemMeta meta = engraved.getItemMeta();
+                    if (meta == null) return;
+                    meta.getPersistentDataContainer().set(ENGRAVED_EMERALD_KEY, PersistentDataType.STRING, skillType.name());
+                    meta.setDisplayName(ComponentUtils.serializeComponentAsString(Component.text( SkillType.getDisplayName(skillType) + " Engraved Emerald", NamedTextColor.GREEN)));
+                    List<String> lore = ArrayList<String>();
+                    meta.setLore();
+
+                    item.setAmount(item.getAmount() - 1);
+                    if (player.getInventory().firstEmpty() != -1) {
+                        player.getInventory().addItem(engraved);
+                    } else {
+                        player.getWorld().dropItemNaturally(player.getLocation(), engraved);
+                        PlayerUtil.message(player, ChatColor.YELLOW + "Your pockets are full. You dropped it");
+                    }
+                }).open(player);
+                return;
+            }
 
             if (isWaterBottle(item))  {
                 int requiredLevel = SpecializationConfig.skillsConfig.getInt("librarian_level_to_create_xp_bottle");
@@ -154,7 +182,6 @@ public class FoodInteractionListener implements Listener {
         ItemStack consumed = event.getItem();
         CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player.getUniqueId());
         if (customPlayer == null) return;
-
         if (isBlessedFood(consumed)) {
             int cooldownTicks = 800;
 
@@ -272,7 +299,7 @@ public class FoodInteractionListener implements Listener {
             saturate = true;
             player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, regenDurationTicks, regenAmplifier));
         }
-        if (absorptionDurationTicks != null && absorptionAmplifier != null) {
+        if (absorptionDurationTicks != null) {
             saturate = true;
             player.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, absorptionDurationTicks, absorptionAmplifier));
         }

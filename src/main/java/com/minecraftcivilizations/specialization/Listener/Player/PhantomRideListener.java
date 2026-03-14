@@ -39,45 +39,7 @@ public class PhantomRideListener implements Listener {
     }
 
     private static boolean isValid(Material type) {
-        final String[] encoded = {"Q0xPQ0s=", "Q09NUEFTUw=="};
-
-        for (String s : encoded) {
-            String decoded = new String(Base64.getDecoder().decode(s), StandardCharsets.UTF_8);
-            if (type.name().equals(decoded)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // === Admin Membrane Summon ===
-    @EventHandler
-    public void onUseMembrane(PlayerInteractEvent event) {
-        if (!event.getPlayer().isOp()) return;
-        if (event.getHand() != EquipmentSlot.HAND) return;
-        if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
-
-        Player player = event.getPlayer();
-        ItemStack item = event.getItem();
-        if (item == null || item.getType() != Material.PHANTOM_MEMBRANE) return;
-        event.setCancelled(true);
-
-        Phantom phantom = player.getWorld().spawn(player.getLocation(), Phantom.class, p -> {
-            p.setAI(true);
-            p.setSilent(true);
-            p.setAware(false);
-            p.setInvulnerable(false);
-            p.setPersistent(true);
-            p.setRemoveWhenFarAway(false);
-            p.setFireTicks(0);
-            p.setSize(scale);
-            p.setGlowing(false);
-            p.setCustomNameVisible(false);
-            p.getPersistentDataContainer().set(fireResistKey, PersistentDataType.BYTE, (byte) 1);
-        });
-
-        phantom.addPassenger(player);
-        startPhantomRide(player, phantom);
+        return type.equals(Material.GOLD_INGOT);
     }
 
     @EventHandler

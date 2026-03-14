@@ -43,7 +43,7 @@ public class RecipesGUI extends GUI {
 
     @Override
     public void open(Player player) {
-        if (page < maxPage-1) {
+        if (page < maxPage) {
             getItems().put(1, new GUIItem(ItemStackUtils.makeItemGUIItem(new ItemStack(Material.valueOf("CREATEDECO_DECAL_RIGHT")), "Next page ("+ (page+1) +")").getItem(), () -> {
                 page++;
                 this.open(player);
