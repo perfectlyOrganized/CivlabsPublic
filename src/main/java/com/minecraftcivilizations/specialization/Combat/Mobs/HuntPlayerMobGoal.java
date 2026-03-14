@@ -98,18 +98,15 @@ public class HuntPlayerMobGoal implements Listener {
             }
         }
     }
-    public static boolean isFullMoon(World world) {
-        long time = world.getFullTime();
-        int days = (int) (time / 24000);
-        int phase = days % 8;
-        return phase == 0;
-    }
+    public static boolean isFullOrNewMoon(World world) {
+        long time = world.getTime();
+        boolean isDarkEnough = (time < 1000 || time > 13000);
+        if (!isDarkEnough) return false;
 
-    public static boolean isInvertedFullMoon(World world) {
-        long time = world.getFullTime();
-        int days = (int) (time / 24000);
+        long fullTime = world.getFullTime();
+        int days = (int) (fullTime / 24000);
         int phase = days % 8;
-        return phase == 4;
+        return phase == 0 || phase == 4;
     }
     /**
      * Event listener to handle target changes
@@ -177,36 +174,50 @@ public class HuntPlayerMobGoal implements Listener {
 
         private void acquireTarget() {
             // If mob has a target, check if it's still valid
-            Entity currentTarget = mob.getTarget();
+            LivingEntity currentTarget = mob.getTarget();
 
-            if (currentTarget != null) {
-                // Check if target is too far away
-                if (!mob.getWorld().equals(currentTarget.getWorld()) ||
-                        mob.getLocation().distance(currentTarget.getLocation()) > followRange) {
-                    mob.setTarget(null);
-                    currentTarget = null;
-                }
-
-                // Check if target is dead
-                if (currentTarget instanceof LivingEntity && ((LivingEntity) currentTarget).isDead()) {
-                    mob.setTarget(null);
-                    currentTarget = null;
-                }
-            }
-
-            // If no target, find one
             if (currentTarget == null) {
                 findNewTarget();
+                return;
+            }
+
+            if (!mob.getWorld().equals(currentTarget.getWorld()) ||
+                    mob.getLocation().distance(currentTarget.getLocation()) > followRange) {
+                resetTarget();
+                return;
+            }
+
+
+            if (currentTarget.isDead()) {
+                resetTarget();
+                return;
+            }
+
+            if (currentTarget instanceof Player) {
+                boolean ignoreLineOfSight = isFullOrNewMoon(mob.getWorld());
+
+                if (!ignoreLineOfSight && !mob.hasLineOfSight(currentTarget)) {
+                    resetTarget();
+                    return;
+                }
+
+                double maxVertical = SpecializationConfig.getMobConfig().getDouble("MOB_RULE_VERTICAL_FOLLOW_RANGE");
+                double verticalDistance = Math.abs(currentTarget.getLocation().getY() - mob.getLocation().getY());
+
+                if (verticalDistance > maxVertical) resetTarget();
             }
         }
-
+        private void resetTarget() {
+            mob.setTarget(null);
+            findNewTarget();
+        }
         private void findNewTarget() {
             Predicate<Player> validGamemode = p ->
                     p.getGameMode() == GameMode.SURVIVAL ||
                             p.getGameMode() == GameMode.ADVENTURE;
 
             double maxVertical = SpecializationConfig.getMobConfig().getDouble("MOB_RULE_VERTICAL_FOLLOW_RANGE");
-            boolean ignoreLineOfSight = isFullMoon(mob.getWorld()) || isInvertedFullMoon(mob.getWorld());
+            boolean ignoreLineOfSight = isFullOrNewMoon(mob.getWorld());
 
 
             // Get nearby players

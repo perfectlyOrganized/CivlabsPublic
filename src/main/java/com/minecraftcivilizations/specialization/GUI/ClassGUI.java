@@ -32,8 +32,6 @@ public class ClassGUI extends GUI {
         CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayerOrThrow(player);
         this.getItems().clear();
 
-        if(customPlayer == null) return;
-
         if (customPlayer.isAdvancedClassesGUIEnabled()) {
             advancedClassGUI(customPlayer);
         } else {

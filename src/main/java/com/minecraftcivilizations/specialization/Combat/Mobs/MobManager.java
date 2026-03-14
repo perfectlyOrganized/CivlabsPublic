@@ -7,7 +7,6 @@ import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.minecraftcivilizations.specialization.util.WorldUtils;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -29,7 +28,6 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import virtuoel.pehkui.api.ScaleData;
-import virtuoel.pehkui.api.ScaleType;
 import virtuoel.pehkui.api.ScaleTypes;
 
 import java.lang.reflect.Field;
@@ -668,7 +666,7 @@ public class MobManager implements Listener {
         double uniqueMobChance = SpecializationConfig.getMobConfig().getDouble("unique_mob_chance");
         double randomMobChance = ThreadLocalRandom.current().nextDouble();
 
-        if ((HuntPlayerMobGoal.isFullMoon(entity.getWorld()) || HuntPlayerMobGoal.isInvertedFullMoon(entity.getWorld())) && uniqueMobChance > randomMobChance) {
+        if (HuntPlayerMobGoal.isFullOrNewMoon(entity.getWorld()) && uniqueMobChance > randomMobChance) {
             net.minecraft.world.entity.Entity mcEntity = ((CraftEntity) entity).getHandle();
             List<String> uniqueScaleType = List.of(
                     "height", "width", "base"
