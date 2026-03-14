@@ -175,10 +175,10 @@ public class ReinforcementProtectionListener implements Listener {
         }
 
         Player player = event.getPlayer();
-        if (player.isSneaking()) {
-            PlayerUtil.message(player, "You can't sneak break this block", 1);
-            event.setCancelled(true);
-        }
+//        if (player.isSneaking()) {
+//            PlayerUtil.message(player, "You can't sneak break this block", 1);
+//            event.setCancelled(true);
+//        }
         CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayerOrThrow(player);
         Material item = player.getInventory().getItemInMainHand().getType();
         if (customPlayer.getSkillLevel(SkillType.BUILDER) < 1 && isBlockConnectedToFourSimilar(block)) {
