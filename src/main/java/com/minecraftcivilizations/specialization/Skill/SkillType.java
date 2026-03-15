@@ -40,7 +40,9 @@ public enum SkillType {
 
         return last_level;
     }
-
+    public String getDisplayName() {
+        return SkillType.getDisplayName(this);
+    }
     public static String getDisplayName(SkillType skillType) {
         return capitalize(skillType.name().toLowerCase());
     }

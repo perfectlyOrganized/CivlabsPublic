@@ -112,7 +112,9 @@ public class CustomPlayer extends CustomPlayerBase {
 
         addSkillXp(skillType, xp, null, false, silent);
     }
-
+    public void removeSkillXp(SkillType skillType, double xp) {
+        addSkillXp(skillType, -xp, null, true, false);
+    }
     /**
      * Add XP with physical location for sound
      */
