@@ -142,6 +142,7 @@ object CustomPlayerManager : Listener {
         if (customPlayer != null) {
             OpenLab.getInstance().applyCustomName(player, customPlayer.name)
             applyPlayerCustomizations(player)
+            customPlayer.applyEffects(player)
         } else {
             Bukkit.getScheduler().runTaskLater(OpenLab.getInstance(), Runnable {
                 if (player.isOnline) {
@@ -149,6 +150,7 @@ object CustomPlayerManager : Listener {
                     if (retryPlayer != null) {
                         OpenLab.getInstance().applyCustomName(player, retryPlayer.name)
                         applyPlayerCustomizations(player)
+                        retryPlayer.applyEffects(player)
                     } else {
                         OpenLab.logger.warning("CustomPlayer still not found for ${player.name} after delay")
                         player.kickPlayer("Player data could not be properly loaded.")
@@ -164,6 +166,8 @@ object CustomPlayerManager : Listener {
         Bukkit.getScheduler().runTaskLater(OpenLab.getInstance(), Runnable {
             if (player.isOnline) {
                 applyPlayerCustomizations(player)
+                val customPlayer = getCustomPlayerOrThrow(player.uniqueId)
+                customPlayer.applyEffects(player)
             }
         }, 2L)
     }

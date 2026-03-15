@@ -363,25 +363,27 @@ public class PlayerInteractListener implements Listener {
             return;
         }
 
-        CustomPlayer cp = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
-        if (cp != null) {
-            cp.addSkillXp(SkillType.FARMER, 1);
+        CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(player);
+        if (customPlayer != null) {
+            customPlayer.addSkillXp(SkillType.FARMER, 1);
         }
     }
 
     @EventHandler
     public void onMilk(PlayerItemConsumeEvent e) {
-        if (e.getItem().getType() != Material.MILK_BUCKET) return;
+        Material type = e.getItem().getType();
+        Material milkBottle = Material.getMaterial("FARMERSDELIGHT_MILK_BOTTLE");
+        if (type != Material.MILK_BUCKET && (milkBottle == null || type != milkBottle)) return;
 
         Bukkit.getScheduler().runTaskLater(
                 OpenLab.getInstance(),
                 () -> {
                     CustomPlayer cp = CustomPlayerManager.INSTANCE.getCustomPlayer(e.getPlayer());
                     if (cp != null) {
-//                        cp.applyEffects();
+                        cp.applyEffects(cp.getPlayer());
                     }
                 },
-                1L
+                2L
         );
     }
 
