@@ -2,8 +2,10 @@ package com.minecraftcivilizations.specialization.Listener.Player.Interactions;
 
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.CustomItem.CustomItem;
+import com.minecraftcivilizations.specialization.GUI.BooleanSelectionGUI;
 import com.minecraftcivilizations.specialization.GUI.ClassSelectionGUI;
 import com.minecraftcivilizations.specialization.OpenLab;
+import com.minecraftcivilizations.specialization.Skill.Skill;
 import com.minecraftcivilizations.specialization.player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
@@ -13,11 +15,9 @@ import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import com.typesafe.config.Config;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
+import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -28,6 +28,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
+import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionData;
 import org.bukkit.potion.PotionEffect;
@@ -35,6 +36,7 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
 public class FoodInteractionListener implements Listener {
@@ -44,6 +46,7 @@ public class FoodInteractionListener implements Listener {
     static NamespacedKey BLESSED_FOOD_KEY = new NamespacedKey(OpenLab.getInstance(), "BLESSED_FOOD");
     static NamespacedKey BLESSED_FOOD_LEVEL_KEY =new NamespacedKey(OpenLab.getInstance(), "BLESSED_FOOD_LEVEL");
     static NamespacedKey ENGRAVED_EMERALD_KEY =new NamespacedKey(OpenLab.getInstance(), "ENGRAVED_EMERALD");
+    static NamespacedKey ENGRAVED_EMERALD_XP_KEY =new NamespacedKey(OpenLab.getInstance(), "ENGRAVED_EMERALD_XP");
 
 
     public FoodInteractionListener(OpenLab plugin) {
@@ -59,29 +62,96 @@ public class FoodInteractionListener implements Listener {
         if (customPlayer == null) return;
         Action action = event.getAction();
         if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
-            if (item == null || item.getAmount() < 1 || !player.isSneaking()) return;
-            if (item.getType().equals(Material.EMERALD)) {
-                int requiredLevel = SpecializationConfig.skillsConfig.getInt("librarian_level_to_create_cxp_transfer");
-                if (customPlayer.getSkillLevel(SkillType.LIBRARIAN) < requiredLevel) return;
-
-                new ClassSelectionGUI(Component.text("Select class to engrave the emerald with"), new HashMap<>(), skillType -> {
-                    ItemStack engraved = item.clone();
-                    engraved.setAmount(1);
-                    ItemMeta meta = engraved.getItemMeta();
+            if (item == null || item.getAmount() < 1) return;
+            if (!player.isSneaking()) {
+                if (item.getType().equals(Material.EMERALD) && !player.hasCooldown(Material.EMERALD)) {
+                    ItemMeta meta = item.getItemMeta();
                     if (meta == null) return;
-                    meta.getPersistentDataContainer().set(ENGRAVED_EMERALD_KEY, PersistentDataType.STRING, skillType.name());
-                    meta.setDisplayName(ComponentUtils.serializeComponentAsString(Component.text( SkillType.getDisplayName(skillType) + " Engraved Emerald", NamedTextColor.GREEN)));
-                    List<String> lore = new ArrayList<>();
-                    lore.add("§fStored:");
-                    lore.add("§f0 §6Cxp");
-                    meta.setLore(lore);
 
-                    item.setAmount(item.getAmount() - 1);
-                    if (player.getInventory().firstEmpty() != -1) {
-                        player.getInventory().addItem(engraved);
-                    } else {
-                        player.getWorld().dropItemNaturally(player.getLocation(), engraved);
-                        PlayerUtil.message(player, ChatColor.YELLOW + "Your pockets are full. You dropped it");
+                    PersistentDataContainer pdc = meta.getPersistentDataContainer();
+                    String key = pdc.get(ENGRAVED_EMERALD_KEY, PersistentDataType.STRING);
+                    if (key == null) return;
+
+                    SkillType skillType = SkillType.valueOf(key);
+                    Skill skill = customPlayer.getSkill(skillType);
+                    int storedXP = pdc.getOrDefault(ENGRAVED_EMERALD_XP_KEY, PersistentDataType.INTEGER,0);
+                    int remaining = (SpecializationConfig.skillsConfig.getInt("cxp_transfer_limit") - storedXP) * 2;
+                    double consumedXP = Math.min(skill.getXp(), Math.min(SpecializationConfig.skillsConfig.getInt("cxp_transfer_consume_per_use") , remaining));
+                    if (consumedXP <= 0) return;
+                    customPlayer.removeSkillXp(skillType, consumedXP);
+                    player.setCooldown(item.getType(), 60);
+
+                    storedXP += (int) consumedXP/2;
+                    pdc.set(ENGRAVED_EMERALD_XP_KEY, PersistentDataType.INTEGER, storedXP);
+
+                    List<String> lore = meta.getLore();
+                    lore.set(2, ChatColor.GOLD.toString() + storedXP +" Cxp");
+                    player.playSound(player.getLocation(), Sound.BLOCK_POINTED_DRIPSTONE_DRIP_LAVA_INTO_CAULDRON, 0.7f, 1.0f);
+                    player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, .8f+ ThreadLocalRandom.current().nextFloat(0.4f));
+                    meta.setLore(lore);
+                    item.setItemMeta(meta);
+                    return;
+                }
+                return;
+            }
+            if (item.getType().equals(Material.EMERALD) && !player.hasCooldown(Material.EMERALD)) {
+                ItemMeta sourceMeta = item.getItemMeta();
+
+                if (sourceMeta == null) return;
+                PersistentDataContainer pdc = sourceMeta.getPersistentDataContainer();
+                String key = pdc.get(ENGRAVED_EMERALD_KEY, PersistentDataType.STRING);
+                if (key == null) {
+                    int requiredLevel = SpecializationConfig.skillsConfig.getInt("librarian_level_to_create_cxp_transfer");
+                    if (customPlayer.getSkillLevel(SkillType.LIBRARIAN) < requiredLevel) return;
+                    ItemStack sourceItem = item.clone();
+
+
+                    new ClassSelectionGUI(Component.text("Select class to engrave"), new HashMap<>(), skillType -> {
+                        ItemStack engraved = sourceItem.clone();
+                        engraved.setAmount(1);
+                        engraved.addUnsafeEnchantment(Enchantment.VANISHING_CURSE, 1);
+                        ItemMeta meta = engraved.getItemMeta();
+                        if (meta == null) return;
+
+                        meta.getPersistentDataContainer().set(ENGRAVED_EMERALD_KEY, PersistentDataType.STRING, skillType.name());
+                        meta.getPersistentDataContainer().set(ENGRAVED_EMERALD_XP_KEY, PersistentDataType.INTEGER, 0);
+
+                        meta.setDisplayName(ChatColor.GREEN + SkillType.getDisplayName(skillType) + " Engraved Emerald");
+
+                        List<String> lore = new ArrayList<>();
+                        lore.add(ChatColor.WHITE + "Consumes 2 CXP for 1 CXP stored, capped at 2000 CXP");
+                        lore.add(ChatColor.WHITE + "Stored:");
+                        lore.add(ChatColor.GOLD + "0 Cxp");
+                        meta.setLore(lore);
+                        engraved.setItemMeta(meta);
+                        player.playSound(player.getLocation(), Sound.ITEM_AXE_SCRAPE, 0.7f, 1.0f);
+                        player.setCooldown(item.getType(), 300);
+
+                        ItemStack itemInHand = player.getInventory().getItemInMainHand();
+                        if (itemInHand.getAmount() > 1) {
+                            itemInHand.setAmount(itemInHand.getAmount() - 1);
+                        } else {
+                            player.getInventory().setItemInMainHand(null);
+                        }
+
+                        if (player.getInventory().firstEmpty() != -1) {
+                            player.getInventory().addItem(engraved);
+                        } else {
+                            player.getWorld().dropItemNaturally(player.getLocation(), engraved);
+                            PlayerUtil.message(player, ChatColor.YELLOW + "Your pockets are full. You dropped it");
+                        }
+                    }).open(player);
+                    return;
+                }
+
+                SkillType skillType = SkillType.valueOf(key);
+                int storedXP = pdc.getOrDefault(ENGRAVED_EMERALD_XP_KEY, PersistentDataType.INTEGER,0);
+                new BooleanSelectionGUI(Component.text("Absorb "+ storedXP +" CXP?"), new HashMap<>(), result -> {
+                    if (result) {
+                        customPlayer.addSkillXp(skillType, storedXP);
+                        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_BURP, 0.8f, 0.9f + ThreadLocalRandom.current().nextFloat(.2f));
+                        player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 0.8f, 0.9f + ThreadLocalRandom.current().nextFloat(.2f));
+                        item.setAmount(0);
                     }
                 }).open(player);
                 return;
