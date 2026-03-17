@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.UUID;
 
 public class PlaceBlockListener implements Listener {
-    private final Map<UUID, LinkedList<String>> recentPlacements = new HashMap<>();
+    private static final LinkedList<String> recentPlacements = new LinkedList<>();
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
@@ -26,21 +26,22 @@ public class PlaceBlockListener implements Listener {
         Block block = event.getBlock();
         String locationKey = block.getWorld().getName() + "," + block.getX() + "," + block.getY() + "," + block.getZ();
 
-        LinkedList<String> history = recentPlacements.getOrDefault(playerId, new LinkedList<>());
-        if (history.contains(locationKey)) {
-            return;
-        }
+        recentPlacements.remove(locationKey);
+        recentPlacements.addFirst(locationKey);
 
-        history.addFirst(locationKey);
-        if (history.size() > 10) {
-            history.removeLast();
+        if (recentPlacements.size() > 50) {
+            recentPlacements.removeLast();
         }
-        recentPlacements.put(playerId, history);
 
         String name = ItemGetterUtil.getItemId(event);
         Pair<SkillType, Double> pair = SkillType.getSkillXpFromConfig(SpecializationConfig.getXpGainFromPlacingConfig(), name);
         CustomPlayer customPlayer = CustomPlayerManager.INSTANCE.getCustomPlayer(playerId);
         customPlayer.addSkillXp(pair.key(), pair.value());
+    }
+
+    public static boolean wasRecentlyPlaced(Block block) {
+        String locationKey = block.getWorld().getName() + "," + block.getX() + "," + block.getY() + "," + block.getZ();
+        return recentPlacements.remove(locationKey);
     }
 
 }
