@@ -109,6 +109,8 @@ public final class Specialization extends JavaPlugin {
     private HammerBehavior hammerBehavior;
     @Getter
     private ThrowableExplosiveBehavior throwableExplosiveBehavior;
+    private NametagVisibilityListener nametagVisibilityListener;
+
     @Getter
     private FoodDurationTicker foodDurationTicker;
     @Getter
@@ -189,6 +191,8 @@ public final class Specialization extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new StonecutterListener(this), this);
         getServer().getPluginManager().registerEvents(new com.minecraftcivilizations.specialization.Cooking.CookingListener(), this);
         getServer().getPluginManager().registerEvents(new com.minecraftcivilizations.specialization.Cooking.CookingConsumeListener(), this);
+        nametagVisibilityListener = new NametagVisibilityListener(this);
+        getServer().getPluginManager().registerEvents(nametagVisibilityListener, this);
         // Register packet listener for blocking totem sound during HOTV animation
         com.minecraftcivilizations.specialization.Cooking.CookingConsumeListener.registerPacketListener();
         // Start cleanup task for HOTV totems
@@ -357,6 +361,10 @@ public final class Specialization extends JavaPlugin {
 
         // Shutdown cooking system first to clean up entities
         com.minecraftcivilizations.specialization.Cooking.CookingSessionManager.getInstance().shutdown();
+
+        if (nametagVisibilityListener != null) {
+            nametagVisibilityListener.shutdown();
+        }
 
         for (Player p : Bukkit.getOnlinePlayers()) {
             phantomRideListener.PhantomStateSave(p);

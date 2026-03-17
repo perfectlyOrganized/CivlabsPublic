@@ -102,6 +102,8 @@ public class SpecializationConfig {
     @Getter
     private static ConfigFile locatorBarConfig;
     @Getter
+    private static ConfigFile nametagVisibilityConfig;
+    @Getter
     private static ConfigFile grindConfig;
     private static final List<EntityType> BREEDABLE =  List.of(EntityType.AXOLOTL, EntityType.CAMEL, EntityType.CAT, EntityType.CHICKEN, EntityType.COD, EntityType.COW, EntityType.DONKEY, EntityType.FOX, EntityType.FROG, EntityType.GOAT, EntityType.HOGLIN, EntityType.HORSE, EntityType.LLAMA, EntityType.MOOSHROOM, EntityType.OCELOT, EntityType.PANDA, EntityType.PARROT, EntityType.PIG, EntityType.RABBIT, EntityType.SHEEP, EntityType.STRIDER, EntityType.TADPOLE, EntityType.TURTLE, EntityType.WOLF);
     public static final List<EntityType> TAMEABLE = List.of(EntityType.WOLF, EntityType.OCELOT, EntityType.CAT, EntityType.PARROT, EntityType.HORSE, EntityType.DONKEY, EntityType.MULE, EntityType.LLAMA, EntityType.TRADER_LLAMA);
@@ -128,6 +130,16 @@ public class SpecializationConfig {
             return data;
         };
         locatorBarConfig = new ConfigFile(Specialization.getInstance(), "locatorBarConfig", locatorBarDefaults);
+
+        Supplier<Map<String, Object>> nametagVisibilityDefaults = () -> {
+            Map<String, Object> data = new HashMap<>();
+            data.put("ENABLED", true);
+            data.put("CHECK_INTERVAL_TICKS", 5.0);
+            data.put("MAX_DISTANCE", 96.0);
+            data.put("HIDE_WHEN_SNEAKING", true);
+            return data;
+        };
+        nametagVisibilityConfig = new ConfigFile(Specialization.getInstance(), "nametagVisibilityConfig", nametagVisibilityDefaults);
 
         Supplier<Map<String, Double>> reinforcementDefaults = () -> {
             Map<String, Double> data = new HashMap<>();
@@ -760,5 +772,13 @@ public class SpecializationConfig {
                 xpMonitorDefaults
         );
     }//change
+
+    public static ConfigFile nametagVisibility() {
+        return nametagVisibilityConfig;
+    }
+
+    public static ConfigFile getNametagVisibilityConfig() {
+        return nametagVisibility();
+    }
 
 }
