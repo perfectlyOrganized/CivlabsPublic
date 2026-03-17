@@ -39,6 +39,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static com.minecraftcivilizations.specialization.Reinforcement.ReinforcementManager.*;
+import com.minecraftcivilizations.specialization.Listener.Player.Blocks.PlaceBlockListener;
 
 public class BreakBlockListener implements Listener {
 
@@ -50,6 +51,9 @@ public class BreakBlockListener implements Listener {
          * This resets the block break progress done by mobs
          */
         Block block = event.getBlock();
+        if (PlaceBlockListener.wasRecentlyPlaced(block)) {
+            return;
+        }
         Collection<Player> nearbyPlayers = block.getWorld().getPlayers().stream()
                 .filter(player -> player.getGameMode() == GameMode.SURVIVAL)
                 .filter(player -> player.getLocation().distanceSquared(block.getLocation()) <= 256) // 16^2 = 256
