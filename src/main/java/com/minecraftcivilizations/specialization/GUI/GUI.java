@@ -114,13 +114,6 @@ public abstract class GUI {
                 }
             });
             this.items.put(8, exit);
-        } else if (option.getKey() == GUIPlaceOption.SHOULD_PLACE_SEARCH && option.getValue()) {
-            GUIItem search = ItemStackUtils.makeGUIItemOfType(Material.OAK_SIGN, "Search");
-            search.setOnClick(() -> {
-                CustomPlayerManager.INSTANCE.getCustomPlayer((inventory.getViewers().get(0)).getUniqueId()).setCurrentGUI(GUI.this.id);
-                SearchSignGUI.openSearch((Player) inventory.getViewers().get(0));
-            });
-            this.items.put(4, search);
         } else if (option.getKey() == GUIPlaceOption.SHOULD_PLACE_NEXT && option.getValue()) {
             GUIItem next = ItemStackUtils.makeGUIItemOfType(Material.ARROW, "Next");
             next.setOnClick(() -> childGUI.open((Player) inventory.getViewers().get(0)));
