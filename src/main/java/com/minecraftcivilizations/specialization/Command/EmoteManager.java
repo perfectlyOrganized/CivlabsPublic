@@ -3,11 +3,8 @@ package com.minecraftcivilizations.specialization.Command;
 import co.aikar.commands.BaseCommand;
 import co.aikar.commands.annotation.CommandAlias;
 import co.aikar.commands.annotation.Description;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
 import com.minecraftcivilizations.specialization.CustomItem.CustomItemManager;
 
-import com.minecraftcivilizations.specialization.CustomItem.PacketListener;
 import com.minecraftcivilizations.specialization.OpenLab;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.minecraftcivilizations.specialization.util.CooldownManager;
@@ -45,7 +42,6 @@ public class EmoteManager extends BaseCommand implements Listener {
 
     private final Map<Block, Interaction> seatBlocks = new HashMap<>();
     private final JavaPlugin plugin;
-    private final ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
     private final NamespacedKey sitKey = new NamespacedKey(OpenLab.getInstance(), "sitemote");
     private final Set<Player> silenced_players = new HashSet<>();
     private final Map<UUID, ArmorStand> sittingStands = new HashMap<>();
@@ -55,7 +51,6 @@ public class EmoteManager extends BaseCommand implements Listener {
     public EmoteManager(CustomItemManager customItemManager, JavaPlugin plugin) {
         this.plugin = plugin;
         Bukkit.getPluginManager().registerEvents(this, plugin);
-        protocolManager.addPacketListener(new PacketListener(this));
     }
 
     public Set<Player> getSilencedPlayers() {
