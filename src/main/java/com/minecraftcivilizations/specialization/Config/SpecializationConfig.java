@@ -101,7 +101,6 @@ public class SpecializationConfig {
     private static ConfigFile instinctConfig;
     @Getter
     private static ConfigFile locatorBarConfig;
-    @Getter
     private static ConfigFile nametagVisibilityConfig;
     @Getter
     private static ConfigFile grindConfig;

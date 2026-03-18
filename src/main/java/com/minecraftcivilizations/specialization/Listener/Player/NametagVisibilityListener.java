@@ -18,6 +18,10 @@ import org.bukkit.scoreboard.Team;
 import org.bukkit.util.BlockIterator;
 import org.bukkit.util.Vector;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+
 public class NametagVisibilityListener implements Listener {
 
     private static final String TEAM_VISIBLE = "nt_visible";
@@ -25,6 +29,7 @@ public class NametagVisibilityListener implements Listener {
 
     private final Specialization plugin;
     private final ConfigFile config;
+    private final Set<UUID> managedScoreboards = new HashSet<>();
     private BukkitTask task;
 
     public NametagVisibilityListener(Specialization plugin) {
@@ -49,16 +54,16 @@ public class NametagVisibilityListener implements Listener {
             task = null;
         }
 
-        if (Bukkit.getScoreboardManager() == null) {
-            return;
-        }
-
         Scoreboard mainScoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
         for (Player player : Bukkit.getOnlinePlayers()) {
+            if (!managedScoreboards.contains(player.getUniqueId())) {
+                continue;
+            }
             if (player.getScoreboard() != mainScoreboard) {
                 player.setScoreboard(mainScoreboard);
             }
         }
+        managedScoreboards.clear();
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -74,6 +79,10 @@ public class NametagVisibilityListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
+        if (!config.getBoolean("ENABLED")) {
+            return;
+        }
+
         String entry = event.getPlayer().getName();
         for (Player viewer : Bukkit.getOnlinePlayers()) {
             Team visibleTeam = viewer.getScoreboard().getTeam(TEAM_VISIBLE);
@@ -88,6 +97,10 @@ public class NametagVisibilityListener implements Listener {
     }
 
     private void refreshAllViewers() {
+        if (!config.getBoolean("ENABLED")) {
+            return;
+        }
+
         double maxDistance = config.getDouble("MAX_DISTANCE");
         double maxDistanceSquared = maxDistance * maxDistance;
         boolean hideWhenSneaking = config.getBoolean("HIDE_WHEN_SNEAKING");
@@ -152,7 +165,7 @@ public class NametagVisibilityListener implements Listener {
             if (current.equals(startBlock) || current.equals(endBlock)) {
                 continue;
             }
-            if (!current.getType().isAir()) {
+            if (current.getType().isOccluding()) {
                 return false;
             }
         }
@@ -164,6 +177,7 @@ public class NametagVisibilityListener implements Listener {
         Scoreboard mainScoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
         if (viewer.getScoreboard() == mainScoreboard) {
             viewer.setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
+            managedScoreboards.add(viewer.getUniqueId());
         }
 
         Scoreboard scoreboard = viewer.getScoreboard();
