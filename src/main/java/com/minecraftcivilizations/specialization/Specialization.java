@@ -1,10 +1,6 @@
 package com.minecraftcivilizations.specialization;
 
 import com.minecraftcivilizations.specialization.CraftEngine.*;
-import net.momirealms.craftengine.core.block.BlockBehavior;
-import net.momirealms.craftengine.core.block.CustomBlock;
-import net.momirealms.craftengine.core.block.behavior.BlockBehaviorFactory;
-import net.momirealms.craftengine.core.block.behavior.BlockBehaviors;
 import net.momirealms.craftengine.core.item.behavior.ItemBehaviors;
 import net.momirealms.craftengine.core.util.Key;
 import org.bukkit.Difficulty;
@@ -22,7 +18,6 @@ import com.minecraftcivilizations.specialization.Command.*;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.CustomItem.CustomItemManager;
 import com.minecraftcivilizations.specialization.Data.DataManager;
-import com.minecraftcivilizations.specialization.Distance.TownManager;
 import com.minecraftcivilizations.specialization.Listener.Blocks.AutoCrafterListener;
 import com.minecraftcivilizations.specialization.Listener.Blocks.ReinforcementProtectionListener;
 import com.minecraftcivilizations.specialization.Listener.BurnListener;
@@ -110,6 +105,7 @@ public final class Specialization extends JavaPlugin {
     @Getter
     private ThrowableExplosiveBehavior throwableExplosiveBehavior;
     private NametagVisibilityListener nametagVisibilityListener;
+    private CompassListener compassListener;
 
     @Getter
     private FoodDurationTicker foodDurationTicker;
@@ -193,6 +189,8 @@ public final class Specialization extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new com.minecraftcivilizations.specialization.Cooking.CookingConsumeListener(), this);
         nametagVisibilityListener = new NametagVisibilityListener(this);
         getServer().getPluginManager().registerEvents(nametagVisibilityListener, this);
+        compassListener = new CompassListener(this);
+        getServer().getPluginManager().registerEvents(compassListener, this);
         // Register packet listener for blocking totem sound during HOTV animation
         com.minecraftcivilizations.specialization.Cooking.CookingConsumeListener.registerPacketListener();
         // Start cleanup task for HOTV totems
@@ -364,6 +362,10 @@ public final class Specialization extends JavaPlugin {
 
         if (nametagVisibilityListener != null) {
             nametagVisibilityListener.shutdown();
+        }
+
+        if (compassListener != null) {
+            compassListener.shutdown();
         }
 
         for (Player p : Bukkit.getOnlinePlayers()) {
