@@ -4,8 +4,10 @@ import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Specialization;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Config.ConfigFile;
 import org.bukkit.Bukkit;
+import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
-import org.bukkit.block.Block;
+import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -15,10 +17,14 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
-import org.bukkit.util.BlockIterator;
+import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -101,54 +107,83 @@ public class NametagVisibilityListener implements Listener {
             return;
         }
 
+        List<Player> onlinePlayers = new ArrayList<>(Bukkit.getOnlinePlayers());
+        if (onlinePlayers.isEmpty()) {
+            return;
+        }
+
         double maxDistance = config.getDouble("MAX_DISTANCE");
         double maxDistanceSquared = maxDistance * maxDistance;
         boolean hideWhenSneaking = config.getBoolean("HIDE_WHEN_SNEAKING");
 
-        for (Player viewer : Bukkit.getOnlinePlayers()) {
-            setupScoreboard(viewer);
-            Team visibleTeam = viewer.getScoreboard().getTeam(TEAM_VISIBLE);
-            Team hiddenTeam = viewer.getScoreboard().getTeam(TEAM_HIDDEN);
-            if (visibleTeam == null || hiddenTeam == null) {
+        Map<UUID, PlayerSnapshot> snapshotsById = new HashMap<>((int) (onlinePlayers.size() / 0.75f) + 1);
+        Map<World, List<PlayerSnapshot>> snapshotsByWorld = new HashMap<>();
+
+        for (Player player : onlinePlayers) {
+            PlayerSnapshot snapshot = PlayerSnapshot.of(player);
+            snapshotsById.put(player.getUniqueId(), snapshot);
+            snapshotsByWorld.computeIfAbsent(snapshot.world(), ignored -> new ArrayList<>()).add(snapshot);
+        }
+
+        for (Player viewer : onlinePlayers) {
+            Team[] teams = getViewerTeams(viewer);
+            if (teams == null) {
+                setupScoreboard(viewer);
+                teams = getViewerTeams(viewer);
+                if (teams == null) {
+                    continue;
+                }
+            }
+
+            Team visibleTeam = teams[0];
+            Team hiddenTeam = teams[1];
+            PlayerSnapshot viewerSnapshot = snapshotsById.get(viewer.getUniqueId());
+            if (viewerSnapshot == null) {
                 continue;
             }
 
-            for (Player target : Bukkit.getOnlinePlayers()) {
-                String entry = target.getName();
-                if (viewer.equals(target)) {
+            List<PlayerSnapshot> sameWorldTargets = snapshotsByWorld.get(viewerSnapshot.world());
+            if (sameWorldTargets == null || sameWorldTargets.isEmpty()) {
+                continue;
+            }
+
+            for (PlayerSnapshot targetSnapshot : sameWorldTargets) {
+                String entry = targetSnapshot.name();
+                if (viewer.getUniqueId().equals(targetSnapshot.player().getUniqueId())) {
                     visibleTeam.removeEntry(entry);
                     hiddenTeam.removeEntry(entry);
                     continue;
                 }
 
-                boolean shouldShow = shouldShowNametag(viewer, target, maxDistanceSquared, hideWhenSneaking);
+                if (viewerSnapshot.location().distanceSquared(targetSnapshot.location()) > maxDistanceSquared) {
+                    setVisibility(entry, false, visibleTeam, hiddenTeam);
+                    continue;
+                }
+
+                boolean shouldShow = shouldShowNametag(viewer, viewerSnapshot, targetSnapshot, hideWhenSneaking);
                 setVisibility(entry, shouldShow, visibleTeam, hiddenTeam);
             }
         }
     }
 
-    private boolean shouldShowNametag(Player viewer, Player target, double maxDistanceSquared, boolean hideWhenSneaking) {
-        if (!viewer.getWorld().equals(target.getWorld())) {
-            return false;
-        }
+    private boolean shouldShowNametag(Player viewer, PlayerSnapshot viewerSnapshot, PlayerSnapshot targetSnapshot, boolean hideWhenSneaking) {
+        Player target = targetSnapshot.player();
         if (!viewer.canSee(target)) {
             return false;
         }
-        if (hideWhenSneaking && target.isSneaking()) {
+        if (hideWhenSneaking && targetSnapshot.sneaking()) {
             return false;
         }
-        if (target.isInvisible()) {
+        if (targetSnapshot.invisible()) {
             return false;
         }
-        if (viewer.getLocation().distanceSquared(target.getLocation()) > maxDistanceSquared) {
-            return false;
-        }
-        return hasStrictLineOfSight(viewer, target);
+        return hasStrictLineOfSight(viewerSnapshot.eyeLocation(), targetSnapshot.eyeLocation());
     }
 
-    private boolean hasStrictLineOfSight(Player viewer, Player target) {
-        Location from = viewer.getEyeLocation();
-        Location to = target.getEyeLocation();
+    private boolean hasStrictLineOfSight(Location from, Location to) {
+        if (!from.getWorld().equals(to.getWorld())) {
+            return false;
+        }
 
         Vector direction = to.toVector().subtract(from.toVector());
         double distance = direction.length();
@@ -156,21 +191,66 @@ public class NametagVisibilityListener implements Listener {
             return true;
         }
 
-        Block startBlock = from.getBlock();
-        Block endBlock = to.getBlock();
-        BlockIterator iterator = new BlockIterator(from.getWorld(), from.toVector(), direction.normalize(), 0.0D, (int) Math.ceil(distance));
-
-        while (iterator.hasNext()) {
-            Block current = iterator.next();
-            if (current.equals(startBlock) || current.equals(endBlock)) {
-                continue;
-            }
-            if (current.getType().isOccluding()) {
-                return false;
-            }
+        Vector normalizedDirection = direction.multiply(1.0D / distance);
+        RayTraceResult solidHit = from.getWorld().rayTraceBlocks(
+                from,
+                normalizedDirection,
+                distance,
+                FluidCollisionMode.NEVER,
+                true
+        );
+        if (solidHit != null) {
+            return false;
         }
 
-        return true;
+        return !hitsForbiddenVisibilityBlock(from, normalizedDirection, distance);
+    }
+
+    private boolean hitsForbiddenVisibilityBlock(Location from, Vector normalizedDirection, double maxDistance) {
+        Location cursor = from.clone();
+        double traveled = 0.0D;
+        double dx = normalizedDirection.getX();
+        double dy = normalizedDirection.getY();
+        double dz = normalizedDirection.getZ();
+
+        while (traveled < maxDistance) {
+            double remaining = maxDistance - traveled;
+            RayTraceResult hit = cursor.getWorld().rayTraceBlocks(
+                    cursor,
+                    normalizedDirection,
+                    remaining,
+                    FluidCollisionMode.ALWAYS,
+                    false
+            );
+
+            if (hit == null || hit.getHitBlock() == null) {
+                return false;
+            }
+
+            Material type = hit.getHitBlock().getType();
+            if (type == Material.LAVA || type == Material.POWDER_SNOW) {
+                return true;
+            }
+
+            double step = cursor.toVector().distance(hit.getHitPosition()) + 0.05D;
+            if (step <= 0.0D) {
+                step = 0.05D;
+            }
+            traveled += step;
+            cursor.add(dx * step, dy * step, dz * step);
+        }
+
+        return false;
+    }
+
+    private Team[] getViewerTeams(Player viewer) {
+        Scoreboard scoreboard = viewer.getScoreboard();
+        Team visibleTeam = scoreboard.getTeam(TEAM_VISIBLE);
+        Team hiddenTeam = scoreboard.getTeam(TEAM_HIDDEN);
+        if (visibleTeam == null || hiddenTeam == null) {
+            return null;
+        }
+        return new Team[]{visibleTeam, hiddenTeam};
     }
 
     private void setupScoreboard(Player viewer) {
@@ -206,6 +286,66 @@ public class NametagVisibilityListener implements Listener {
         if (!hiddenTeam.hasEntry(entry)) {
             visibleTeam.removeEntry(entry);
             hiddenTeam.addEntry(entry);
+        }
+    }
+
+    private static final class PlayerSnapshot {
+        private final Player player;
+        private final String name;
+        private final World world;
+        private final Location location;
+        private final Location eyeLocation;
+        private final boolean sneaking;
+        private final boolean invisible;
+
+        private PlayerSnapshot(Player player, String name, World world, Location location, Location eyeLocation, boolean sneaking, boolean invisible) {
+            this.player = player;
+            this.name = name;
+            this.world = world;
+            this.location = location;
+            this.eyeLocation = eyeLocation;
+            this.sneaking = sneaking;
+            this.invisible = invisible;
+        }
+
+        static PlayerSnapshot of(Player player) {
+            return new PlayerSnapshot(
+                    player,
+                    player.getName(),
+                    player.getWorld(),
+                    player.getLocation(),
+                    player.getEyeLocation(),
+                    player.isSneaking(),
+                    player.isInvisible()
+            );
+        }
+
+        Player player() {
+            return player;
+        }
+
+        String name() {
+            return name;
+        }
+
+        World world() {
+            return world;
+        }
+
+        Location location() {
+            return location;
+        }
+
+        Location eyeLocation() {
+            return eyeLocation;
+        }
+
+        boolean sneaking() {
+            return sneaking;
+        }
+
+        boolean invisible() {
+            return invisible;
         }
     }
 }
