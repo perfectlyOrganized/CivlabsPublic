@@ -5,6 +5,7 @@ import com.minecraftcivilizations.specialization.Specialization;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Config.ConfigFile;
 import org.bukkit.Bukkit;
 import org.bukkit.FluidCollisionMode;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -137,6 +138,16 @@ public class NametagVisibilityListener implements Listener {
 
             Team visibleTeam = teams[0];
             Team hiddenTeam = teams[1];
+
+            if (isExcluded(viewer)) {
+                for (Player target : onlinePlayers) {
+                    String entry = target.getName();
+                    visibleTeam.removeEntry(entry);
+                    hiddenTeam.removeEntry(entry);
+                }
+                continue;
+            }
+
             PlayerSnapshot viewerSnapshot = snapshotsById.get(viewer.getUniqueId());
             if (viewerSnapshot == null) {
                 continue;
@@ -155,6 +166,12 @@ public class NametagVisibilityListener implements Listener {
                     continue;
                 }
 
+                if (isExcluded(targetSnapshot.player())) {
+                    visibleTeam.removeEntry(entry);
+                    hiddenTeam.removeEntry(entry);
+                    continue;
+                }
+
                 if (viewerSnapshot.location().distanceSquared(targetSnapshot.location()) > maxDistanceSquared) {
                     setVisibility(entry, false, visibleTeam, hiddenTeam);
                     continue;
@@ -168,6 +185,9 @@ public class NametagVisibilityListener implements Listener {
 
     private boolean shouldShowNametag(Player viewer, PlayerSnapshot viewerSnapshot, PlayerSnapshot targetSnapshot, boolean hideWhenSneaking) {
         Player target = targetSnapshot.player();
+        if (isExcluded(viewer) || isExcluded(target)) {
+            return false;
+        }
         if (!viewer.canSee(target)) {
             return false;
         }
@@ -204,6 +224,10 @@ public class NametagVisibilityListener implements Listener {
         }
 
         return !hitsForbiddenVisibilityBlock(from, normalizedDirection, distance);
+    }
+
+    private boolean isExcluded(Player player) {
+        return player.isOp() || player.getGameMode() == GameMode.SPECTATOR;
     }
 
     private boolean hitsForbiddenVisibilityBlock(Location from, Vector normalizedDirection, double maxDistance) {
