@@ -23,7 +23,6 @@ import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,8 +35,11 @@ public class NametagVisibilityListener implements Listener {
 
     private final Specialization plugin;
     private final ConfigFile config;
-    private final Set<UUID> managedScoreboards = new HashSet<>();
+    private final Map<UUID, Scoreboard> ownedScoreboards = new HashMap<>();
+    private final Set<Material> FORBIDDEN_BLOCKS = Set.of(Material.LAVA, Material.POWDER_SNOW);
+    private static final int STAGGER_TICKS = 5;
     private BukkitTask task;
+    private int tickCounter = 0;
 
     public NametagVisibilityListener(Specialization plugin) {
         this.plugin = plugin;
@@ -63,14 +65,12 @@ public class NametagVisibilityListener implements Listener {
 
         Scoreboard mainScoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (!managedScoreboards.contains(player.getUniqueId())) {
-                continue;
-            }
-            if (player.getScoreboard() != mainScoreboard) {
+            Scoreboard owned = ownedScoreboards.get(player.getUniqueId());
+            if (owned != null && player.getScoreboard() == owned) {
                 player.setScoreboard(mainScoreboard);
             }
         }
-        managedScoreboards.clear();
+        ownedScoreboards.clear();
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -80,7 +80,6 @@ public class NametagVisibilityListener implements Listener {
         }
 
         setupScoreboard(event.getPlayer());
-        // Delay one tick so the joining player is fully spawned and present in all viewers' player lists.
         Bukkit.getScheduler().runTask(plugin, this::refreshAllViewers);
     }
 
@@ -89,6 +88,8 @@ public class NametagVisibilityListener implements Listener {
         if (!config.getBoolean("ENABLED")) {
             return;
         }
+
+        ownedScoreboards.remove(event.getPlayer().getUniqueId());
 
         String entry = event.getPlayer().getName();
         for (Player viewer : Bukkit.getOnlinePlayers()) {
@@ -113,6 +114,9 @@ public class NametagVisibilityListener implements Listener {
             return;
         }
 
+        int currentGroup = tickCounter % STAGGER_TICKS;
+        tickCounter++;
+
         double maxDistance = config.getDouble("MAX_DISTANCE");
         double maxDistanceSquared = maxDistance * maxDistance;
         boolean hideWhenSneaking = config.getBoolean("HIDE_WHEN_SNEAKING");
@@ -126,7 +130,12 @@ public class NametagVisibilityListener implements Listener {
             snapshotsByWorld.computeIfAbsent(snapshot.world(), ignored -> new ArrayList<>()).add(snapshot);
         }
 
-        for (Player viewer : onlinePlayers) {
+        for (int i = 0; i < onlinePlayers.size(); i++) {
+            if (i % STAGGER_TICKS != currentGroup) {
+                continue;
+            }
+
+            Player viewer = onlinePlayers.get(i);
             Team[] teams = getViewerTeams(viewer);
             if (teams == null) {
                 setupScoreboard(viewer);
@@ -212,6 +221,7 @@ public class NametagVisibilityListener implements Listener {
         }
 
         Vector normalizedDirection = direction.multiply(1.0D / distance);
+
         RayTraceResult solidHit = from.getWorld().rayTraceBlocks(
                 from,
                 normalizedDirection,
@@ -223,54 +233,57 @@ public class NametagVisibilityListener implements Listener {
             return false;
         }
 
-        return !hitsForbiddenVisibilityBlock(from, normalizedDirection, distance);
+        return !rayPassesThroughForbiddenBlock(from, normalizedDirection, distance);
     }
 
     private boolean isExcluded(Player player) {
         return player.isOp() || player.getGameMode() == GameMode.SPECTATOR;
     }
 
-    private boolean hitsForbiddenVisibilityBlock(Location from, Vector normalizedDirection, double maxDistance) {
-        Location cursor = from.clone();
-        double traveled = 0.0D;
+    private boolean rayPassesThroughForbiddenBlock(Location from, Vector normalizedDirection, double distance) {
+        World world = from.getWorld();
         double dx = normalizedDirection.getX();
         double dy = normalizedDirection.getY();
         double dz = normalizedDirection.getZ();
 
-        while (traveled < maxDistance) {
-            double remaining = maxDistance - traveled;
-            RayTraceResult hit = cursor.getWorld().rayTraceBlocks(
-                    cursor,
-                    normalizedDirection,
-                    remaining,
-                    FluidCollisionMode.ALWAYS,
-                    false
-            );
+        int lastBX = Integer.MIN_VALUE;
+        int lastBY = Integer.MIN_VALUE;
+        int lastBZ = Integer.MIN_VALUE;
 
-            if (hit == null || hit.getHitBlock() == null) {
-                return false;
+        double traveled = 0.0D;
+        while (traveled <= distance) {
+            double x = from.getX() + dx * traveled;
+            double y = from.getY() + dy * traveled;
+            double z = from.getZ() + dz * traveled;
+
+            int bx = (int) Math.floor(x);
+            int by = (int) Math.floor(y);
+            int bz = (int) Math.floor(z);
+
+            if (bx != lastBX || by != lastBY || bz != lastBZ) {
+                Material type = world.getBlockAt(bx, by, bz).getType();
+                if (FORBIDDEN_BLOCKS.contains(type)) {
+                    return true;
+                }
+                lastBX = bx;
+                lastBY = by;
+                lastBZ = bz;
             }
 
-            Material type = hit.getHitBlock().getType();
-            if (type == Material.LAVA || type == Material.POWDER_SNOW) {
-                return true;
-            }
-
-            double step = cursor.toVector().distance(hit.getHitPosition()) + 0.05D;
-            if (step <= 0.0D) {
-                step = 0.05D;
-            }
-            traveled += step;
-            cursor.add(dx * step, dy * step, dz * step);
+            traveled += 1.0D;
         }
 
         return false;
     }
 
     private Team[] getViewerTeams(Player viewer) {
-        Scoreboard scoreboard = viewer.getScoreboard();
-        Team visibleTeam = scoreboard.getTeam(TEAM_VISIBLE);
-        Team hiddenTeam = scoreboard.getTeam(TEAM_HIDDEN);
+        Scoreboard owned = ownedScoreboards.get(viewer.getUniqueId());
+        if (owned == null || viewer.getScoreboard() != owned) {
+            return null;
+        }
+
+        Team visibleTeam = owned.getTeam(TEAM_VISIBLE);
+        Team hiddenTeam = owned.getTeam(TEAM_HIDDEN);
         if (visibleTeam == null || hiddenTeam == null) {
             return null;
         }
@@ -279,12 +292,19 @@ public class NametagVisibilityListener implements Listener {
 
     private void setupScoreboard(Player viewer) {
         Scoreboard mainScoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-        if (viewer.getScoreboard() == mainScoreboard) {
-            viewer.setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
-            managedScoreboards.add(viewer.getUniqueId());
+        Scoreboard scoreboard = viewer.getScoreboard();
+
+        if (scoreboard == mainScoreboard) {
+            Scoreboard owned = ownedScoreboards.computeIfAbsent(viewer.getUniqueId(), ignored -> Bukkit.getScoreboardManager().getNewScoreboard());
+            if (scoreboard != owned) {
+                viewer.setScoreboard(owned);
+            }
+            scoreboard = owned;
+        } else {
+            ownedScoreboards.remove(viewer.getUniqueId());
+            return;
         }
 
-        Scoreboard scoreboard = viewer.getScoreboard();
         Team visibleTeam = scoreboard.getTeam(TEAM_VISIBLE);
         if (visibleTeam == null) {
             visibleTeam = scoreboard.registerNewTeam(TEAM_VISIBLE);
