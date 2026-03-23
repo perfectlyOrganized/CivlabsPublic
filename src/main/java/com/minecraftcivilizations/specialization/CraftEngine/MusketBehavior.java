@@ -449,18 +449,17 @@ public class MusketBehavior extends ItemBehavior {
         double baseDamage = 24.0;
         double hitDistance = shooter.getLocation().distance(livingEntity.getLocation());
 
-        // Distance damage falloff
+        // Reverse distance scaling (as requested): less damage up close, more from afar
         double damageMultiplier;
-        if (hitDistance <= 20) {
-            damageMultiplier = 1.0;
-        } else if (hitDistance <= 40) {
-            damageMultiplier = 1.0 - ((hitDistance - 20) / 20.0) * 0.1;
-        } else if (hitDistance <= 60) {
-            damageMultiplier = 0.9 - ((hitDistance - 40) / 20.0) * 0.2;
+        if (hitDistance <= 10) {
+            damageMultiplier = 0.5; // Weak up close (12 damage / 6 hearts)
+        } else if (hitDistance <= 30) {
+            damageMultiplier = 0.5 + ((hitDistance - 10) / 20.0) * 0.5; // Scales up to 1.0x at 30 blocks
+        } else if (hitDistance <= 50) {
+            damageMultiplier = 1.0 + ((hitDistance - 30) / 20.0) * 0.3; // Scales up to 1.3x at 50 blocks
         } else {
-            damageMultiplier = 0.7 - ((hitDistance - 60) / 20.0) * 0.2;
+            damageMultiplier = 1.3; // Max damage at long range (31.2 damage / 15+ hearts)
         }
-        damageMultiplier = Math.max(0.5, damageMultiplier);
 
         double damage = baseDamage * damageMultiplier;
 

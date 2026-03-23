@@ -33,8 +33,10 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Listener to handle musket-related events:
- * - Only allows musket to be loaded with lead_shot (blocks arrows/fireworks completely)
- * - Tracks load count (3 loads required) - consumes 1 lead_shot per full reload cycle
+ * - Only allows musket to be loaded with lead_shot (blocks arrows/fireworks
+ * completely)
+ * - Tracks load count (3 loads required) - consumes 1 lead_shot per full reload
+ * cycle
  * - Fires musket projectile instead of arrow when fully loaded
  */
 public class MusketListener implements Listener {
@@ -55,12 +57,12 @@ public class MusketListener implements Listener {
                 ItemStack mainHand = player.getInventory().getItemInMainHand();
                 if (isMusket(mainHand)) {
                     player.addPotionEffect(new PotionEffect(
-                        PotionEffectType.SLOWNESS,
-                        30, // 1.5 seconds (refreshed every tick, so always active while holding)
-                        1,  // Level 2 (0-indexed, so 1 = level 2)
-                        false,
-                        false, // No particles
-                        true   // Show icon
+                            PotionEffectType.SLOWNESS,
+                            30, // 1.5 seconds (refreshed every tick, so always active while holding)
+                            1, // Level 2 (0-indexed, so 1 = level 2)
+                            false,
+                            false, // No particles
+                            true // Show icon
                     ));
                 }
             }
@@ -76,7 +78,7 @@ public class MusketListener implements Listener {
         }
         Item<ItemStack> wrapped = BukkitItemManager.instance().wrap(itemStack);
         return wrapped.getCustomItem().isPresent() &&
-               wrapped.getCustomItem().get().id().equals(MUSKET_ID);
+                wrapped.getCustomItem().get().id().equals(MUSKET_ID);
     }
 
     /**
@@ -88,7 +90,7 @@ public class MusketListener implements Listener {
         }
         Item<ItemStack> wrapped = BukkitItemManager.instance().wrap(itemStack);
         return wrapped.getCustomItem().isPresent() &&
-               wrapped.getCustomItem().get().id().equals(LEAD_SHOT_ID);
+                wrapped.getCustomItem().get().id().equals(LEAD_SHOT_ID);
     }
 
     /**
@@ -149,95 +151,71 @@ public class MusketListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGH)
     public void onMusketUse(PlayerInteractEvent event) {
-        // Only handle right-click actions
         if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;
         }
 
         Player player = event.getPlayer();
-        ItemStack mainHand = player.getInventory().getItemInMainHand();
+        ItemStack weapon = event.getItem();
 
-        if (!isMusket(mainHand)) {
+        if (!isMusket(weapon)) {
             return;
         }
 
-        // Cancel the event to prevent vanilla crossbow behavior
         event.setCancelled(true);
 
-        // Check if player is downed - downed players cannot use musket
         if (isPlayerDowned(player)) {
             player.sendActionBar(Component.text("Cannot use musket while downed!").color(NamedTextColor.RED));
             return;
         }
 
-        // Check cooldown
         if (player.hasCooldown(Material.CROSSBOW)) {
             return;
         }
 
-        int currentLoads = MusketBehavior.getLoadCount(mainHand);
+        int currentLoads = MusketBehavior.getLoadCount(weapon);
 
-        // If fully loaded, SHOOT
         if (currentLoads >= REQUIRED_LOADS) {
-            // Get enchantment levels
-            int multishotLevel = mainHand.getEnchantmentLevel(Enchantment.MULTISHOT);
-            int piercingLevel = mainHand.getEnchantmentLevel(Enchantment.PIERCING);
+            int multishotLevel = weapon.getEnchantmentLevel(Enchantment.MULTISHOT);
+            int piercingLevel = weapon.getEnchantmentLevel(Enchantment.PIERCING);
 
-            // Fire the musket projectile with enchantments!
             Location eyeLocation = player.getEyeLocation();
             Vector direction = eyeLocation.getDirection().normalize();
-            MusketBehavior.shootProjectile(player, eyeLocation, direction, player.getWorld(), multishotLevel, piercingLevel);
+            MusketBehavior.shootProjectile(player, eyeLocation, direction, player.getWorld(), multishotLevel,
+                    piercingLevel);
 
-            // Random cooldown between 3-5 seconds (60-100 ticks)
             int randomCooldown = 60 + ThreadLocalRandom.current().nextInt(41);
             player.setCooldown(Material.CROSSBOW, randomCooldown);
 
-            // Reset load count after firing
-            MusketBehavior.resetLoadCount(mainHand);
-
-            // Keep crossbow visually loaded (don't clear projectiles)
-            ensureCrossbowVisuallyLoaded(mainHand);
-
-            // Damage the musket
-            mainHand.damage(1, player);
+            MusketBehavior.resetLoadCount(weapon);
+            ensureCrossbowVisuallyLoaded(weapon);
+            weapon.damage(1, player);
             return;
         }
 
-        // Not fully loaded - try to RELOAD
         if (!hasLeadShot(player)) {
             player.sendActionBar(Component.text("Requires Lead Shot to reload!").color(NamedTextColor.RED));
             return;
         }
 
-        // Get Quick Charge level for faster reloading
-        int quickChargeLevel = mainHand.getEnchantmentLevel(Enchantment.QUICK_CHARGE);
-
-        // Increment load counter
+        int quickChargeLevel = weapon.getEnchantmentLevel(Enchantment.QUICK_CHARGE);
         int newLoads = currentLoads + 1;
-        MusketBehavior.incrementLoadCount(mainHand);
+        MusketBehavior.incrementLoadCount(weapon);
 
         if (newLoads < REQUIRED_LOADS) {
-            // Calculate reload cooldown based on Quick Charge
-            // Base: 25 ticks (~1.25 seconds)
-            // Quick Charge I: 20 ticks (~1.0 second)
-            // Quick Charge II: 16 ticks (~0.8 seconds)
-            // Quick Charge III: 12 ticks (~0.6 seconds)
             int reloadCooldown = Math.max(12, 25 - (quickChargeLevel * 4));
-
             player.setCooldown(Material.CROSSBOW, reloadCooldown);
-            player.sendActionBar(Component.text("Reloading... " + newLoads + "/" + REQUIRED_LOADS).color(NamedTextColor.YELLOW));
-            // Play reload sound for ALL nearby players (not just the shooter)
-            playReloadSoundForAll(player.getLocation(), 0.9f + (float)(Math.random() * 0.2));
+            player.sendActionBar(
+                    Component.text("Reloading... " + newLoads + "/" + REQUIRED_LOADS).color(NamedTextColor.YELLOW));
+            playReloadSoundForAll(player.getLocation(), 0.9f + (float) (Math.random() * 0.2));
         } else {
-            // Fully loaded! Consume 1 lead_shot - NO cooldown on final reload
             consumeLeadShot(player);
-            player.sendActionBar(Component.text("Musket Ready!").color(NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
-            // Play final reload sound for ALL nearby players
+            player.sendActionBar(
+                    Component.text("Musket Ready!").color(NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
             playReloadSoundForAll(player.getLocation(), 1.2f);
         }
 
-        // Keep crossbow visually loaded at all times
-        ensureCrossbowVisuallyLoaded(mainHand);
+        ensureCrossbowVisuallyLoaded(weapon);
     }
 
     /**
@@ -286,7 +264,20 @@ public class MusketListener implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onItemSwitch(PlayerItemHeldEvent event) {
-        MusketBehavior.resetAccuracy(event.getPlayer().getUniqueId());
+        Player player = event.getPlayer();
+        MusketBehavior.resetAccuracy(player.getUniqueId());
+
+        ItemStack newWeapon = player.getInventory().getItem(event.getNewSlot());
+        if (isMusket(newWeapon)) {
+            int currentLoads = MusketBehavior.getLoadCount(newWeapon);
+            if (currentLoads >= REQUIRED_LOADS) {
+                player.sendActionBar(
+                        Component.text("Musket Ready!").color(NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
+            } else {
+                player.sendActionBar(
+                        Component.text("Musket: " + currentLoads + "/" + REQUIRED_LOADS).color(NamedTextColor.WHITE));
+            }
+        }
     }
 
     /**
@@ -298,23 +289,23 @@ public class MusketListener implements Listener {
         if (event.getClickedBlock() != null) {
             Material type = event.getClickedBlock().getType();
             if (type.toString().contains("CHEST") ||
-                type.toString().contains("BARREL") ||
-                type.toString().contains("SHULKER") ||
-                type.toString().contains("FURNACE") ||
-                type.toString().contains("ANVIL") ||
-                type.toString().contains("ENCHANTING") ||
-                type.toString().contains("CRAFTING") ||
-                type.toString().contains("BREWING") ||
-                type.toString().contains("HOPPER") ||
-                type.toString().contains("DISPENSER") ||
-                type.toString().contains("DROPPER") ||
-                type == Material.LEVER ||
-                type == Material.COMPARATOR ||
-                type == Material.REPEATER ||
-                type.toString().contains("BUTTON") ||
-                type.toString().contains("DOOR") ||
-                type.toString().contains("GATE") ||
-                type.toString().contains("TRAPDOOR")) {
+                    type.toString().contains("BARREL") ||
+                    type.toString().contains("SHULKER") ||
+                    type.toString().contains("FURNACE") ||
+                    type.toString().contains("ANVIL") ||
+                    type.toString().contains("ENCHANTING") ||
+                    type.toString().contains("CRAFTING") ||
+                    type.toString().contains("BREWING") ||
+                    type.toString().contains("HOPPER") ||
+                    type.toString().contains("DISPENSER") ||
+                    type.toString().contains("DROPPER") ||
+                    type == Material.LEVER ||
+                    type == Material.COMPARATOR ||
+                    type == Material.REPEATER ||
+                    type.toString().contains("BUTTON") ||
+                    type.toString().contains("DOOR") ||
+                    type.toString().contains("GATE") ||
+                    type.toString().contains("TRAPDOOR")) {
                 MusketBehavior.resetAccuracy(event.getPlayer().getUniqueId());
             }
         }
