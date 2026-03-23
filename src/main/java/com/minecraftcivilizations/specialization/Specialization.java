@@ -218,8 +218,16 @@ public final class Specialization extends JavaPlugin {
         getServer().getPluginManager().registerEvents(throwableExplosiveBehavior, this);
         //town data does not need to wait anymore
         //TownManager.scanAllPlayersForTownsAsync();
+        
         ItemBehaviors.register(Key.of("specialization:musket_behavior"), MusketBehavior.FACTORY);
-        new MusketListener(); // Handles musket accuracy tracking and prevents arrow loading
+        new MusketListener();
+
+        ItemBehaviors.register(Key.of("specialization:revolver_behavior"), RevolverBehavior.FACTORY);
+        new RevolverListener();
+
+        ItemBehaviors.register(Key.of("specialization:shotgun_behavior"), ShotgunBehavior.FACTORY);
+        new ShotgunListener();
+
         ItemBehaviors.register(Key.of("specialization:hammer_behavior"), HammerBehavior.FACTORY);
         ItemBehaviors.register(Key.of("specialization:mortar_and_pestle_behavior"), MortarAndPestleBehavior.FACTORY);
         ItemBehaviors.register(Key.of("specialization:metal_detector_behavior"), MetalDetectorBehavior.FACTORY);
